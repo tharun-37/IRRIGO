@@ -1,0 +1,17 @@
+# Virtual environment (copied from the sibling MP3 tree, 475 MB).
+.venv/
+
+# Editor / agent workspace metadata
+.freebuff/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Node / dashboard
+frontend/node_modules/
+frontend/dist/
+
+# Local corpora (43 MB of simulated seasons; regenerate with scripts/).
+data/

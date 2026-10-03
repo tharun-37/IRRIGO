@@ -1,0 +1,373 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-white font-sans text-ink-900 antialiased;
+    background-color: #f7f9fd;
+  }
+
+  /* Film grain, as an actual displacement rather than a tiled overlay.
+
+     A flat noise layer sits *on* the artwork and dulls it. Routing the same
+     turbulence through a displacement map distorts the edge instead, so the
+     gradient keeps its colour and gains an organic boundary — the difference
+     between grain on a surface and a surface that is made of grain. */
+  .grain {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .grain > .grain-layer {
+    position: fixed;
+    inset: -6%;
+    z-index: 0;
+    pointer-events: none;
+    filter: url('#grain-warp');
+    opacity: 0.5;
+    background-image:
+      radial-gradient(60% 55% at 18% 8%, #cfe0ff 0%, transparent 62%),
+      radial-gradient(52% 48% at 88% 12%, #e6dcff 0%, transparent 60%),
+      radial-gradient(70% 60% at 50% 104%, #d6f5e2 0%, transparent 64%),
+      linear-gradient(180deg, #f7f9fd 0%, #eaeffc 100%);
+  }
+
+  /* Content rides above the warped layer. */
+  .grain > *:not(.grain-layer) {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Numbers align in columns without visual noise. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  /* The shell: a centred white sheet on a tinted page, as in the reference. */
+  .sheet {
+    @apply mx-auto w-full max-w-[1180px] rounded-card bg-white shadow-card;
+  }
+
+  .card {
+    /* Near-opaque rather than 80% white: a translucent panel over a pale tinted
+       page has almost no luminance step against it, so the shadow had nothing to
+       sit on and the card read as flat. The border is a real ink tone for the
+       same reason — `border-white/70` was invisible on white. One step darker
+       than the original `ink-100/90`: a deeper shadow needs a defined edge to
+       land against, or the rim dissolves into the gradient beneath it. */
+    @apply rounded-card border border-ink-200/80 bg-white/95 shadow-card;
+    /* Each card is its own sizing context, so `cqw` below measures this card
+       rather than the viewport. That is what lets one rule serve a card that is
+       260px wide on a laptop and 200px on a phone. */
+    container-type: inline-size;
+  }
+
+  /* A recessed surface for grouped content inside a card: stat rows, input
+     blocks, reading tiles. Inset shadow rather than a drop shadow, because the
+     grouping is *below* the card surface in the hierarchy. Two levels of depth
+     read as a card with contents; one level reads as a pile of same-weight
+     boxes. */
+  .panel {
+    @apply rounded-card border border-ink-200/70 bg-ink-50/70 shadow-panel;
+  }
+
+  /* Fluid type.
+     A fixed px size is wrong at both ends of a responsive grid: too large when
+     the card narrows, wasted space when it widens. `clamp()` between a floor and
+     a ceiling, with the middle term in container-query units, keeps the figure
+     proportional to its own box and never shrinks past legibility. */
+  .type-figure-xl {
+    font-size: clamp(1.5rem, 11cqw, 2.25rem);
+  }
+
+  .type-figure-lg {
+    font-size: clamp(1.25rem, 7.5cqw, 1.75rem);
+  }
+
+  .type-figure {
+    font-size: clamp(1.125rem, 5.5cqw, 1.5rem);
+  }
+
+  .type-value {
+    font-size: clamp(0.8125rem, 4cqw, 1.0625rem);
+  }
+
+  .type-body {
+    font-size: clamp(0.6875rem, 3.1cqw, 0.8125rem);
+  }
+
+  .type-label {
+    font-size: clamp(0.5rem, 2.4cqw, 0.6875rem);
+  }
+
+  /* Display sizes for the few figures that carry a card.
+
+     These are the numbers an operator reads from across the yard, so they get
+     their own scale rather than reusing the body sizes. The middle term is in
+     `cqw`, so a figure grows with its own card: the decision's depth scales
+     across the full page width, the sky card's temperature scales with a third
+     of it, and neither needs a separate breakpoint to stay proportional. */
+  .type-display {
+    font-size: clamp(2rem, 3.4cqw, 3rem);
+  }
+
+  .type-display-sm {
+    font-size: clamp(1.5rem, 4.4cqw, 2.4rem);
+  }
+
+  .type-headline {
+    font-size: clamp(1.0625rem, 1.9cqw, 1.5rem);
+  }
+
+  /* Fluid padding, so gutters shrink on a phone and open out on a wide screen
+     instead of being pinned to one value that is wrong at one end. */
+  .pad-card {
+    padding-inline: clamp(0.875rem, 2.6cqw, 1.5rem);
+  }
+
+  .pad-card-y {
+    padding-block: clamp(0.75rem, 2.2cqw, 1.25rem);
+  }
+
+  /* The top bar and the page gutters track the viewport, because they scale with
+     the window rather than with any one card. */
+  .pad-page {
+    padding: clamp(0.75rem, 1.6vw, 1.5rem);
+  }
+
+  /* A card whose contents are centred. Kept for the rare figure that genuinely
+     reads better centred; deliberately not applied to whole cards, which is what
+     produced tall cards with their text floating in the middle of empty space. */
+  .stack-center {
+    @apply flex flex-col items-center text-center;
+  }
+
+  /* A wash of colour for a card that carries a headline figure, tinted by what
+     the figure means: dry soil, a healthy profile, or a resting field. */
+  /* Glass. A translucent panel that samples what is behind it, used where a
+     gradient sits underneath and the panel should read as part of it rather
+     than on top of it. */
+  .glass {
+    @apply border border-white/60 bg-white/55 backdrop-blur-xl backdrop-saturate-150;
+  }
+
+  /* The sky card's gradient. Named rather than inline so the same wash can be
+     referenced by the chip, the glow and the hover state. */
+  .sky-wash {
+    background-image: linear-gradient(145deg, #4f7fe0 0%, #3b5fc0 48%, #2f3f8f 100%);
+  }
+
+  .tint-dry {
+    background-image: linear-gradient(150deg, #fff7ed 0%, rgba(255, 255, 255, 0.86) 55%);
+  }
+
+  .tint-good {
+    background-image: linear-gradient(150deg, #f0fdf4 0%, rgba(255, 255, 255, 0.86) 55%);
+  }
+
+  .tint-wet {
+    background-image: linear-gradient(150deg, #eff6ff 0%, rgba(255, 255, 255, 0.86) 55%);
+  }
+
+  .tint-rest {
+    background-image: linear-gradient(150deg, #f8fafc 0%, rgba(255, 255, 255, 0.86) 55%);
+  }
+
+  /* The stage track's active segment, with a gradient so the position of the
+     crop reads as lit rather than merely coloured. */
+  .stage-live {
+    background-image: linear-gradient(90deg, #3b82f6 0%, #2563eb 55%, #1d4ed8 100%);
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.45);
+  }
+
+  /* --- The controller banner ------------------------------------------
+     A saturated gradient plate with an SVG wave along its base, so the
+     decision reads as a distinct instrument panel rather than another white
+     card. Text on top is white, which is the highest-contrast pairing
+     available and the one that survives being read outdoors. */
+  .hero-plate {
+    @apply relative overflow-hidden text-white;
+  }
+
+  .hero-plate::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(120% 90% at 15% 0%, rgba(255, 255, 255, 0.22) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .hero-irrigate {
+    background-image: linear-gradient(135deg, #4c1d95 0%, #312e81 52%, #1e3a8a 100%);
+  }
+
+  .hero-monitor {
+    background-image: linear-gradient(135deg, #1d4ed8 0%, #1e40af 58%, #312e81 100%);
+  }
+
+  .hero-hold {
+    background-image: linear-gradient(135deg, #b45309 0%, #92400e 55%, #7c2d12 100%);
+  }
+
+  /* A gradient blob pushed through a turbulence displacement, the "less but
+     better" treatment. Purely decorative, one filter on the page. */
+  .blob {
+    filter: url(#blob-grain);
+    pointer-events: none;
+  }
+
+  /* Translucent pill, for the field switcher. */
+  .glass {
+    background-color: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.75);
+  }
+
+  /* The average marker on a bar chart, with its label riding the line. */
+  .avg-line {
+    @apply absolute inset-x-0 border-t border-dashed border-ink-300;
+  }
+
+  .avg-chip {
+    @apply absolute -top-2.5 right-0 rounded-[5px] bg-ink-900 px-1.5 py-0.5
+           text-[10px] font-semibold text-white;
+  }
+
+  /* Bars grow from the baseline on mount rather than appearing at full height. */
+  .bar-rise {
+    animation: barRise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .card-header {
+    @apply flex items-center justify-between border-b border-ink-200 px-5 py-3;
+  }
+
+  .card-title {
+    @apply text-[13px] font-semibold tracking-tight text-ink-900;
+  }
+
+  .card-body {
+    @apply p-5;
+  }
+
+  /* A statistic cell: large figure over a small uppercase caption. */
+  .stat-cell {
+    @apply flex flex-col items-center justify-center gap-0.5 border-r border-ink-200 px-4 py-4 text-center last:border-r-0;
+  }
+
+  .stat-value {
+    @apply tnum text-[26px] font-semibold leading-none tracking-tight text-ink-900;
+  }
+
+  .stat-label {
+    @apply text-[10px] font-medium uppercase tracking-[0.08em] text-ink-400;
+  }
+
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-pill px-4 py-2
+           text-[12px] font-semibold transition-all duration-150
+           focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
+           focus-visible:outline-brand-600 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply btn bg-ink-900 text-white hover:bg-ink-700;
+  }
+
+  .btn-secondary {
+    @apply btn border border-ink-200 bg-ink-50 text-ink-700 hover:border-ink-300 hover:bg-ink-100;
+  }
+
+  .btn-ghost {
+    @apply btn text-ink-500 hover:bg-ink-100 hover:text-ink-900;
+  }
+
+  .nav-link-active {
+    @apply text-brand-700;
+  }
+
+  .nav-link-active::after {
+    content: '';
+    @apply absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-brand-600;
+  }
+
+  .section-label {
+    @apply text-[11px] font-semibold tracking-tight text-ink-700;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-0.5
+           text-[10px] font-semibold uppercase tracking-[0.06em];
+  }
+
+  /* A full-bleed band of panels separated by a hairline grid. The container's
+     background is the divider colour, so `gap-px` alone produces the rules. */
+  .panel-grid {
+    @apply flex min-h-0 flex-1 flex-col gap-px overflow-hidden bg-ink-200;
+  }
+
+  .panel {
+    @apply bg-white;
+  }
+
+  /* Bento cell: a card with no chrome of its own, so a grid of them reads as
+     one surface divided by hairlines rather than as stacked boxes. */
+  .cell {
+    @apply bg-white p-5;
+    container-type: inline-size;
+  }
+
+  .cell-head {
+    @apply mb-3 flex items-center justify-between gap-3;
+  }
+
+  .cell-title {
+    @apply text-[13px] font-semibold tracking-tight text-ink-900;
+  }
+
+  /* Micro label above a figure, the unit of small print throughout the shell. */
+  .micro {
+    @apply text-[10px] font-semibold uppercase tracking-[0.08em] text-ink-400;
+  }
+
+  .rail-item {
+    @apply flex w-full items-center gap-3 rounded-pill px-3 py-2 text-[13px]
+           font-medium text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-900;
+  }
+
+  .rail-item-active {
+    @apply bg-ink-900 text-white hover:bg-ink-900 hover:text-white;
+  }
+
+  /* A hatched proportion bar, used for mix breakdowns. */
+  .hatch {
+    @apply h-1.5 w-full overflow-hidden rounded-pill bg-ink-100;
+  }
+
+  .nav-link {
+    @apply relative px-1 pb-3 pt-1 text-[11px] font-semibold uppercase tracking-[0.09em]
+           text-ink-500 transition-colors hover:text-ink-900;
+  }
+}
+
+@layer utilities {
+  /* Recharts injects its own focus outline on hover; it is visually noisy here. */
+  .recharts-wrapper:focus,
+  .recharts-surface:focus {
+    outline: none;
+  }
+}

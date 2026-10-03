@@ -1,0 +1,1159 @@
+{
+  "v1_headline": {
+    "target": "min(TAW - Dr, infiltration)",
+    "distinct_target_values": 3,
+    "modal_target_share_pct": 39.13,
+    "modal_value_mm": 22.0,
+    "events_at_pure_application_cap_pct": 66.36,
+    "soil_lookup_within_1mm_pct": 66.92,
+    "ood_r2_unseen_station": 0.0816
+  },
+  "v2": {
+    "grouped": {
+      "n": 6936,
+      "mae_mm": 2.968036,
+      "median_ae_mm": 1.455935,
+      "rmse_mm": 5.000288,
+      "bias_mm": 0.125745,
+      "r2": 0.957071,
+      "spearman": 0.939736,
+      "within_5mm_pct": 80.175894,
+      "within_10mm_pct": 93.872549,
+      "split": "grouped_by_series",
+      "held_out": "120 of 1200 series",
+      "rationale": "comparable with the previous generation's protocol",
+      "soil_median_mae_mm": 17.757121,
+      "physics_baseline": {
+        "n": 6936,
+        "mae_mm": 26.26407,
+        "median_ae_mm": 22.002494,
+        "rmse_mm": 32.7411,
+        "bias_mm": 25.15442,
+        "r2": -0.840543,
+        "spearman": 0.354571,
+        "within_5mm_pct": 14.013841,
+        "within_10mm_pct": 27.061707
+      },
+      "skill_vs_physics": {
+        "n": 3843,
+        "physics_mae_mm": 15.97188,
+        "model_mae_mm": 4.340703,
+        "skill_vs_physics_pct": 72.822841
+      },
+      "trigger": {
+        "threshold_mm": 1.0,
+        "needs_water_pct": 55.406574,
+        "precision": 0.81756,
+        "recall": 0.995837,
+        "missed_pct": 0.416341,
+        "false_alarm_pct": 27.610734,
+        "confusion": {
+          "true_positive": 3827,
+          "false_positive": 854,
+          "false_negative": 16,
+          "true_negative": 2239
+        }
+      },
+      "interval_90": {
+        "coverage": 0.9,
+        "quantile_mm": 9.459663,
+        "n_calibration": 3796,
+        "realised_coverage": 0.900158
+      },
+      "test_coverage_90": 0.931228,
+      "test_coverage_90_when_water_needed": 0.896175
+    },
+    "leave_one_station_out_summary": {
+      "folds": 12,
+      "mean_r2": 0.708344,
+      "median_r2": 0.880367,
+      "min_r2": -0.24425,
+      "max_r2": 0.929556,
+      "std_r2": 0.349487,
+      "mean_mae_mm": 5.41927,
+      "worst_fold": "KOL",
+      "worst_fold_r2": -0.24425,
+      "negative_r2_folds": 1
+    },
+    "leave_one_crop_out_summary": {
+      "folds": 11,
+      "mean_r2": 0.820474,
+      "median_r2": 0.842862,
+      "min_r2": 0.589106,
+      "max_r2": 0.945155,
+      "std_r2": 0.104557,
+      "mean_mae_mm": 5.881272,
+      "worst_fold": "Groundnut",
+      "worst_fold_r2": 0.589106,
+      "negative_r2_folds": 0
+    },
+    "leave_one_station_out": [
+      {
+        "n": 4854,
+        "mae_mm": 4.299499,
+        "median_ae_mm": 2.092443,
+        "rmse_mm": 7.298581,
+        "bias_mm": -1.16933,
+        "r2": 0.882495,
+        "spearman": 0.908162,
+        "within_5mm_pct": 70.807581,
+        "within_10mm_pct": 87.536053,
+        "split": "holdout_station_AMD",
+        "held_out": "AMD",
+        "rationale": "unseen climate, which is what V1 failed on",
+        "soil_median_mae_mm": 18.357917,
+        "physics_baseline": {
+          "n": 4854,
+          "mae_mm": 27.487839,
+          "median_ae_mm": 23.217776,
+          "rmse_mm": 34.033452,
+          "bias_mm": 26.910512,
+          "r2": -1.555007,
+          "spearman": 0.38577,
+          "within_5mm_pct": 13.370416,
+          "within_10mm_pct": 25.278121
+        },
+        "skill_vs_physics": {
+          "n": 2751,
+          "physics_mae_mm": 16.970062,
+          "model_mae_mm": 6.439321,
+          "skill_vs_physics_pct": 62.054815
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 56.674907,
+          "precision": 0.809278,
+          "recall": 0.970193,
+          "missed_pct": 2.980734,
+          "false_alarm_pct": 29.909653,
+          "confusion": {
+            "true_positive": 2669,
+            "false_positive": 629,
+            "false_negative": 82,
+            "true_negative": 1474
+          }
+        }
+      },
+      {
+        "n": 4769,
+        "mae_mm": 4.429726,
+        "median_ae_mm": 1.681902,
+        "rmse_mm": 7.750539,
+        "bias_mm": 2.530069,
+        "r2": 0.453626,
+        "spearman": 0.646252,
+        "within_5mm_pct": 70.161459,
+        "within_10mm_pct": 84.839589,
+        "split": "holdout_station_BBN",
+        "held_out": "BBN",
+        "rationale": "unseen climate, which is what V1 failed on",
+        "soil_median_mae_mm": 9.566552,
+        "physics_baseline": {
+          "n": 4769,
+          "mae_mm": 40.113907,
+          "median_ae_mm": 41.262417,
+          "rmse_mm": 44.216555,
+          "bias_mm": 40.079688,
+          "r2": -16.782617,
+          "spearman": -0.086292,
+          "within_5mm_pct": 2.411407,
+          "within_10mm_pct": 6.101908
+        },
+        "skill_vs_physics": {
+          "n": 1081,
+          "physics_mae_mm": 23.587533,
+          "model_mae_mm": 7.287802,
+          "skill_vs_physics_pct": 69.10316
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 22.667226,
+          "precision": 0.378284,
+          "recall": 0.999075,
+          "missed_pct": 0.092507,
+          "false_alarm_pct": 48.129067,
+          "confusion": {
+            "true_positive": 1080,
+            "false_positive": 1775,
+            "false_negative": 1,
+            "true_negative": 1913
+          }
+        }
+      },
+      {
+        "n": 5941,
+        "mae_mm": 12.120329,
+        "median_ae_mm": 7.584489,
+        "rmse_mm": 17.923342,
+        "bias_mm": -1.360667,
+        "r2": 0.292061,
+        "spearman": 0.576285,
+        "within_5mm_pct": 41.625989,
+        "within_10mm_pct": 57.162094,
+        "split": "holdout_station_CHN",
+        "held_out": "CHN",
+        "rationale": "unseen climate, which is what V1 failed on",
+        "soil_median_mae_mm": 16.943404,
+        "physics_baseline": {
+          "n": 5941,
+          "mae_mm": 38.021023,
+          "median_ae_mm": 40.22025,
+          "rmse_mm": 43.137328,
+          "bias_mm": 37.434565,
+          "r2": -3.100762,
+          "spearman": 0.367583,
+          "within_5mm_pct": 7.389328,
+          "within_10mm_pct": 12.624137
+        },
+        "skill_vs_physics": {
+          "n": 3437,
+          "physics_mae_mm": 30.010759,
+          "model_mae_mm": 15.68079,
+          "skill_vs_physics_pct": 47.749438
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 57.852213,
+          "precision": 0.691547,
+          "recall": 0.894967,
+          "missed_pct": 10.503346,
+          "false_alarm_pct": 54.792332,
+          "confusion": {
+            "true_positive": 3076,
+            "false_positive": 1372,
+            "false_negative": 361,
+            "true_negative": 1132
+          }
+        }
+      },
+      {
+        "n": 5894,
+        "mae_mm": 3.000198,
+        "median_ae_mm": 1.647638,
+        "rmse_mm": 5.017667,
+        "bias_mm": 0.701033,
+        "r2": 0.909647,
+        "spearman": 0.917057,
+        "within_5mm_pct": 80.166271,
+        "within_10mm_pct": 94.80828,
+        "split": "holdout_station_HYD",
+        "held_out": "HYD",
+        "rationale": "unseen climate, which is what V1 failed on",
+        "soil_median_mae_mm": 14.953276,
+        "physics_baseline": {
+          "n": 5894,
+          "mae_mm": 23.86768,
+          "median_ae_mm": 19.214897,
+          "rmse_mm": 30.218699,
+          "bias_mm": 23.204692,
+          "r2": -2.277101,
+          "spearman": 0.153082,
+          "within_5mm_pct": 19.35867,
+          "within_10mm_pct": 32.728198
+        },
+        "skill_vs_physics": {
+          "n": 3052,
+          "physics_mae_mm": 11.886121,
+          "model_mae_mm": 4.078691,
+          "skill_vs_physics_pct": 65.685263
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 51.781473,
+          "precision": 0.744868,
+          "recall": 0.998689,
+          "missed_pct": 0.131062,
+          "false_alarm_pct": 36.734694,
+          "confusion": {
+            "true_positive": 3048,
+            "false_positive": 1044,
+            "false_negative": 4,
+            "true_negative": 1798
+          }
+        }
+      },
+      {
+        "n": 6360,
+        "mae_mm": 2.837575,
+        "median_ae_mm": 1.394209,
+        "rmse_mm": 4.862238,
+        "bias_mm": 0.082803,
+        "r2": 0.929556,
+        "spearman": 0.927233,
+        "within_5mm_pct": 81.352201,
+        "within_10mm_pct": 94.371069,
+        "split": "holdout_station_IDR",
+        "held_out": "IDR",
+        "rationale": "unseen climate, which is what V1 failed on",
+        "soil_median_mae_mm": 16.989501,
+        "physics_baseline": {
+          "n": 6360,
+          "mae_mm": 22.231456,
+          "median_ae_mm": 16.504906,
+          "rmse_mm": 28.758385,
+          "bias_mm": 21.607296,
+          "r2": -1.464348,
+          "spearman": 0.301542,
+          "within_5mm_pct": 19.622642,
+          "within_10mm_pct": 34.622642
+        },
+        "skill_vs_physics": {
+          "n": 3443,
+          "physics_mae_mm": 9.638255,
+          "model_mae_mm": 4.09022,
+          "skill_vs_physics_pct": 57.562649
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 54.13522,
+          "precision": 0.828957,
+          "recall": 0.999419,
+          "missed_pct": 0.058089,
+          "false_alarm_pct": 24.340075,
+          "confusion": {
+            "true_positive": 3441,
+            "false_positive": 710,
+            "false_negative": 2,
+            "true_negative": 2207
+          }
+        }
+      },
+      {
+        "n": 7737,
+        "mae_mm": 7.807496,
+        "median_ae_mm": 4.804984,
+        "rmse_mm": 12.385,
+        "bias_mm": -2.700186,
+        "r2": 0.745564,
+        "spearman": 0.86096,
+        "within_5mm_pct": 51.376503,
+        "within_10mm_pct": 74.434535,
+        "split": "holdout_station_JAI",
+        "held_out": "JAI",
+        "rationale": "unseen climate, which is what V1 failed on",
+        "soil_median_mae_mm": 21.935388,
+        "physics_baseline": {
+          "n": 7737,
+          "mae_mm": 20.069346,
+          "median_ae_mm": 16.702654,
+          "rmse_mm": 25.052095,
+          "bias_mm": 18.933834,
+          "r2": -0.041057,
+          "spearman": 0.693663,
+          "within_5mm_pct": 14.954117,
+          "within_10mm_pct": 30.412305
+        },
+        "skill_vs_physics": {
+          "n": 5961,
+          "physics_mae_mm": 16.891288,
+          "model_mae_mm": 9.619699,
+          "skill_vs_physics_pct": 43.049347
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 77.045366,
+          "precision": 0.911384,
+          "recall": 0.945479,
+          "missed_pct": 5.452105,
+          "false_alarm_pct": 30.855856,
+          "confusion": {
+            "true_positive": 5636,
+            "false_positive": 548,
+            "false_negative": 325,
+            "true_negative": 1228
+          }
+        }
+      },
+      {
+        "n": 4444,
+        "mae_mm": 4.95492,
+        "median_ae_mm": 1.237828,
+        "rmse_mm": 8.964016,
+        "bias_mm": 4.703239,
+        "r2": -0.24425,
+        "spearman": 0.518353,
+        "within_5mm_pct": 68.609361,
+        "within_10mm_pct": 81.075608,
+        "split": "holdout_station_KOL",
+        "held_out": "KOL",
+        "rationale": "unseen climate, which is what V1 failed on",
+        "soil_median_mae_mm": 12.447812,
+        "physics_baseline": {
+          "n": 4444,
+          "mae_mm": 45.571186,
+          "median_ae_mm": 45.873611,
+          "rmse_mm": 48.90549,
+          "bias_mm": 45.562226,
+          "r2": -36.035436,
+          "spearman": 0.048846,
+          "within_5mm_pct": 0.742574,
+          "within_10mm_pct": 1.912691
+        },
+        "skill_vs_physics": {
+          "n": 569,
+          "physics_mae_mm": 35.398739,
+          "model_mae_mm": 11.123791,
+          "skill_vs_physics_pct": 68.575741
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 12.80378,
+          "precision": 0.239579,
+          "recall": 1.0,
+          "missed_pct": 0.0,
+          "false_alarm_pct": 46.606452,
+          "confusion": {
+            "true_positive": 569,
+            "false_positive": 1806,
+            "false_negative": 0,
+            "true_negative": 2069
+          }
+        }
+      },
+      {
+        "n": 4716,
+        "mae_mm": 6.342779,
+        "median_ae_mm": 4.635494,
+        "rmse_mm": 8.719995,
+        "bias_mm": -3.49582,
+        "r2": 0.878238,
+        "spearman": 0.929042,
+        "within_5mm_pct": 52.268872,
+        "within_10mm_pct": 78.350297,
+        "split": "holdout_station_LKO",
+        "held_out": "LKO",
+        "rationale": "unseen climate, which is what V1 failed on",
+        "soil_median_mae_mm": 26.902744,
+        "physics_baseline": {
+          "n": 4716,
+          "mae_mm": 10.98269,
+          "median_ae_mm": 8.094507,
+          "rmse_mm": 14.719957,
+          "bias_mm": 8.338622,
+          "r2": 0.65303,
+          "spearman": 0.836845,
+          "within_5mm_pct": 32.527566,
+          "within_10mm_pct": 58.418151
+        },
+        "skill_vs_physics": {
+          "n": 4312,
+          "physics_mae_mm": 9.477256,
+          "model_mae_mm": 6.693442,
+          "skill_vs_physics_pct": 29.373629
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 91.433418,
+          "precision": 0.959493,
+          "recall": 0.999768,
+          "missed_pct": 0.023191,
+          "false_alarm_pct": 45.049505,
+          "confusion": {
+            "true_positive": 4311,
+            "false_positive": 182,
+            "false_negative": 1,
+            "true_negative": 222
+          }
+        }
+      },
+      {
+        "n": 7998,
+        "mae_mm": 5.840713,
+        "median_ae_mm": 3.698763,
+        "rmse_mm": 9.379963,
+        "bias_mm": 2.728444,
+        "r2": 0.92636,
+        "spearman": 0.954939,
+        "within_5mm_pct": 60.215054,
+        "within_10mm_pct": 82.683171,
+        "split": "holdout_station_LUD",
+        "held_out": "LUD",
+        "rationale": "unseen climate, which is what V1 failed on",
+        "soil_median_mae_mm": 30.468206,
+        "physics_baseline": {
+          "n": 7998,
+          "mae_mm": 14.402438,
+          "median_ae_mm": 11.136974,
+          "rmse_mm": 19.308383,
+          "bias_mm": 11.485262,
+          "r2": 0.687967,
+          "spearman": 0.848726,
+          "within_5mm_pct": 21.492873,
+          "within_10mm_pct": 44.461115
+        },
+        "skill_vs_physics": {
+          "n": 5911,
+          "physics_mae_mm": 11.671924,
+          "model_mae_mm": 6.275055,
+          "skill_vs_physics_pct": 46.238039
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 73.905976,
+          "precision": 0.840563,
+          "recall": 0.999831,
+          "missed_pct": 0.016918,
+          "false_alarm_pct": 53.713464,
+          "confusion": {
+            "true_positive": 5910,
+            "false_positive": 1121,
+            "false_negative": 1,
+            "true_negative": 966
+          }
+        }
+      },
+      {
+        "n": 5282,
+        "mae_mm": 2.952142,
+        "median_ae_mm": 0.967154,
+        "rmse_mm": 5.75182,
+        "bias_mm": 1.813209,
+        "r2": 0.874484,
+        "spearman": 0.854025,
+        "within_5mm_pct": 81.294964,
+        "within_10mm_pct": 92.881484,
+        "split": "holdout_station_NAG",
+        "held_out": "NAG",
+        "rationale": "unseen climate, which is what V1 failed on",
+        "soil_median_mae_mm": 14.772438,
+        "physics_baseline": {
+          "n": 5282,
+          "mae_mm": 29.920791,
+          "median_ae_mm": 28.826963,
+          "rmse_mm": 36.044044,
+          "bias_mm": 29.354507,
+          "r2": -3.928957,
+          "spearman": 0.04865,
+          "within_5mm_pct": 13.650133,
+          "within_10mm_pct": 23.097312
+        },
+        "skill_vs_physics": {
+          "n": 2029,
+          "physics_mae_mm": 13.053242,
+          "model_mae_mm": 4.548286,
+          "skill_vs_physics_pct": 65.155889
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 38.41348,
+          "precision": 0.686062,
+          "recall": 0.999507,
+          "missed_pct": 0.049285,
+          "false_alarm_pct": 28.527513,
+          "confusion": {
+            "true_positive": 2028,
+            "false_positive": 928,
+            "false_negative": 1,
+            "true_negative": 2325
+          }
+        }
+      },
+      {
+        "n": 7202,
+        "mae_mm": 6.029099,
+        "median_ae_mm": 3.862054,
+        "rmse_mm": 8.877831,
+        "bias_mm": -2.449789,
+        "r2": 0.922921,
+        "spearman": 0.96655,
+        "within_5mm_pct": 58.414329,
+        "within_10mm_pct": 79.741738,
+        "split": "holdout_station_PNJ",
+        "held_out": "PNJ",
+        "rationale": "unseen climate, which is what V1 failed on",
+        "soil_median_mae_mm": 29.334903,
+        "physics_baseline": {
+          "n": 7202,
+          "mae_mm": 13.591419,
+          "median_ae_mm": 10.908175,
+          "rmse_mm": 17.681793,
+          "bias_mm": 10.247358,
+          "r2": 0.694244,
+          "spearman": 0.865778,
+          "within_5mm_pct": 24.048875,
+          "within_10mm_pct": 46.153846
+        },
+        "skill_vs_physics": {
+          "n": 5849,
+          "physics_mae_mm": 12.088911,
+          "model_mae_mm": 7.001953,
+          "skill_vs_physics_pct": 42.079541
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 81.213552,
+          "precision": 0.900602,
+          "recall": 0.997606,
+          "missed_pct": 0.239357,
+          "false_alarm_pct": 47.597931,
+          "confusion": {
+            "true_positive": 5835,
+            "false_positive": 644,
+            "false_negative": 14,
+            "true_negative": 709
+          }
+        }
+      },
+      {
+        "n": 6885,
+        "mae_mm": 4.416768,
+        "median_ae_mm": 1.894139,
+        "rmse_mm": 7.498394,
+        "bias_mm": 0.386723,
+        "r2": 0.92942,
+        "spearman": 0.88173,
+        "within_5mm_pct": 70.312273,
+        "within_10mm_pct": 85.098039,
+        "split": "holdout_station_PNQ",
+        "held_out": "PNQ",
+        "rationale": "unseen climate, which is what V1 failed on",
+        "soil_median_mae_mm": 21.079801,
+        "physics_baseline": {
+          "n": 6885,
+          "mae_mm": 26.1408,
+          "median_ae_mm": 24.921313,
+          "rmse_mm": 31.188672,
+          "bias_mm": 24.860336,
+          "r2": -0.221058,
+          "spearman": 0.522649,
+          "within_5mm_pct": 12.403776,
+          "within_10mm_pct": 21.902687
+        },
+        "skill_vs_physics": {
+          "n": 2865,
+          "physics_mae_mm": 13.224557,
+          "model_mae_mm": 7.325903,
+          "skill_vs_physics_pct": 44.60379
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 41.6122,
+          "precision": 0.63273,
+          "recall": 1.0,
+          "missed_pct": 0.0,
+          "false_alarm_pct": 41.368159,
+          "confusion": {
+            "true_positive": 2865,
+            "false_positive": 1663,
+            "false_negative": 0,
+            "true_negative": 2357
+          }
+        }
+      }
+    ],
+    "leave_one_crop_out": [
+      {
+        "n": 9716,
+        "mae_mm": 5.489049,
+        "median_ae_mm": 3.329781,
+        "rmse_mm": 8.941782,
+        "bias_mm": 1.404334,
+        "r2": 0.916894,
+        "spearman": 0.938277,
+        "within_5mm_pct": 61.918485,
+        "within_10mm_pct": 82.811857,
+        "split": "holdout_crop_Cotton",
+        "held_out": "Cotton",
+        "rationale": "transfer to a crop never trained on",
+        "soil_median_mae_mm": 25.55294,
+        "physics_baseline": {
+          "n": 9716,
+          "mae_mm": 21.479261,
+          "median_ae_mm": 15.230204,
+          "rmse_mm": 28.336688,
+          "bias_mm": 19.428936,
+          "r2": 0.165389,
+          "spearman": 0.633786,
+          "within_5mm_pct": 18.330589,
+          "within_10mm_pct": 34.654179
+        },
+        "skill_vs_physics": {
+          "n": 6233,
+          "physics_mae_mm": 14.232592,
+          "model_mae_mm": 6.670841,
+          "skill_vs_physics_pct": 53.12982
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 64.151914,
+          "precision": 0.809125,
+          "recall": 0.992941,
+          "missed_pct": 0.70592,
+          "false_alarm_pct": 41.917887,
+          "confusion": {
+            "true_positive": 6189,
+            "false_positive": 1460,
+            "false_negative": 44,
+            "true_negative": 2023
+          }
+        }
+      },
+      {
+        "n": 6125,
+        "mae_mm": 5.4197,
+        "median_ae_mm": 1.670579,
+        "rmse_mm": 9.76357,
+        "bias_mm": -0.533647,
+        "r2": 0.589106,
+        "spearman": 0.704417,
+        "within_5mm_pct": 66.644898,
+        "within_10mm_pct": 80.37551,
+        "split": "holdout_crop_Groundnut",
+        "held_out": "Groundnut",
+        "rationale": "transfer to a crop never trained on",
+        "soil_median_mae_mm": 11.665209,
+        "physics_baseline": {
+          "n": 6125,
+          "mae_mm": 37.243583,
+          "median_ae_mm": 38.025023,
+          "rmse_mm": 41.639407,
+          "bias_mm": 37.082139,
+          "r2": -6.473453,
+          "spearman": 0.224443,
+          "within_5mm_pct": 3.804082,
+          "within_10mm_pct": 8.995918
+        },
+        "skill_vs_physics": {
+          "n": 2235,
+          "physics_mae_mm": 26.566425,
+          "model_mae_mm": 10.406327,
+          "skill_vs_physics_pct": 60.829026
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 36.489796,
+          "precision": 0.612875,
+          "recall": 0.924385,
+          "missed_pct": 7.561521,
+          "false_alarm_pct": 33.547558,
+          "confusion": {
+            "true_positive": 2066,
+            "false_positive": 1305,
+            "false_negative": 169,
+            "true_negative": 2585
+          }
+        }
+      },
+      {
+        "n": 11736,
+        "mae_mm": 4.089843,
+        "median_ae_mm": 1.891016,
+        "rmse_mm": 7.103788,
+        "bias_mm": -1.212022,
+        "r2": 0.945155,
+        "spearman": 0.933339,
+        "within_5mm_pct": 72.384117,
+        "within_10mm_pct": 87.755624,
+        "split": "holdout_crop_Maize",
+        "held_out": "Maize",
+        "rationale": "transfer to a crop never trained on",
+        "soil_median_mae_mm": 20.666588,
+        "physics_baseline": {
+          "n": 11736,
+          "mae_mm": 24.974079,
+          "median_ae_mm": 19.228452,
+          "rmse_mm": 31.698735,
+          "bias_mm": 23.188628,
+          "r2": -0.092049,
+          "spearman": 0.478957,
+          "within_5mm_pct": 13.053851,
+          "within_10mm_pct": 27.053511
+        },
+        "skill_vs_physics": {
+          "n": 6172,
+          "physics_mae_mm": 14.141609,
+          "model_mae_mm": 6.595542,
+          "skill_vs_physics_pct": 53.360734
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 52.59032,
+          "precision": 0.787335,
+          "recall": 0.995139,
+          "missed_pct": 0.486066,
+          "false_alarm_pct": 29.816679,
+          "confusion": {
+            "true_positive": 6142,
+            "false_positive": 1659,
+            "false_negative": 30,
+            "true_negative": 3905
+          }
+        }
+      },
+      {
+        "n": 2433,
+        "mae_mm": 4.835178,
+        "median_ae_mm": 3.062368,
+        "rmse_mm": 6.919634,
+        "bias_mm": 1.697865,
+        "r2": 0.825779,
+        "spearman": 0.831707,
+        "within_5mm_pct": 72.955199,
+        "within_10mm_pct": 88.244965,
+        "split": "holdout_crop_Onion",
+        "held_out": "Onion",
+        "rationale": "transfer to a crop never trained on",
+        "soil_median_mae_mm": 14.003797,
+        "physics_baseline": {
+          "n": 2433,
+          "mae_mm": 28.116862,
+          "median_ae_mm": 27.847147,
+          "rmse_mm": 32.733189,
+          "bias_mm": 27.676896,
+          "r2": -2.898624,
+          "spearman": 0.234607,
+          "within_5mm_pct": 7.151665,
+          "within_10mm_pct": 16.810522
+        },
+        "skill_vs_physics": {
+          "n": 888,
+          "physics_mae_mm": 12.026124,
+          "model_mae_mm": 6.398397,
+          "skill_vs_physics_pct": 46.79585
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 36.49815,
+          "precision": 0.370927,
+          "recall": 1.0,
+          "missed_pct": 0.0,
+          "false_alarm_pct": 97.475728,
+          "confusion": {
+            "true_positive": 888,
+            "false_positive": 1506,
+            "false_negative": 0,
+            "true_negative": 39
+          }
+        }
+      },
+      {
+        "n": 1589,
+        "mae_mm": 9.284037,
+        "median_ae_mm": 8.600544,
+        "rmse_mm": 11.1563,
+        "bias_mm": -7.703216,
+        "r2": 0.70006,
+        "spearman": 0.911348,
+        "within_5mm_pct": 28.634361,
+        "within_10mm_pct": 57.772184,
+        "split": "holdout_crop_Potato",
+        "held_out": "Potato",
+        "rationale": "transfer to a crop never trained on",
+        "soil_median_mae_mm": 21.614116,
+        "physics_baseline": {
+          "n": 1589,
+          "mae_mm": 8.631915,
+          "median_ae_mm": 6.466769,
+          "rmse_mm": 11.501221,
+          "bias_mm": 6.739759,
+          "r2": 0.681226,
+          "spearman": 0.896582,
+          "within_5mm_pct": 39.96224,
+          "within_10mm_pct": 68.7854
+        },
+        "skill_vs_physics": {
+          "n": 1574,
+          "physics_mae_mm": 8.480436,
+          "model_mae_mm": 9.332919,
+          "skill_vs_physics_pct": -10.052351
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 99.05601,
+          "precision": 0.992434,
+          "recall": 1.0,
+          "missed_pct": 0.0,
+          "false_alarm_pct": 80.0,
+          "confusion": {
+            "true_positive": 1574,
+            "false_positive": 12,
+            "false_negative": 0,
+            "true_negative": 3
+          }
+        }
+      },
+      {
+        "n": 10165,
+        "mae_mm": 9.488108,
+        "median_ae_mm": 6.213321,
+        "rmse_mm": 14.045963,
+        "bias_mm": -7.618606,
+        "r2": 0.739981,
+        "spearman": 0.885901,
+        "within_5mm_pct": 44.161338,
+        "within_10mm_pct": 64.308903,
+        "split": "holdout_crop_Rice",
+        "held_out": "Rice",
+        "rationale": "transfer to a crop never trained on",
+        "soil_median_mae_mm": 25.660863,
+        "physics_baseline": {
+          "n": 10165,
+          "mae_mm": 23.476126,
+          "median_ae_mm": 14.911602,
+          "rmse_mm": 31.637837,
+          "bias_mm": 21.189919,
+          "r2": -0.319214,
+          "spearman": 0.425794,
+          "within_5mm_pct": 22.302017,
+          "within_10mm_pct": 39.655681
+        },
+        "skill_vs_physics": {
+          "n": 7991,
+          "physics_mae_mm": 16.252443,
+          "model_mae_mm": 11.811404,
+          "skill_vs_physics_pct": 27.325361
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 78.612887,
+          "precision": 0.955046,
+          "recall": 0.922538,
+          "missed_pct": 7.746214,
+          "false_alarm_pct": 15.961362,
+          "confusion": {
+            "true_positive": 7372,
+            "false_positive": 347,
+            "false_negative": 619,
+            "true_negative": 1827
+          }
+        }
+      },
+      {
+        "n": 3917,
+        "mae_mm": 3.750415,
+        "median_ae_mm": 2.791581,
+        "rmse_mm": 5.352771,
+        "bias_mm": 1.251131,
+        "r2": 0.907947,
+        "spearman": 0.932478,
+        "within_5mm_pct": 70.564207,
+        "within_10mm_pct": 93.08144,
+        "split": "holdout_crop_Sorghum",
+        "held_out": "Sorghum",
+        "rationale": "transfer to a crop never trained on",
+        "soil_median_mae_mm": 15.000794,
+        "physics_baseline": {
+          "n": 3917,
+          "mae_mm": 22.045184,
+          "median_ae_mm": 18.436056,
+          "rmse_mm": 27.33468,
+          "bias_mm": 21.422709,
+          "r2": -1.400536,
+          "spearman": 0.31451,
+          "within_5mm_pct": 16.696451,
+          "within_10mm_pct": 29.614501
+        },
+        "skill_vs_physics": {
+          "n": 2353,
+          "physics_mae_mm": 14.13369,
+          "model_mae_mm": 4.827329,
+          "skill_vs_physics_pct": 65.845229
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 60.071483,
+          "precision": 0.77667,
+          "recall": 0.9932,
+          "missed_pct": 0.679983,
+          "false_alarm_pct": 42.966752,
+          "confusion": {
+            "true_positive": 2337,
+            "false_positive": 672,
+            "false_negative": 16,
+            "true_negative": 892
+          }
+        }
+      },
+      {
+        "n": 10042,
+        "mae_mm": 3.529077,
+        "median_ae_mm": 1.942412,
+        "rmse_mm": 5.710937,
+        "bias_mm": 0.682812,
+        "r2": 0.89431,
+        "spearman": 0.916945,
+        "within_5mm_pct": 74.955188,
+        "within_10mm_pct": 91.784505,
+        "split": "holdout_crop_Soybean",
+        "held_out": "Soybean",
+        "rationale": "transfer to a crop never trained on",
+        "soil_median_mae_mm": 15.912321,
+        "physics_baseline": {
+          "n": 10042,
+          "mae_mm": 21.937157,
+          "median_ae_mm": 17.589895,
+          "rmse_mm": 28.188113,
+          "bias_mm": 21.350724,
+          "r2": -1.574845,
+          "spearman": 0.306829,
+          "within_5mm_pct": 20.483967,
+          "within_10mm_pct": 34.684326
+        },
+        "skill_vs_physics": {
+          "n": 5509,
+          "physics_mae_mm": 10.870157,
+          "model_mae_mm": 4.554588,
+          "skill_vs_physics_pct": 58.100072
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 54.85959,
+          "precision": 0.766843,
+          "recall": 1.0,
+          "missed_pct": 0.0,
+          "false_alarm_pct": 36.951246,
+          "confusion": {
+            "true_positive": 5509,
+            "false_positive": 1675,
+            "false_negative": 0,
+            "true_negative": 2858
+          }
+        }
+      },
+      {
+        "n": 6582,
+        "mae_mm": 8.511228,
+        "median_ae_mm": 3.612714,
+        "rmse_mm": 14.403015,
+        "bias_mm": 4.700637,
+        "r2": 0.772299,
+        "spearman": 0.866101,
+        "within_5mm_pct": 55.773321,
+        "within_10mm_pct": 70.343361,
+        "split": "holdout_crop_Sugarcane",
+        "held_out": "Sugarcane",
+        "rationale": "transfer to a crop never trained on",
+        "soil_median_mae_mm": 22.376188,
+        "physics_baseline": {
+          "n": 6582,
+          "mae_mm": 31.943907,
+          "median_ae_mm": 31.075898,
+          "rmse_mm": 38.550937,
+          "bias_mm": 30.502679,
+          "r2": -0.631277,
+          "spearman": 0.510989,
+          "within_5mm_pct": 12.7165,
+          "within_10mm_pct": 21.665147
+        },
+        "skill_vs_physics": {
+          "n": 3034,
+          "physics_mae_mm": 17.116002,
+          "model_mae_mm": 11.020206,
+          "skill_vs_physics_pct": 35.6146
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 46.095412,
+          "precision": 0.680431,
+          "recall": 0.999341,
+          "missed_pct": 0.06592,
+          "false_alarm_pct": 40.135287,
+          "confusion": {
+            "true_positive": 3032,
+            "false_positive": 1424,
+            "false_negative": 2,
+            "true_negative": 2124
+          }
+        }
+      },
+      {
+        "n": 1842,
+        "mae_mm": 6.650576,
+        "median_ae_mm": 4.469771,
+        "rmse_mm": 9.254032,
+        "bias_mm": -0.795606,
+        "r2": 0.890822,
+        "spearman": 0.947195,
+        "within_5mm_pct": 53.420195,
+        "within_10mm_pct": 76.981542,
+        "split": "holdout_crop_Sunflower",
+        "held_out": "Sunflower",
+        "rationale": "transfer to a crop never trained on",
+        "soil_median_mae_mm": 23.724099,
+        "physics_baseline": {
+          "n": 1842,
+          "mae_mm": 13.669401,
+          "median_ae_mm": 11.673806,
+          "rmse_mm": 17.308639,
+          "bias_mm": 11.118262,
+          "r2": 0.618058,
+          "spearman": 0.85676,
+          "within_5mm_pct": 21.281216,
+          "within_10mm_pct": 42.942454
+        },
+        "skill_vs_physics": {
+          "n": 1467,
+          "physics_mae_mm": 12.705494,
+          "model_mae_mm": 7.554071,
+          "skill_vs_physics_pct": 40.544846
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 79.641694,
+          "precision": 0.82221,
+          "recall": 0.999318,
+          "missed_pct": 0.068166,
+          "false_alarm_pct": 84.533333,
+          "confusion": {
+            "true_positive": 1466,
+            "false_positive": 317,
+            "false_negative": 1,
+            "true_negative": 58
+          }
+        }
+      },
+      {
+        "n": 7935,
+        "mae_mm": 3.646776,
+        "median_ae_mm": 1.857043,
+        "rmse_mm": 6.081949,
+        "bias_mm": 0.99979,
+        "r2": 0.842862,
+        "spearman": 0.883178,
+        "within_5mm_pct": 72.060491,
+        "within_10mm_pct": 90.611216,
+        "split": "holdout_crop_Wheat",
+        "held_out": "Wheat",
+        "rationale": "transfer to a crop never trained on",
+        "soil_median_mae_mm": 15.223651,
+        "physics_baseline": {
+          "n": 7935,
+          "mae_mm": 25.283475,
+          "median_ae_mm": 21.779159,
+          "rmse_mm": 30.739368,
+          "bias_mm": 24.88631,
+          "r2": -3.014064,
+          "spearman": 0.2099,
+          "within_5mm_pct": 9.829868,
+          "within_10mm_pct": 21.600504
+        },
+        "skill_vs_physics": {
+          "n": 3804,
+          "physics_mae_mm": 15.137242,
+          "model_mae_mm": 5.66859,
+          "skill_vs_physics_pct": 62.552027
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 47.939509,
+          "precision": 0.756151,
+          "recall": 0.993691,
+          "missed_pct": 0.630915,
+          "false_alarm_pct": 29.508594,
+          "confusion": {
+            "true_positive": 3780,
+            "false_positive": 1219,
+            "false_negative": 24,
+            "true_negative": 2912
+          }
+        }
+      }
+    ],
+    "target_distinct_values": 40402,
+    "target_modal_share_pct": 0.009694619486185167
+  },
+  "old_target_reproduced_on_this_corpus": {
+    "distinct_values": 854,
+    "modal_share_pct": 29.535806442662523
+  }
+}

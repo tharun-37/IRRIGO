@@ -1,0 +1,37 @@
+{
+  "description": "Agronomic rule-engine thresholds for disease labelling.",
+  "method": "Structured sweep plus random search over a candidate grid, scored with a held-out random forest on a forward-simulated corpus. A candidate is accepted only if the Healthy share is in [0.30, 0.92] and every disease class survives with at least 150 rows and 0.35% of the corpus.",
+  "search": {
+    "trials": 50,
+    "held_out_macro_f1": 0.965,
+    "healthy_ratio": 0.8575,
+    "classes_observed": 6
+  },
+  "thresholds": {
+    "root_rot_wetness": 0.97,
+    "root_rot_ph": 5.6,
+    "powdery_temp_low": 20.0,
+    "powdery_temp_high": 27.0,
+    "powdery_humidity": 72.0,
+    "powdery_light": 45000.0,
+    "blight_temp": 28.0,
+    "blight_humidity": 68.0,
+    "blight_nitrogen": 28.0,
+    "rust_temp": 18.0,
+    "rust_humidity": 86.0,
+    "rust_wetness": 0.86,
+    "bacterial_temp": 26.0,
+    "bacterial_humidity": 82.0,
+    "bacterial_ph": 7.8
+  },
+  "rules": [
+    "wetness = soil_moisture / field_capacity_pct (loam default 42% if the soil class is unknown)",
+    "Root_Rot: wetness >= root_rot_wetness AND soil_ph <= root_rot_ph",
+    "Powdery_Mildew: powdery_temp_low <= temperature <= powdery_temp_high AND humidity >= powdery_humidity AND light_intensity <= powdery_light",
+    "Early_Blight: temperature >= blight_temp AND humidity >= blight_humidity AND nitrogen < blight_nitrogen",
+    "Rust: temperature <= rust_temp AND humidity >= rust_humidity AND wetness >= rust_wetness",
+    "Bacterial_Leaf_Spot: temperature >= bacterial_temp AND humidity >= bacterial_humidity AND soil_ph >= bacterial_ph",
+    "Otherwise: Healthy"
+  ],
+  "caveat": "No public dataset pairs NPK soil telemetry with confirmed crop disease diagnoses. These labels are an agronomic rule engine and the model that learns them is a stress-risk indicator, not a diagnostic instrument."
+}

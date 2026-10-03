@@ -1,0 +1,7 @@
+fastapi==0.141.1
+uvicorn[standard]==0.54.0
+pydantic==2.13.5
+pydantic-settings==2.15.0
+# To load the inherited V1 decision bundle (see app/core/ml_bridge.py).
+joblib==1.6.0
+scikit-learn==1.9.1
