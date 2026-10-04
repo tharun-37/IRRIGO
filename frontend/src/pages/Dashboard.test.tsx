@@ -321,27 +321,12 @@ describe('Field view', () => {
 
     // Grouped into captioned lists rather than one long grid of label/value
     // pairs, which read as a wall with nothing saying which facts went together.
-    for (const caption of ['Field record', 'Plot', 'Growth', 'Season']) {
+    for (const caption of ['Field record', 'Plot', 'Season to date']) {
       expect(within(details as HTMLElement).getByRole('heading', { name: caption })).toBeTruthy()
     }
 
-    // Scoped to this section, because "Crop age" and "Stage" are also readings
-    // further down the page.
-    for (const fact of [
-      'Name',
-      'Crop',
-      'Station',
-      'Sown',
-      'Soil',
-      'Irrigation',
-      'Area',
-      'Roots',
-      'Stage',
-      'Crop age',
-      'Length',
-      'Water',
-      'Rain',
-    ]) {
+    // What this block is the only place to read.
+    for (const fact of ['Name', 'Crop', 'Station', 'Sown', 'Soil', 'Irrigation', 'Area']) {
       expect(within(details as HTMLElement).getByText(fact)).toBeTruthy()
     }
 
@@ -446,22 +431,29 @@ describe('Field view', () => {
 
     const details = screen.getByRole('heading', { name: 'Field details' }).closest('section')
 
-    // Four captioned groups, each a vertical list. A wrapping grid of every fact
+    // Three captioned groups, each a vertical list. A wrapping grid of every fact
     // left dead cells whenever the count was not a multiple of the columns; a
     // column of rows cannot have a hole in it.
     const groups = Array.from(details?.querySelectorAll('h3') ?? [])
     expect(groups.map((node) => node.textContent)).toEqual([
       'Field record',
       'Plot',
-      'Growth',
-      'Season',
+      'Season to date',
     ])
     for (const caption of groups) {
       const list = caption.parentElement?.querySelector('dl')
       expect(list?.children.length).toBeGreaterThan(0)
     }
 
-    // The five outcome figures share the one-line label/value shape, so a short
+    // Nothing here repeats what another widget already says. The hero prints
+    // day and stage, soil water prints roots, and the crop-age panel prints
+    // season length and season water, so none of those belong in this block.
+    const detailText = details?.textContent ?? ''
+    for (const repeated of ['Roots', 'Stage', 'Crop age', 'Length', 'Growing degree days']) {
+      expect(detailText).not.toContain(repeated)
+    }
+
+    // The outcome figures share the one-line label/value shape, so a short
     // value is not stranded at the left of a very wide column. It is the only
     // `dl` that is a direct child of the section rather than of a group.
     const outcomes = details?.querySelector(':scope > dl')

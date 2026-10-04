@@ -1215,11 +1215,12 @@ const season = field.season
     year: 'numeric',
   })
 
-  // Grouped rather than one long list. Nineteen label/value pairs in a single
-  // wrapping grid read as a wall: nothing said which facts belonged together, and
-  // the eye had to scan the whole width to find one. Four short lists under their
-  // own captions scan like a form, and each list is the same shape as the reading
-  // rows elsewhere on the page.
+  // Only what this block is the sole place to read. Crop age, stage and roots are
+  // already printed by the decision hero and again by the readings, and season
+  // length and season water are printed by the crop-age panel, so all five are
+  // left out here rather than said twice on one screen. What remains is the
+  // field's identity, the shape of the plot, and the two season-to-date figures
+  // nothing else carries.
   const groups: { caption: string; rows: { label: string; value: string }[] }[] = [
     {
       caption: 'Field record',
@@ -1236,29 +1237,20 @@ const season = field.season
         { label: 'Soil', value: titleCase(field.soilType) },
         { label: 'Irrigation', value: titleCase(field.method) },
         { label: 'Area', value: `${num(field.areaM2 / 10_000, 2)} ha` },
-        { label: 'Roots', value: `${num(field.water.rootDepthCm, 0)} cm` },
       ],
     },
     {
-      caption: 'Growth',
-      rows: [
-        { label: 'Stage', value: field.stageLabel },
-        { label: 'Crop age', value: `${field.ageDays} days` },
-        { label: 'Growing degree days', value: `${num(field.gdd, 0)} °C·d` },
-      ],
+      caption: 'Season to date',
+      rows: [{ label: 'Degree days', value: `${num(field.gdd, 0)} °C·d` }],
     },
   ]
 
-  // Only planned once a season exists for the field, so this group is left out
-  // entirely rather than printed as dashes.
+  // Only planned once a season exists for the field, so the row is left out
+  // entirely rather than printed as a dash.
   if (season) {
-    groups.push({
-      caption: 'Season',
-      rows: [
-        { label: 'Length', value: `${season.daysInSeason} days` },
-        { label: 'Water', value: `${num(season.seasonGrossMm, 0)} mm` },
-        { label: 'Rain', value: `${num(season.seasonRainMm, 0)} mm` },
-      ],
+    groups[2].rows.push({
+      label: 'Rain',
+      value: `${num(season.seasonRainMm, 0)} mm`,
     })
   }
 
@@ -1281,18 +1273,11 @@ const season = field.season
 
   return (
     <section className="card pad-card">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <h2 className="type-label font-semibold uppercase tracking-[0.07em] text-ink-500">
-          Field details
-        </h2>
-        <div className="flex items-center gap-2">
-          {/* Unlabelled: the outcome row below already names this one, and
-              repeating the label here just printed it twice. */}
-          <ToneBadge tone={riskTone}>{titleCase(field.risk.diseaseRisk)}</ToneBadge>
-        </div>
-      </div>
+      <h2 className="type-label font-semibold uppercase tracking-[0.07em] text-ink-500">
+        Field details
+      </h2>
 
-      <div className="mt-3 grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-3 grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
         {groups.map((group) => (
           <div key={group.caption} className="min-w-0">
             <h3 className="micro">{group.caption}</h3>
@@ -1305,13 +1290,23 @@ const season = field.season
         ))}
       </div>
 
-      {/* The five numbers behind the recommendation, label and value on one line
-          so a short figure like "100%" is not stranded at the left of a
-          three-hundred-pixel column. No rule above them: the border and the
-          padding under it were a blank band across the middle of this card. */}
+      {/* The numbers behind the recommendation, label and value on one line so a
+          short figure like "100%" is not stranded at the left of a wide column.
+          Disease risk keeps its colour here rather than in a badge of its own in
+          the header, which said the same thing twice. No rule above them: the
+          border and the padding under it were a blank band across this card. */}
       <dl className="mt-3 grid gap-x-6 gap-y-1 text-[11px] sm:grid-cols-3 xl:grid-cols-5">
         {outcomes.map((fact) => (
-          <Line key={fact.label} label={fact.label} value={fact.value} />
+          <div key={fact.label} className="flex items-baseline justify-between gap-2">
+            <dt className="shrink-0 text-ink-500">{fact.label}</dt>
+            {fact.label === 'Disease risk' ? (
+              <dd>
+                <ToneBadge tone={riskTone}>{fact.value}</ToneBadge>
+              </dd>
+            ) : (
+              <dd className="tnum truncate text-right font-medium text-ink-900">{fact.value}</dd>
+            )}
+          </div>
         ))}
       </dl>
     </section>
