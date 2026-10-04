@@ -7,7 +7,7 @@
  * instruction with jargon would pass a type check and fail here.
  */
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../App'
@@ -300,20 +300,46 @@ describe('Field view', () => {
     expect(switcher.length).toBeGreaterThan(0)
 
     // The two facts that make each field's answer different are both on screen.
-    expect(screen.getByText('Crop age')).toBeTruthy()
+    // By heading role: "Crop age" is also a fact in the field details block, so
+    // the text alone no longer picks out this card.
+    expect(screen.getByRole('heading', { name: 'Crop age' })).toBeTruthy()
     expect(screen.getByText('days old')).toBeTruthy()
     expect(screen.getByText('Soil water')).toBeTruthy()
     expect(screen.getByText('Refill at')).toBeTruthy()
   })
 
-  it('leads with the decision, then three readings, the field strip, sensors, the week', async () => {
+  it('leads with the field details, then the decision, three readings, sensors, the week', async () => {
     const { container } = renderShell()
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
     )
 
-    // The decision leads. It shares the top row with the farm total, which is the
-    // same question at two scales: what this field needs, and what the farm needs.
+    // The field's own identity comes first, so "which field is this, and what is
+    // it" is answered before "what should I do". Scoped to that section, because
+    // "Crop age" and "Stage" are also readings further down the page.
+    const details = screen.getByRole('heading', { name: 'Field details' }).closest('section')
+    expect(details).toBeTruthy()
+    for (const fact of [
+      'Field',
+      'Crop',
+      'Station',
+      'Soil',
+      'Irrigation',
+      'Area',
+      'Sown',
+      'Stage',
+      'Crop age',
+      'Roots',
+    ]) {
+      expect(within(details as HTMLElement).getByText(fact)).toBeTruthy()
+    }
+    // And the numbers behind the recommendation, not just the field's own facts.
+    for (const outcome of ['Disease risk', 'Crop stress index', 'Yield outlook']) {
+      expect(within(details as HTMLElement).getByText(outcome)).toBeTruthy()
+    }
+
+    // The decision leads what follows. It shares its row with the farm total,
+    // which is the same question at two scales.
     expect(screen.getByText('Recommended depth')).toBeTruthy()
     expect(screen.getByRole('heading', { level: 1 })).toBeTruthy()
     expect(screen.getByText('Farm this week')).toBeTruthy()
@@ -325,12 +351,11 @@ describe('Field view', () => {
 
     // Then the three supporting readings.
     expect(screen.getByText('Soil water')).toBeTruthy()
-    expect(screen.getByText('Crop age')).toBeTruthy()
+    // By heading role: "Crop age" is also a fact in the field details block, so
+    // the text alone no longer picks out this card.
+    expect(screen.getByRole('heading', { name: 'Crop age' })).toBeTruthy()
     // The sky card is titled by its station, not by a heading.
     expect(screen.getByText(/· now/)).toBeTruthy()
-
-    // The field record is a strip, not a fourth card competing for height.
-    expect(screen.getByText('Field')).toBeTruthy()
 
     // The per-field cards are gone; the farm roll-up replaced them.
     expect(screen.queryByText('Showing above · hover for detail')).toBeNull()
@@ -341,14 +366,33 @@ describe('Field view', () => {
     expect(screen.queryByText('Next seven days')).toBeNull()
     expect(screen.queryByText('Water in the soil')).toBeNull()
 
-    // Vertical order: farm total, the three readings, field strip, sensors.
+    // Vertical order: field details, decision and farm total, the three
+    // readings, then the sensors.
     const order = Array.from(container.querySelectorAll('section'))
       .map((node) => node.querySelector('h2')?.textContent ?? '')
       .filter(Boolean)
-    expect(order.indexOf('Farm this week')).toBeGreaterThanOrEqual(0)
+    expect(order.indexOf('Field details')).toBeGreaterThanOrEqual(0)
+    expect(order.indexOf('Farm this week')).toBeGreaterThan(order.indexOf('Field details'))
     expect(order.indexOf('Soil water')).toBeGreaterThan(order.indexOf('Farm this week'))
     expect(order.indexOf('Crop age')).toBeGreaterThan(order.indexOf('Soil water'))
     expect(order.indexOf('7-in-1 soil sensor')).toBeGreaterThan(order.indexOf('Crop age'))
+  })
+
+  it('sizes each card to its own content instead of stretching it', async () => {
+    renderShell()
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
+    )
+
+    // These widgets carry very different amounts of content. Letting the grid
+    // stretch every card to the tallest one in its row left the short cards
+    // mostly empty, which is what put a gap above each card's divider line.
+    // Both rows are `items-start`, so each card is only as tall as its content.
+    const decisionRow = screen.getByText('Farm this week').closest('section')?.parentElement
+    expect(decisionRow?.className).toContain('items-start')
+
+    const readingsRow = screen.getByText('Soil water').closest('section')?.parentElement
+    expect(readingsRow?.className).toContain('items-start')
   })
 
   it('places the stage marker inside the active segment, not at its edge', async () => {
@@ -436,7 +480,9 @@ it('puts soil dryness and crop age first, as the two deciding facts', async () =
     expect(screen.getByText('Used')).toBeTruthy()
 
     // Crop age: days old, the stage it is in, and the season track.
-    expect(screen.getByText('Crop age')).toBeTruthy()
+    // By heading role: "Crop age" is also a fact in the field details block, so
+    // the text alone no longer picks out this card.
+    expect(screen.getByRole('heading', { name: 'Crop age' })).toBeTruthy()
     expect(screen.getByText('days old')).toBeTruthy()
     expect(screen.getByText('Crop need')).toBeTruthy()
     expect(screen.getByText('Sun today')).toBeTruthy()

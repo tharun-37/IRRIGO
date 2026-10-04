@@ -349,46 +349,45 @@ export default function Dashboard() {
         ) : (
 <div className="scroll-smooth pad-page mx-auto flex max-w-[1180px] flex-col gap-[clamp(0.7rem,1.5vw,1.1rem)] lg:h-full lg:max-w-none lg:overflow-y-auto">
             {/* ---- The answer, and the week's bill, side by side ---------- */}
+            {/* ---- Who this advice is about, before the advice -------- */}
+            <div className="shrink-0">
+              <FieldDetails field={field} />
+            </div>
+
             {/* What this field needs and what the whole farm needs are the same
-                question at two scales, so they sit together on the first row
-                rather than the farm total being pushed to the bottom of the page
-                under three charts. Half and half: the hero is the widest thing on
-                the screen but it does not need full width to say "water 10.8 mm",
-                and splitting the row means a 1080p screen shows the operator's
-                whole decision without scrolling.
+                question at two scales, so they sit together on the row directly
+                under the field details rather than the farm total being pushed
+                to the bottom of the page under three charts. Half and half: the
+                hero is the widest thing on the screen but it does not need full
+                width to say "water 10.8 mm", and splitting the row means a 1080p
+                screen shows the operator's whole decision without scrolling.
 
                 `shrink-0` on the wrapper matters. A flex child that clips its own
                 overflow (`overflow-hidden` on the hero and the sky card) loses
                 its automatic minimum size, so the column was free to squash it
                 below its content and the decision's detail lines were cut off. */}
-            <div className="grid shrink-0 gap-[clamp(0.7rem,1.5vw,1.1rem)] lg:grid-cols-2">
+            {/* `items-start` so each card is exactly as tall as its own content.
+                Stretched to the hero's height, the budget card was mostly empty
+                and its "by depth" line was pushed to the floor of that void. */}
+            <div className="grid shrink-0 items-start gap-[clamp(0.7rem,1.5vw,1.1rem)] lg:grid-cols-2">
               <DecisionHero field={field} depth={depth} band={soil.band} />
               <BudgetCard fields={fields} totalMm={totalMm} />
             </div>
 
             {/* ---- The evidence for it: three compact readings ---------- */}
-            {/* Cards stretch to a common height so the row ends on one line.
-                The slack is absorbed by the card's *content* — the wetness row
-                centres itself, the sky card already pins its figure to the base —
-                so equalising costs no empty space. On md the third card would
-                otherwise sit alone in a half-width row, so it spans the row and
-                the three read as two even bands. */}
-            <div className="grid shrink-0 gap-[clamp(0.7rem,1.5vw,1.1rem)] md:grid-cols-2 xl:grid-cols-3">
+            {/* `items-start` for the same reason: these three carry very different
+                amounts of content, so stretching them to the sky card's height
+                left the wetness ring floating in the middle of an empty card and
+                pushed the crop-age figure to the top of another. Sizing each to
+                its own content is what keeps the gap out of the widgets. On md
+                the third card would otherwise sit alone in a half-width row, so
+                it spans the row and the three read as two even bands. */}
+            <div className="grid shrink-0 items-start gap-[clamp(0.7rem,1.5vw,1.1rem)] md:grid-cols-2 xl:grid-cols-3">
               <WetnessCard field={field} remaining={soil.remaining} band={soil.band} />
               <SkyCard field={field} />
-              {/* The span wrapper has to stretch the card itself. As a plain
-                  block the card kept its own height inside a taller row and sat
-                  short of its neighbours' edge; as a `flex` item without
-                  `flex-1` it shrink-wrapped its content instead and collapsed
-                  into a narrow column. `flex-1` is what fills the cell. */}
-              <div className="flex md:col-span-2 xl:col-span-1">
+              <div className="md:col-span-2 xl:col-span-1">
                 <AgeCard field={field} />
               </div>
-            </div>
-
-            {/* ---- The field record, as a strip rather than a card ------ */}
-            <div className="shrink-0">
-              <FieldStrip field={field} />
             </div>
 
             {/* The sensor head, given its own row: seven readings is the most
@@ -688,10 +687,9 @@ function WetnessCard({
 
   return (
     <Card title="Soil water" hint={`${num(field.sensors.soilMoisture, 0)}% moisture`}>
-      {/* Horizontal: the ring carries the proportion on the left and the verdict
-          and numbers sit beside it. `flex-1` so a stretched card centres this row
-          in the extra height rather than dropping its footnote into it. */}
-      <div className="flex flex-1 items-center gap-3.5">
+      {/* No `flex-1`: the card is sized to its content, so a growing row would
+          only re-open the gap this widget was just fixed for. */}
+      <div className="flex items-center gap-3.5">
         {/* Sized from the card's own width so it cannot overflow a narrow column. */}
         <div className="relative aspect-square w-[38cqw] max-w-[116px] shrink-0">
           <svg viewBox="0 0 140 140" className="h-full w-full -rotate-90">
@@ -758,7 +756,7 @@ function AgeCard({ field }: { field: Advisory }) {
   const finished = current === 'post_harvest' || current === 'harvest'
 
   return (
-    <Card title="Crop age" hint={field.crop} className="flex-1 justify-between">
+    <Card title="Crop age" hint={field.crop}>
       <div className="flex items-end justify-between gap-4">
         <div>
           <span className="tnum text-[clamp(1.75rem,6cqw,2.4rem)] font-semibold leading-none tracking-tight text-ink-900">
@@ -1133,8 +1131,10 @@ function SkyCard({ field }: { field: Advisory }) {
         </div>
 
         {/* Stacked, not side by side: a row of label/value pairs beside a large
-            figure left each pair about forty pixels wide. */}
-        <div className="mt-auto pt-3">
+            figure left each pair about forty pixels wide. Not `mt-auto` either —
+            with the card sized to its content that would only drop this group
+            into whatever space a taller neighbour once left behind. */}
+        <div className="pt-3">
           <span className="tnum block text-[clamp(2rem,9cqw,2.9rem)] font-semibold leading-none tracking-tight">
             {num(temp, 0)}°
           </span>
@@ -1161,54 +1161,102 @@ function SkyCard({ field }: { field: Advisory }) {
 }
 
 /**
- * The field record, as a horizontal strip.
+ * The field record, as a full details section and the first thing on the page.
  *
- * This was a fourth card in the top row, which meant seven short label/value
- * pills stacked inside a card sized by its neighbour and a large empty lower
- * half. Laid out as one strip it is a single line of reference facts, which is
- * what it always was.
+ * This was a single strip of six pills sitting below the readings, which read as
+ * a footnote to the advice instead of the identity of the field the advice is
+ * about. Moved to the top and laid out as labelled rows in a grid, so it answers
+ * "which field is this, and what is it" before it answers "what should I do".
  */
-function FieldStrip({ field }: { field: Advisory }) {
+function FieldDetails({ field }: { field: Advisory }) {
   const riskTone =
     field.risk.riskLevel === 'risk' ? 'alert' : field.risk.riskLevel === 'watch' ? 'warn' : 'healthy'
 
+  const season = field.season
+
   const facts: { label: string; value: string }[] = [
-    { label: 'Area', value: `${num(field.areaM2 / 10_000, 2)} ha` },
-    { label: 'Soil', value: titleCase(field.soilType) },
+    { label: 'Field', value: field.fieldId },
+    { label: 'Crop', value: titleCase(field.crop) },
     { label: 'Station', value: field.station },
+    { label: 'Soil', value: titleCase(field.soilType) },
     { label: 'Irrigation', value: titleCase(field.method) },
+    { label: 'Area', value: `${num(field.areaM2 / 10_000, 2)} ha` },
+    {
+      label: 'Sown',
+      value: new Date(field.sowingDate).toLocaleDateString([], {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      }),
+    },
+    { label: 'Stage', value: field.stageLabel },
+    { label: 'Crop age', value: `${field.ageDays} days` },
     { label: 'Roots', value: `${num(field.water.rootDepthCm, 0)} cm` },
-    { label: 'Sown', value: new Date(field.sowingDate).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' }) },
+    { label: 'Growing degree days', value: `${num(field.gdd, 0)} °C·d` },
+  ]
+
+  // Only present once a season has been planned for, so these are appended
+  // rather than printed as dashes.
+  if (season) {
+    facts.push(
+      { label: 'Season length', value: `${season.daysInSeason} days` },
+      { label: 'Season water', value: `${num(season.seasonGrossMm, 0)} mm` },
+      { label: 'Season rain', value: `${num(season.seasonRainMm, 0)} mm` },
+    )
+  }
+
+  const outcomes: { label: string; value: string }[] = [
+    { label: 'Disease risk', value: titleCase(field.risk.diseaseRisk) },
+    {
+      label: 'Confidence',
+      value: `${Math.round((field.risk.diseaseConfidence ?? 0) * 100)}%`,
+    },
+    { label: 'Crop stress index', value: num(field.risk.cropStressIndex, 2) },
+    { label: 'Yield outlook', value: `${num(field.risk.yieldTPerHa, 1)} t/ha` },
+    {
+      label: 'Stress in',
+      value:
+        field.water.daysUntilStress === null
+          ? 'Not forecast'
+          : `${Math.round(field.water.daysUntilStress)} days`,
+    },
   ]
 
   return (
-    <section className="card pad-card py-[clamp(0.7rem,1.8cqw,1rem)]">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5">
-        <span className="type-label shrink-0 font-semibold uppercase tracking-[0.07em] text-ink-400">
-          Field
-        </span>
-        {facts.map((fact) => (
-          <span
-            key={fact.label}
-            className="panel min-w-0 px-[clamp(0.5rem,1.4cqw,0.75rem)] py-1"
-          >
-            <span className="block text-[9px] uppercase tracking-[0.06em] text-ink-400">
-              {fact.label}
-            </span>
-            <span className="block truncate text-[12px] font-semibold text-ink-900">
-              {fact.value}
-            </span>
-          </span>
-        ))}
-        <span className="panel ml-auto flex items-center gap-2 px-[clamp(0.5rem,1.4cqw,0.75rem)] py-1">
-          <span className="text-[9px] uppercase tracking-[0.06em] text-ink-400">Disease</span>
+    <section className="card pad-card">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <h2 className="type-label font-semibold uppercase tracking-[0.07em] text-ink-500">
+          Field details
+        </h2>
+        <div className="flex items-center gap-2">
+          {/* Unlabelled: the outcome row below already names this one, and
+              repeating the label here just printed it twice. */}
           <ToneBadge tone={riskTone}>{titleCase(field.risk.diseaseRisk)}</ToneBadge>
-          <span className="tnum text-[11px] text-ink-500">
-            {Math.round((field.risk.diseaseConfidence ?? 0) * 100)}% · stress{' '}
-            {num(field.risk.cropStressIndex, 2)} · {num(field.risk.yieldTPerHa, 1)} t/ha
-          </span>
-        </span>
+        </div>
       </div>
+
+      {/* Labelled rows in a grid rather than pills in a wrapping line: the
+          values line up against each other, so the block scans as one table
+          instead of a set of unrelated boxes. */}
+      <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2.5 sm:grid-cols-3 xl:grid-cols-4">
+        {facts.map((fact) => (
+          <div key={fact.label} className="min-w-0">
+            <dt className="text-[9px] uppercase tracking-[0.06em] text-ink-400">{fact.label}</dt>
+            <dd className="truncate text-[12px] font-semibold text-ink-900">{fact.value}</dd>
+          </div>
+        ))}
+      </dl>
+
+      {/* The five numbers that decide the recommendation, kept behind their own
+          divider so the field's own facts above stay a single block. */}
+      <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2.5 border-t border-ink-100 pt-3 sm:grid-cols-3 xl:grid-cols-5">
+        {outcomes.map((fact) => (
+          <div key={fact.label} className="min-w-0">
+            <dt className="text-[9px] uppercase tracking-[0.06em] text-ink-400">{fact.label}</dt>
+            <dd className="tnum truncate text-[12px] font-semibold text-ink-900">{fact.value}</dd>
+          </div>
+        ))}
+      </dl>
     </section>
   )
 }
