@@ -22,7 +22,6 @@
  */
 
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import { useLive } from '../App'
 import { usePollingFetch } from '../hooks/usePollingFetch'
@@ -397,12 +396,6 @@ export default function Dashboard() {
             <div className="shrink-0">
               <SensorBoard field={field} />
             </div>
-
-            <p className="pb-2 pt-1 text-center">
-              <Link to="/model" className="text-[11px] text-ink-400 hover:text-ink-700">
-                How this recommendation is calculated
-              </Link>
-            </p>
           </div>
         )}
       </main>

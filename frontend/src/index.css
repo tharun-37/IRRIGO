@@ -14,8 +14,13 @@
   }
 
   body {
-    @apply bg-white font-sans text-ink-900 antialiased;
-    background-color: #f7f9fd;
+    @apply font-sans text-ink-900 antialiased;
+    /* The page itself, not the cards. Everything on screen is a white plate, so a
+       near-white page left nothing for those plates to sit on and the screen read
+       flat. Stepping the page down puts each card back above its background, which
+       is where separation has to come from - filling the cards instead was tried
+       and turned them into slabs. */
+    background-color: #e9edf5;
   }
 
   /* Film grain, as an actual displacement rather than a tiled overlay.
@@ -52,10 +57,10 @@
     transform: translateZ(0);
     backface-visibility: hidden;
     background-image:
-      radial-gradient(60% 55% at 18% 8%, #cfe0ff 0%, transparent 62%),
-      radial-gradient(52% 48% at 88% 12%, #e6dcff 0%, transparent 60%),
-      radial-gradient(70% 60% at 50% 104%, #d6f5e2 0%, transparent 64%),
-      linear-gradient(180deg, #f7f9fd 0%, #eaeffc 100%);
+      radial-gradient(60% 55% at 18% 8%, #b7ccf9 0%, transparent 62%),
+      radial-gradient(52% 48% at 88% 12%, #d3c4f8 0%, transparent 60%),
+      radial-gradient(70% 60% at 50% 104%, #bce7ce 0%, transparent 64%),
+      linear-gradient(180deg, #e9edf5 0%, #dbe2f6 100%);
   }
 
   /* Content rides above the warped layer. */
@@ -111,14 +116,10 @@
      job one layer in. */
   /* The card: a white plate, the way the reference reads.
      The separation on this page comes from the page behind, not from the card. The
-     background is a pale blue-lavender wash, so a white plate on it is a distinct
-     object with a visible gap either side. Filling the cards with colour instead
-     removed exactly that: the plates merged into slabs, the white hairline border
-     became invisible against its own fill, and a row of cards read as one mass
-     rather than as separate things.
-     So the fill goes back to white and the border back to a real ink tone - a white
-     border is only visible against a coloured fill, which is the case this no
-     longer is. */
+     background is a deeper wash than it was, so a white plate on it is a distinctly
+     brighter object with a visible gap either side. Filling the cards themselves was
+     tried and removed: the plates merged into slabs and a large card became a wall
+     of colour with text floating in it. */
   .card {
     @apply relative rounded-card border border-ink-200/70 bg-white/80 shadow-card backdrop-blur-md;
     /* Each card is its own sizing context, so `cqw` below measures this card
