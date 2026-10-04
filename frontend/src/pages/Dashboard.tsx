@@ -1195,12 +1195,17 @@ function SkyCard({ field }: { field: Advisory }) {
 }
 
 /**
- * The field record, as a full details section and the first thing on the page.
+ * The field record, as the first thing on the page.
  *
- * This was a single strip of six pills sitting below the readings, which read as
- * a footnote to the advice instead of the identity of the field the advice is
- * about. Moved to the top and laid out as labelled rows in a grid, so it answers
- * "which field is this, and what is it" before it answers "what should I do".
+ * This was a strip of six pills sitting below the readings, which read as a
+ * footnote to the advice instead of the identity of the field the advice is
+ * about. Moved to the top, and cut back to the four facts nothing else states.
+ *
+ * Each fact is a recessed panel rather than a label and a value on one line.
+ * Four pairs spread across a wide screen put every value four hundred pixels
+ * from its own label, which left the strip too thin to read as anything; a cell
+ * carries its label above its value and gives the band some body. It is the same
+ * shape as the four sensor panels further down the page.
  */
 function FieldDetails({ field }: { field: Advisory }) {
   // Only the physical basics, and only the ones nothing else on this screen
@@ -1229,9 +1234,21 @@ function FieldDetails({ field }: { field: Advisory }) {
         Field details
       </h2>
 
-      <dl className="mt-2 grid gap-x-6 gap-y-1 text-[11px] sm:grid-cols-2 lg:grid-cols-4">
+      {/* A recessed panel per fact, label above value. As one line per fact across a
+          wide screen the value ended up hundreds of pixels from its own label,
+          which is what made the strip look like a thin rule rather than a
+          record. Same shape as the four sensor panels lower down the page. */}
+      <dl className="mt-2.5 grid gap-[clamp(0.4rem,0.9vw,0.7rem)] sm:grid-cols-2 lg:grid-cols-4">
         {rows.map((row) => (
-          <Line key={row.label} label={row.label} value={row.value} />
+          <div
+            key={row.label}
+            className="panel min-w-0 px-[clamp(0.6rem,1.8cqw,0.95rem)] py-[clamp(0.5rem,1.4cqw,0.75rem)]"
+          >
+            <dt className="micro truncate">{row.label}</dt>
+            <dd className="mt-0.5 truncate text-[clamp(0.8125rem,1.5cqw,0.9375rem)] font-semibold text-ink-900">
+              {row.value}
+            </dd>
+          </div>
         ))}
       </dl>
     </section>

@@ -440,17 +440,21 @@ describe('Field view', () => {
 
     const details = screen.getByRole('heading', { name: 'Field details' }).closest('section')
 
-    // One short list, one row of four, no captions and no second block.
+    // One row of four recessed panels, each label above its value. As four
+    // label/value lines spread across the full width, every value sat hundreds
+    // of pixels from its own label and the strip read as a thin rule.
     expect(details?.querySelectorAll('h3')).toHaveLength(0)
     const list = details?.querySelector('dl')
     expect(list?.children).toHaveLength(4)
-    for (const row of Array.from(list?.children ?? [])) {
-      expect(row.querySelector('dt')).toBeTruthy()
-      expect(row.querySelector('dd')).toBeTruthy()
+    expect(list?.className).toContain('lg:grid-cols-4')
+    for (const cell of Array.from(list?.children ?? [])) {
+      expect(cell.className).toContain('panel')
+      expect(cell.querySelector('dt')).toBeTruthy()
+      expect(cell.querySelector('dd')).toBeTruthy()
     }
 
-    // Soil type is the fact this block exists for. The fixture's is 'clay', so the
-    // title-cased rendering is checked rather than the raw value.
+    // Soil type is the fact this block exists for. The fixture's is 'clay', so
+    // the title-cased rendering is checked rather than the raw value.
     expect(within(details as HTMLElement).getByText('Clay')).toBeTruthy()
   })
 
