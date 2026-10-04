@@ -1203,37 +1203,59 @@ function FieldDetails({ field }: { field: Advisory }) {
   const riskTone =
     field.risk.riskLevel === 'risk' ? 'alert' : field.risk.riskLevel === 'watch' ? 'warn' : 'healthy'
 
-  const season = field.season
+const season = field.season
 
-  const facts: { label: string; value: string }[] = [
-    { label: 'Field', value: field.fieldId },
-    { label: 'Crop', value: titleCase(field.crop) },
-    { label: 'Station', value: field.station },
-    { label: 'Soil', value: titleCase(field.soilType) },
-    { label: 'Irrigation', value: titleCase(field.method) },
-    { label: 'Area', value: `${num(field.areaM2 / 10_000, 2)} ha` },
+  const sown = new Date(field.sowingDate).toLocaleDateString([], {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+
+  // Grouped rather than one long list. Nineteen label/value pairs in a single
+  // wrapping grid read as a wall: nothing said which facts belonged together, and
+  // the eye had to scan the whole width to find one. Four short lists under their
+  // own captions scan like a form, and each list is the same shape as the reading
+  // rows elsewhere on the page.
+  const groups: { caption: string; rows: { label: string; value: string }[] }[] = [
     {
-      label: 'Sown',
-      value: new Date(field.sowingDate).toLocaleDateString([], {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      }),
+      caption: 'Field record',
+      rows: [
+        { label: 'Name', value: field.fieldId },
+        { label: 'Crop', value: titleCase(field.crop) },
+        { label: 'Station', value: field.station },
+        { label: 'Sown', value: sown },
+      ],
     },
-    { label: 'Stage', value: field.stageLabel },
-    { label: 'Crop age', value: `${field.ageDays} days` },
-    { label: 'Roots', value: `${num(field.water.rootDepthCm, 0)} cm` },
-    { label: 'Growing degree days', value: `${num(field.gdd, 0)} °C·d` },
+    {
+      caption: 'Plot',
+      rows: [
+        { label: 'Soil', value: titleCase(field.soilType) },
+        { label: 'Irrigation', value: titleCase(field.method) },
+        { label: 'Area', value: `${num(field.areaM2 / 10_000, 2)} ha` },
+        { label: 'Roots', value: `${num(field.water.rootDepthCm, 0)} cm` },
+      ],
+    },
+    {
+      caption: 'Growth',
+      rows: [
+        { label: 'Stage', value: field.stageLabel },
+        { label: 'Crop age', value: `${field.ageDays} days` },
+        { label: 'Growing degree days', value: `${num(field.gdd, 0)} °C·d` },
+      ],
+    },
   ]
 
-  // Only present once a season has been planned for, so these are appended
-  // rather than printed as dashes.
+  // Only planned once a season exists for the field, so this group is left out
+  // entirely rather than printed as dashes.
   if (season) {
-    facts.push(
-      { label: 'Season length', value: `${season.daysInSeason} days` },
-      { label: 'Season water', value: `${num(season.seasonGrossMm, 0)} mm` },
-      { label: 'Season rain', value: `${num(season.seasonRainMm, 0)} mm` },
-    )
+    groups.push({
+      caption: 'Season',
+      rows: [
+        { label: 'Length', value: `${season.daysInSeason} days` },
+        { label: 'Water', value: `${num(season.seasonGrossMm, 0)} mm` },
+        { label: 'Rain', value: `${num(season.seasonRainMm, 0)} mm` },
+      ],
+    })
   }
 
   const outcomes: { label: string; value: string }[] = [
@@ -1266,29 +1288,26 @@ function FieldDetails({ field }: { field: Advisory }) {
         </div>
       </div>
 
-      {/* Wrapping rows of growing cells rather than a fixed column count: a grid
-          always leaves its last row short when the count is not a multiple of
-          the columns, which is what put two dead cells under "season rain" and
-          left the five outcomes on their own rhythm. Here every row fills the
-          width, whatever the field count works out as. */}
-      <dl className="mt-3 flex flex-wrap gap-x-4 gap-y-2.5">
-        {facts.map((fact) => (
-          <div key={fact.label} className="min-w-[15rem] flex-1">
-            <dt className="text-[9px] uppercase tracking-[0.06em] text-ink-400">{fact.label}</dt>
-            <dd className="truncate text-[12px] font-semibold text-ink-900">{fact.value}</dd>
+      <div className="mt-3 grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
+        {groups.map((group) => (
+          <div key={group.caption} className="min-w-0">
+            <h3 className="micro">{group.caption}</h3>
+            <dl className="mt-1 space-y-0.5 text-[11px]">
+              {group.rows.map((row) => (
+                <Line key={row.label} label={row.label} value={row.value} />
+              ))}
+            </dl>
           </div>
         ))}
-      </dl>
+      </div>
 
-{/* The five numbers that decide the recommendation. No rule above them: the
-            border and the padding under it were a blank band across the middle of
-            this card. */}
-      <dl className="mt-2.5 flex flex-wrap gap-x-4 gap-y-2.5">
+      {/* The five numbers behind the recommendation, label and value on one line
+          so a short figure like "100%" is not stranded at the left of a
+          three-hundred-pixel column. No rule above them: the border and the
+          padding under it were a blank band across the middle of this card. */}
+      <dl className="mt-3 grid gap-x-6 gap-y-1 text-[11px] sm:grid-cols-3 xl:grid-cols-5">
         {outcomes.map((fact) => (
-          <div key={fact.label} className="min-w-[9rem] flex-1">
-            <dt className="text-[9px] uppercase tracking-[0.06em] text-ink-400">{fact.label}</dt>
-            <dd className="tnum truncate text-[12px] font-semibold text-ink-900">{fact.value}</dd>
-          </div>
+          <Line key={fact.label} label={fact.label} value={fact.value} />
         ))}
       </dl>
     </section>

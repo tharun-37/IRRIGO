@@ -315,24 +315,36 @@ describe('Field view', () => {
     )
 
     // The field's own identity comes first, so "which field is this, and what is
-    // it" is answered before "what should I do". Scoped to that section, because
-    // "Crop age" and "Stage" are also readings further down the page.
+    // it" is answered before "what should I do".
     const details = screen.getByRole('heading', { name: 'Field details' }).closest('section')
     expect(details).toBeTruthy()
+
+    // Grouped into captioned lists rather than one long grid of label/value
+    // pairs, which read as a wall with nothing saying which facts went together.
+    for (const caption of ['Field record', 'Plot', 'Growth', 'Season']) {
+      expect(within(details as HTMLElement).getByRole('heading', { name: caption })).toBeTruthy()
+    }
+
+    // Scoped to this section, because "Crop age" and "Stage" are also readings
+    // further down the page.
     for (const fact of [
-      'Field',
+      'Name',
       'Crop',
       'Station',
+      'Sown',
       'Soil',
       'Irrigation',
       'Area',
-      'Sown',
+      'Roots',
       'Stage',
       'Crop age',
-      'Roots',
+      'Length',
+      'Water',
+      'Rain',
     ]) {
       expect(within(details as HTMLElement).getByText(fact)).toBeTruthy()
     }
+
     // And the numbers behind the recommendation, not just the field's own facts.
     for (const outcome of ['Disease risk', 'Crop stress index', 'Yield outlook']) {
       expect(within(details as HTMLElement).getByText(outcome)).toBeTruthy()
@@ -431,25 +443,38 @@ describe('Field view', () => {
     expect(sky?.querySelector('.text-\\[clamp\\(2\\.25rem\\,18cqw\\,5rem\\)\\]')).toBeTruthy()
   })
 
-  it('fills every row of the field details, with no dead cells', async () => {
+  it('groups the field details into captioned lists, not one flat grid', async () => {
     renderShell()
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
     )
 
-    // A fixed column count always leaves its last row short when the fact count
-    // is not a multiple of it. Growing cells in a wrapping row fill the width
-    // whatever the count works out as.
     const details = screen.getByRole('heading', { name: 'Field details' }).closest('section')
-    const lists = Array.from(details?.querySelectorAll('dl') ?? [])
-    expect(lists).toHaveLength(2)
-    for (const list of lists) {
-      expect(list.className).toContain('flex-wrap')
-      // Every cell grows, so no row ends with an unfilled slot.
-      expect(list.querySelector(':scope > div:not([class*="col-span"])')).toBeTruthy()
-      for (const cell of Array.from(list.children)) {
-        expect(cell.className).toContain('flex-1')
-      }
+
+    // Four captioned groups, each a vertical list. A wrapping grid of every fact
+    // left dead cells whenever the count was not a multiple of the columns; a
+    // column of rows cannot have a hole in it.
+    const groups = Array.from(details?.querySelectorAll('h3') ?? [])
+    expect(groups.map((node) => node.textContent)).toEqual([
+      'Field record',
+      'Plot',
+      'Growth',
+      'Season',
+    ])
+    for (const caption of groups) {
+      const list = caption.parentElement?.querySelector('dl')
+      expect(list?.children.length).toBeGreaterThan(0)
+    }
+
+    // The five outcome figures share the one-line label/value shape, so a short
+    // value is not stranded at the left of a very wide column. It is the only
+    // `dl` that is a direct child of the section rather than of a group.
+    const outcomes = details?.querySelector(':scope > dl')
+    expect(outcomes?.children).toHaveLength(5)
+    expect(outcomes?.className).toContain('xl:grid-cols-5')
+    for (const row of Array.from(outcomes?.children ?? [])) {
+      expect(row.querySelector('dt')).toBeTruthy()
+      expect(row.querySelector('dd')).toBeTruthy()
     }
   })
 
