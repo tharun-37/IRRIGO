@@ -344,7 +344,7 @@ export default function Dashboard() {
         </button>
       </header>
 
-      <main className="min-h-0 flex-1 overflow-y-auto lg:overflow-hidden">
+      <main className="scroll-smooth min-h-0 flex-1 overflow-y-auto lg:overflow-hidden">
         {advisor.error ? (
           <p className="p-6 text-[13px] text-status-alert">{advisor.error}</p>
         ) : adding ? (
@@ -370,7 +370,7 @@ export default function Dashboard() {
             <AddField onRegistered={setFieldId} />
           </div>
         ) : (
-<div className="pad-page mx-auto flex max-w-[1180px] flex-col gap-[clamp(0.7rem,1.5vw,1.1rem)] lg:h-full lg:max-w-none lg:overflow-y-auto">
+<div className="scroll-smooth pad-page mx-auto flex max-w-[1180px] flex-col gap-[clamp(0.7rem,1.5vw,1.1rem)] lg:h-full lg:max-w-none lg:overflow-y-auto">
             {/* ---- The answer, on its own full-width row --------------- */}
             {/* This is what the operator opened the page for, so it is not made
                 to share a row with three supporting readings and shrink to fit

@@ -36,6 +36,21 @@
     pointer-events: none;
     filter: url('#grain-warp');
     opacity: 0.5;
+    /* Promoted to its own compositor layer, and this is not a micro-optimisation.
+
+       `feTurbulence` is procedural: the noise is generated, not stored, so
+       nothing about this layer can be cached from a previous frame. Left on the
+       main layer, scrolling makes the browser regenerate a viewport's worth of
+       turbulence every frame, which is what made the whole page look like it was
+       shivering. Handed to the compositor it is rasterised once and then merely
+       translated, so scrolling moves content across a static texture and the
+       texture costs nothing per frame.
+
+       `inset: -6%` is deliberate for the same reason: it overscans the layer past
+       every viewport edge, so translating it can never expose a seam. */
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
     background-image:
       radial-gradient(60% 55% at 18% 8%, #cfe0ff 0%, transparent 62%),
       radial-gradient(52% 48% at 88% 12%, #e6dcff 0%, transparent 60%),
@@ -56,6 +71,28 @@
 }
 
 @layer components {
+  /* Smooth scrolling for the app's own scroll containers.
+
+     This page does not scroll the document: the field view scrolls an inner
+     column, so `scroll-behavior` on `html` alone would do nothing here and the
+     class has to sit on the element that actually scrolls. `overscroll-behavior:
+     contain` stops the chain at the boundary, which is what stops a flick that
+     reaches the end from appearing to drag the page underneath it - the other half
+     of the "shrugging" feel.
+
+     Disabled under `prefers-reduced-motion`, where animated scrolling is exactly
+     the thing the user has asked not to have. */
+  .scroll-smooth {
+    scroll-behavior: smooth;
+    overscroll-behavior: contain;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .scroll-smooth {
+      scroll-behavior: auto;
+    }
+  }
+
   /* The shell: a centred translucent plate on a tinted page. */
   .sheet {
     @apply mx-auto w-full max-w-[1180px] rounded-card bg-white/70 shadow-card backdrop-blur-md;
