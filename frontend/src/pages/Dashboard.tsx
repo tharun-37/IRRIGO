@@ -366,23 +366,25 @@ export default function Dashboard() {
                 overflow (`overflow-hidden` on the hero and the sky card) loses
                 its automatic minimum size, so the column was free to squash it
                 below its content and the decision's detail lines were cut off. */}
-            {/* `items-start` so each card is exactly as tall as its own content.
-                Stretched to the hero's height, the budget card was mostly empty
-                and its "by depth" line was pushed to the floor of that void. */}
-            <div className="grid shrink-0 items-start gap-[clamp(0.7rem,1.5vw,1.1rem)] lg:grid-cols-2">
+            {/* Equal heights: the grid's default stretch, so the budget card ends on the
+                hero's line instead of stopping short of it. The slack goes to
+                the "by depth" bars, which spread into it rather than leaving a
+                void under the card's last row. */}
+            <div className="grid shrink-0 gap-[clamp(0.7rem,1.5vw,1.1rem)] lg:grid-cols-2">
               <DecisionHero field={field} depth={depth} band={soil.band} />
               <BudgetCard fields={fields} totalMm={totalMm} />
             </div>
 
             {/* ---- The evidence for it: three compact readings ---------- */}
-            {/* `items-start` for the same reason: these three carry very different
-                amounts of content, so stretching them to the sky card's height
-                left the wetness ring floating in the middle of an empty card and
-                pushed the crop-age figure to the top of another. Sizing each to
-                its own content is what keeps the gap out of the widgets. On md
-                the third card would otherwise sit alone in a half-width row, so
-                it spans the row and the three read as two even bands. */}
-            <div className="grid shrink-0 items-start gap-[clamp(0.7rem,1.5vw,1.1rem)] md:grid-cols-2 xl:grid-cols-3">
+            {/* Equal heights again, for the same reason: these three carry very
+                different amounts of content, so whichever is tallest sets the
+                row and the others have to absorb the difference. Each hands its
+                slack to one bordered surface — the numbers panel, the humidity
+                box, the season panel — so the extra height is filled instead of
+                showing as blank card. On md the third card would otherwise sit
+                alone in a half-width row, so it spans the row and the three
+                read as two even bands. */}
+            <div className="grid shrink-0 gap-[clamp(0.7rem,1.5vw,1.1rem)] md:grid-cols-2 xl:grid-cols-3">
               <WetnessCard field={field} remaining={soil.remaining} band={soil.band} />
               <SkyCard field={field} />
               <div className="md:col-span-2 xl:col-span-1">
@@ -687,11 +689,12 @@ function WetnessCard({
 
   return (
     <Card title="Soil water" hint={`${num(field.sensors.soilMoisture, 0)}% moisture`}>
-      {/* No `flex-1`: the card is sized to its content, so a growing row would
-          only re-open the gap this widget was just fixed for. */}
-      <div className="flex items-center gap-3.5">
+      {/* `flex-1` so this row, and not the card's own background, absorbs the height
+          the tallest neighbour in the row imposes. `items-stretch` hands that
+          height to the numbers panel; the ring stays its own size and centres. */}
+      <div className="flex flex-1 items-stretch gap-3.5">
         {/* Sized from the card's own width so it cannot overflow a narrow column. */}
-        <div className="relative aspect-square w-[38cqw] max-w-[116px] shrink-0">
+        <div className="relative aspect-square w-[38cqw] max-w-[116px] shrink-0 self-center">
           <svg viewBox="0 0 140 140" className="h-full w-full -rotate-90">
             <defs>
               <linearGradient id="ringFill" x1="0" y1="0" x2="1" y2="1">
@@ -721,11 +724,13 @@ function WetnessCard({
           </div>
         </div>
 
-        <div className="panel min-w-0 flex-1 px-[clamp(0.6rem,1.8cqw,0.95rem)] py-[clamp(0.55rem,1.6cqw,0.85rem)]">
+        <div className="panel flex min-w-0 flex-1 flex-col px-[clamp(0.6rem,1.8cqw,0.95rem)] py-[clamp(0.55rem,1.6cqw,0.85rem)]">
           <div className={`text-[clamp(1.05rem,3.6cqw,1.35rem)] font-semibold leading-none ${style.text}`}>
             {style.word}
           </div>
-          <dl className="mt-2 space-y-1 text-[11px] text-ink-700">
+          {/* `justify-between` so the four readings spread down the panel when it
+              is stretched, instead of clustering at the top under empty panel. */}
+          <dl className="mt-2 flex flex-1 flex-col justify-between gap-1 text-[11px] text-ink-700">
             <Line label="Used" value={`${num(field.water.depletionMm)} mm`} />
             <Line label="Available" value={`${num(field.water.tawMm)} mm`} />
             <Line label="Refill at" value={`${num(field.water.rawMm)} mm`} />
@@ -757,15 +762,18 @@ function AgeCard({ field }: { field: Advisory }) {
 
   return (
     <Card title="Crop age" hint={field.crop}>
+      {/* `min-w-0` on the stage side: a long label like "Mid-season (peak demand)"
+          then wraps inside the column instead of running into the age figure,
+          which is the one thing here that must not be broken up. */}
       <div className="flex items-end justify-between gap-4">
-        <div>
+        <div className="shrink-0">
           <span className="tnum text-[clamp(1.75rem,6cqw,2.4rem)] font-semibold leading-none tracking-tight text-ink-900">
             {field.ageDays}
           </span>
           <span className="ml-1.5 text-[12px] text-ink-500">days old</span>
         </div>
-        <div className="text-right">
-          <div className="type-value font-semibold text-ink-900">
+        <div className="min-w-0 text-right">
+          <div className="type-value break-words font-semibold text-ink-900">
             {finished ? 'Finished' : field.stageLabel}
           </div>
           <div className="tnum text-[10px] text-ink-400">
@@ -780,7 +788,9 @@ function AgeCard({ field }: { field: Advisory }) {
 
       <StageTrack field={field} progress={progress} current={current} finished={finished} />
 
-      <div className="panel mt-2.5 grid grid-cols-3 gap-2 px-[clamp(0.6rem,1.8cqw,0.95rem)] py-[clamp(0.55rem,1.6cqw,0.85rem)]">
+      {/* The season panel takes the height a taller neighbour imposes, so this card
+          ends on the row's line with its own surface filling the difference. */}
+      <div className="panel mt-2.5 grid flex-1 grid-cols-3 gap-2 px-[clamp(0.6rem,1.8cqw,0.95rem)] py-[clamp(0.55rem,1.6cqw,0.85rem)]">
         {field.season && field.season.daysInSeason > 0 ? (
           <>
             <MiniStat label="Sun today" value={`${num(field.water.et0MmDay, 1)} mm`} />
@@ -1051,10 +1061,13 @@ function BudgetCard({
         <Line label="Area covered" value={`${num(totalArea / 10_000, 2)} ha`} />
       </dl>
 
-      {/* Fields ranked by depth: the comparison the operator is actually after. */}
-      <div className="mt-3 border-t border-ink-100 pt-2.5">
-        <div className="micro mb-1.5">By depth</div>
-        <div className="space-y-1.5">
+      {/* Fields ranked by depth: the comparison the operator is actually after.
+          This block takes whatever height the hero beside it imposes, so the two
+          cards end on one line and the bars spread into the difference rather
+          than the card ending with a void under the last one. */}
+      <div className="mt-3 flex flex-1 flex-col border-t border-ink-100 pt-2.5">
+        <div className="micro mb-1.5 shrink-0">By depth</div>
+        <div className="flex flex-1 flex-col justify-between gap-1.5">
           {[...fields]
             .sort((a, b) => depthOf(b) - depthOf(a))
             .map((item) => {
@@ -1131,17 +1144,18 @@ function SkyCard({ field }: { field: Advisory }) {
         </div>
 
         {/* Stacked, not side by side: a row of label/value pairs beside a large
-            figure left each pair about forty pixels wide. Not `mt-auto` either —
-            with the card sized to its content that would only drop this group
-            into whatever space a taller neighbour once left behind. */}
-        <div className="pt-3">
-          <span className="tnum block text-[clamp(2rem,9cqw,2.9rem)] font-semibold leading-none tracking-tight">
+            figure left each pair about forty pixels wide. The group grows and
+            passes the height on to the humidity box, so this card ends on the
+            row's line with the box filling the difference rather than the card
+            ending with bare blue under the footnote. */}
+        <div className="flex flex-1 flex-col pt-3">
+          <span className="tnum block shrink-0 text-[clamp(2rem,9cqw,2.9rem)] font-semibold leading-none tracking-tight">
             {num(temp, 0)}°
           </span>
 
           {/* Recessed with a translucent white so the group sits into the blue
               rather than floating on it. */}
-          <dl className="mt-3 space-y-1 rounded-card border border-white/15 bg-white/10 px-[clamp(0.6rem,1.8cqw,0.95rem)] py-[clamp(0.5rem,1.5cqw,0.8rem)] text-[11px] shadow-[inset_0_1px_2px_rgba(15,23,42,0.18)]">
+          <dl className="mt-3 flex flex-1 flex-col justify-center rounded-card border border-white/15 bg-white/10 px-[clamp(0.6rem,1.8cqw,0.95rem)] py-[clamp(0.5rem,1.5cqw,0.8rem)] text-[11px] shadow-[inset_0_1px_2px_rgba(15,23,42,0.18)]">
             {/* Humidity only. Air temperature is the headline above it and rain
                 today is one of the three decision inputs further up the page, so
                 listing either here just printed the same figure twice. */}
@@ -1151,7 +1165,7 @@ function SkyCard({ field }: { field: Advisory }) {
             </div>
           </dl>
 
-          <p className="mt-2.5 text-[10px] leading-snug text-white/50">
+          <p className="mt-2.5 shrink-0 text-[10px] leading-snug text-white/50">
             Observed at {field.station}. No forecast is stored.
           </p>
         </div>
@@ -1235,12 +1249,14 @@ function FieldDetails({ field }: { field: Advisory }) {
         </div>
       </div>
 
-      {/* Labelled rows in a grid rather than pills in a wrapping line: the
-          values line up against each other, so the block scans as one table
-          instead of a set of unrelated boxes. */}
-      <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2.5 sm:grid-cols-3 xl:grid-cols-4">
+      {/* Wrapping rows of growing cells rather than a fixed column count: a grid
+          always leaves its last row short when the count is not a multiple of
+          the columns, which is what put two dead cells under "season rain" and
+          left the five outcomes on their own rhythm. Here every row fills the
+          width, whatever the field count works out as. */}
+      <dl className="mt-3 flex flex-wrap gap-x-4 gap-y-2.5">
         {facts.map((fact) => (
-          <div key={fact.label} className="min-w-0">
+          <div key={fact.label} className="min-w-[15rem] flex-1">
             <dt className="text-[9px] uppercase tracking-[0.06em] text-ink-400">{fact.label}</dt>
             <dd className="truncate text-[12px] font-semibold text-ink-900">{fact.value}</dd>
           </div>
@@ -1249,9 +1265,9 @@ function FieldDetails({ field }: { field: Advisory }) {
 
       {/* The five numbers that decide the recommendation, kept behind their own
           divider so the field's own facts above stay a single block. */}
-      <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2.5 border-t border-ink-100 pt-3 sm:grid-cols-3 xl:grid-cols-5">
+      <dl className="mt-3 flex flex-wrap gap-x-4 gap-y-2.5 border-t border-ink-100 pt-3">
         {outcomes.map((fact) => (
-          <div key={fact.label} className="min-w-0">
+          <div key={fact.label} className="min-w-[9rem] flex-1">
             <dt className="text-[9px] uppercase tracking-[0.06em] text-ink-400">{fact.label}</dt>
             <dd className="tnum truncate text-[12px] font-semibold text-ink-900">{fact.value}</dd>
           </div>
@@ -1272,7 +1288,10 @@ function Line({ label, value }: { label: string; value: string }) {
 
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
-    <div>
+    // `h-full justify-center`: the panel this sits in grows to match a taller
+    // neighbour, and each stat stays centred in its column rather than hanging
+    // from the top of it.
+    <div className="flex h-full flex-col justify-center">
       <div className="tnum text-[15px] font-semibold text-ink-900">{value}</div>
       <div className="mt-0.5 text-[10px] uppercase tracking-[0.06em] text-ink-400">{label}</div>
     </div>

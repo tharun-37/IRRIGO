@@ -378,21 +378,53 @@ describe('Field view', () => {
     expect(order.indexOf('7-in-1 soil sensor')).toBeGreaterThan(order.indexOf('Crop age'))
   })
 
-  it('sizes each card to its own content instead of stretching it', async () => {
+  it('gives every card in a row the same height, filling the difference', async () => {
     renderShell()
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
     )
 
-    // These widgets carry very different amounts of content. Letting the grid
-    // stretch every card to the tallest one in its row left the short cards
-    // mostly empty, which is what put a gap above each card's divider line.
-    // Both rows are `items-start`, so each card is only as tall as its content.
+    // Both rows stretch, so cards in a row end on one line instead of leaving a
+    // gap under the shorter ones.
     const decisionRow = screen.getByText('Farm this week').closest('section')?.parentElement
-    expect(decisionRow?.className).toContain('items-start')
+    expect(decisionRow?.className).not.toContain('items-start')
 
     const readingsRow = screen.getByText('Soil water').closest('section')?.parentElement
-    expect(readingsRow?.className).toContain('items-start')
+    expect(readingsRow?.className).not.toContain('items-start')
+
+    // And the height a taller neighbour imposes is handed to a bordered surface
+    // rather than left as blank card. One growing surface per card in the row.
+    // By heading role: "Crop age" is also a fact in the field details block.
+    for (const title of ['Soil water', 'Crop age', 'Farm this week']) {
+      const card = screen.getByRole('heading', { name: title }).closest('section')
+      expect(card?.querySelector('.flex-1')).toBeTruthy()
+    }
+    // The sky card is not a `Card`, so its humidity box is the surface that
+    // grows there.
+    const sky = screen.getByText(/· now/).closest('section')
+    expect(sky?.querySelector('dl.flex-1')).toBeTruthy()
+  })
+
+  it('fills every row of the field details, with no dead cells', async () => {
+    renderShell()
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
+    )
+
+    // A fixed column count always leaves its last row short when the fact count
+    // is not a multiple of it. Growing cells in a wrapping row fill the width
+    // whatever the count works out as.
+    const details = screen.getByRole('heading', { name: 'Field details' }).closest('section')
+    const lists = Array.from(details?.querySelectorAll('dl') ?? [])
+    expect(lists).toHaveLength(2)
+    for (const list of lists) {
+      expect(list.className).toContain('flex-wrap')
+      // Every cell grows, so no row ends with an unfilled slot.
+      expect(list.querySelector(':scope > div:not([class*="col-span"])')).toBeTruthy()
+      for (const cell of Array.from(list.children)) {
+        expect(cell.className).toContain('flex-1')
+      }
+    }
   })
 
   it('places the stage marker inside the active segment, not at its edge', async () => {
