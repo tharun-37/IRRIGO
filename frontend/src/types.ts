@@ -368,6 +368,157 @@ export interface AdvisorFeed {
   fields: Advisory[]
 }
 
+/* -------------------------------------------------------------------------- */
+/* Field registration                                                           */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * One crop from the engine's catalogue.
+ *
+ * These are the numbers that make a cotton field need three times the water of a
+ * rice field on the same day. They are on the wire rather than buried in the
+ * engine so the interface can show *why* two fields with identical sensors get
+ * different recommendations - a selector that only collects a name gives an
+ * operator nothing to decide on.
+ */
+export interface CropOption {
+  name: string
+  kcInitial: number
+  kcMid: number
+  kcEnd: number
+  /** Maximum rooting depth, metres, reached at mid-season. */
+  rootDepthMaxM: number
+  /** Fraction of available water the crop will draw down before it is stressed. */
+  depletionFractionP: number
+  optimalPh: [number, number]
+  /** Species base temperature for thermal-time accumulation, Celsius. */
+  gddBaseTempC: number
+  /** GDD at the end of each FAO-56 stage; the last is the season total. */
+  gddStageEnds: number[]
+  seasonGdd: number
+  /** Calendar length of each FAO-56 stage in days; the last is the season. */
+  lengthStageDays: number[]
+  seasonDays: number
+  /** FAO-33 yield response to water, and the season's potential yield. */
+  ky: number
+  yieldPotentialTHa: number
+  /** Named varieties: a short-season hybrid is a different water plan. */
+  variants: string[]
+  /** Every method that suits this crop, most efficient first. */
+  suitableMethods: string[]
+  /** Methods that work but change what the recommendation means, with the reason. */
+  warnings: Record<string, string>
+}
+
+export interface CropCatalogue {
+  crops: CropOption[]
+}
+
+/** Legal values for every reference field on a sowing. */
+export interface RegistryOptions {
+  stations: string[]
+  crops: string[]
+  soils: string[]
+  methods: string[]
+}
+
+/**
+ * A field registration request.
+ *
+ * Mirrors `FieldCreate` in `backend/app/schemas.py`. Only `fieldId`, `station`,
+ * `crop` and `sowingDate` are required; the rest default server-side, which is
+ * why the form can be submitted with four fields filled in.
+ */
+export interface FieldCreate {
+  fieldId: string
+  station: string
+  crop: string
+  sowingDate: string
+  soilType?: string
+  methodName?: string
+  fieldAreaM2?: number
+  mulched?: boolean
+  nitrogenRegime?: number
+  notes?: string
+  /** Named cultivar. A short-duration hybrid is a different water plan. */
+  cropVariant?: string
+  /** Depth of a hardpan or gravel, metres. Caps what the roots can reach. */
+  restrictingDepthM?: number
+  /** Fraction of the crop considered emerged; below 1 it transpires less. */
+  emergenceFraction?: number
+}
+
+/** A stored sowing, as `POST /api/fields` and `GET /api/fields/{id}` return it. */
+export interface FieldRecord {
+  fieldId: string
+  station: string
+  crop: string
+  cropVariant: string | null
+  sowingDate: string
+  soilType: string
+  methodName: string
+  fieldAreaM2: number
+  mulched: boolean
+  nitrogenRegime: number
+  restrictingDepthM: number | null
+  emergenceFraction: number | null
+  daysSinceSowing: number
+  seasonDay: number
+  notes: string
+  /**
+   * The plan the engine produced for the new field, attached to the registration
+   * response so the form can show a result without a second round trip.
+   */
+  plan?: FieldPlan
+  planError?: string
+}
+
+export interface ScheduleDayPlan {
+  offset: number
+  applyMm: number
+  grossApplyMm: number
+  depletionBeforeMm: number
+  depletionAfterMm: number
+  stressBefore: boolean
+  stressAfter: boolean
+  reason: string
+}
+
+export interface FieldPlan {
+  fieldId: string
+  station: string
+  crop: string
+  asOf: string
+  sowingDate: string
+  daysSinceSowing: number
+  stage: string
+  stageProgress: number
+  rootDepthCm: number
+  tawMm: number
+  rawMm: number
+  depletionMm: number
+  depletionFraction: number
+  daysUntilStress: number | null
+  kc: number
+  et0MmDay: number
+  etcMmDay: number
+  /** Engine dataclass, serialised verbatim; snake_case by design. */
+  requirement: Record<string, number | string | boolean>
+  schedule: {
+    events: ScheduleDayPlan[]
+    totalNetMm: number
+    totalGrossMm: number
+    totalEvents: number
+    firstEventDay: number | null
+    unmetRequirementMm: number
+    stressDays: number
+    percolationMm: number
+    infeasible: boolean
+    requirementInsufficient: boolean
+  } | null
+  dataSource: string
+}
+
 export interface SystemHealth {
   status: 'ok' | 'degraded' | 'down'
   version: string

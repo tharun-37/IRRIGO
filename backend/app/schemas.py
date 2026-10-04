@@ -18,6 +18,18 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
+# The engine's own reference tables. They are the single source of truth for what a
+# field may be, and importing them here means the API validates a sowing against the
+# same catalogue the plan will later be computed from. Validating against a second,
+# hand-kept list here would let the two drift, and the drift would only surface as a
+# 500 at the first irrigation rather than as a rejected registration.
+#
+# `app.main` puts the `src/` tree on the import path before this package is reached,
+# so the import resolves the same way it does for the service layer.
+from irrigation.data.crops import CROPS, crop as lookup_crop
+from irrigation.data.cultivation import METHODS, method as lookup_method
+from irrigation.data.soil import TEXTURES, texture as lookup_texture
+
 
 # --------------------------------------------------------------------------
 # system
@@ -63,6 +75,18 @@ class FieldOut(BaseModel):
 
 
 class FieldCreate(BaseModel):
+    """
+    A sowing to register.
+
+    Every reference value is resolved against the engine's catalogue at validation
+    time rather than at plan time. The alternative - accepting a free string and
+    letting `SowingEvent` refuse it - turns a typo into a 500 with a stack trace,
+    and does it after the operator believes the field was saved. Refusing here costs
+    nothing: the error names the field, the offending value and the full set of
+    accepted values, which is everything a client needs to render the correction
+    without a second round trip.
+    """
+
     fieldId: str = Field(min_length=1, max_length=64)
     station: str
     crop: str
@@ -73,6 +97,14 @@ class FieldCreate(BaseModel):
     mulched: bool = False
     nitrogenRegime: float = Field(default=1.0, gt=0)
     notes: str = ""
+    #: Named variety. A short-season hybrid finishes weeks earlier, so a variety is
+    #: a different water plan rather than a cosmetic label.
+    cropVariant: str | None = None
+    #: Depth of a hardpan or gravel, metres. Caps what the roots can reach.
+    restrictingDepthM: float | None = Field(default=None, gt=0)
+    #: Fraction of the crop considered emerged. Below 1.0 the crop is partly below
+    #: ground and transpires less than the curve assumes.
+    emergenceFraction: float | None = Field(default=None, gt=0, le=1)
 
     @field_validator("sowingDate")
     @classmethod
@@ -91,6 +123,95 @@ class FieldCreate(BaseModel):
         if not value.strip():
             raise ValueError("must not be blank")
         return value.strip()
+
+    @field_validator("crop")
+    @classmethod
+    def _known_crop(cls, value: str) -> str:
+        try:
+            lookup_crop(value)
+        except KeyError as error:
+            raise ValueError(str(error)) from error
+        return value
+
+    @field_validator("soilType")
+    @classmethod
+    def _known_soil(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        try:
+            lookup_texture(value)
+        except KeyError as error:
+            raise ValueError(str(error)) from error
+        return value
+
+    @field_validator("methodName")
+    @classmethod
+    def _known_method(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        try:
+            lookup_method(value)
+        except KeyError as error:
+            raise ValueError(str(error)) from error
+        return value
+
+    @field_validator("cropVariant")
+    @classmethod
+    def _known_variant(cls, value: str | None, info) -> str | None:
+        # `crop` is declared first, so its validated value is already available.
+        if value is None:
+            return None
+        crop_name = info.data.get("crop")
+        if not crop_name:
+            raise ValueError("cropVariant requires a crop")
+        try:
+            lookup_crop(crop_name, value)
+        except KeyError as error:
+            raise ValueError(str(error)) from error
+        return value
+
+
+class CropOptionOut(BaseModel):
+    """
+    One crop as the interface needs it: the parameters that change the plan, and
+    the methods that suit it.
+
+    The interface has to be able to say *why* a crop behaves differently from the one
+    beside it. Four numbers do that work: the crop coefficient the season peaks at,
+    the rooting depth, the depletion threshold that sets when irrigation triggers,
+    and the length of the season. Sending them means an operator can read a 13 mm
+    recommendation for barley and a 4 mm one for a young paddy, and see that the
+    difference is the crop rather than a mistake.
+    """
+
+    name: str
+    kcInitial: float
+    kcMid: float
+    kcEnd: float
+    rootDepthMaxM: float
+    depletionFractionP: float
+    optimalPh: list[float]
+    gddBaseTempC: float
+    #: GDD at the end of each FAO-56 stage, and the season total.
+    gddStageEnds: list[float]
+    seasonGdd: float
+    #: Calendar length of each FAO-56 stage in days, and the season total.
+    lengthStageDays: list[int]
+    seasonDays: int
+    #: FAO-33 yield response to water and the season's potential yield. What the
+    #: water is actually for, which a depth in millimetres does not say.
+    ky: float
+    yieldPotentialTHa: float
+    #: Named varieties, which each change the season length.
+    variants: list[str]
+    #: Methods that suit this crop, most efficient first.
+    suitableMethods: list[str]
+    #: Methods that work but change what the recommendation means, with the reason.
+    warnings: dict[str, str]
+
+
+class CropCatalogueOut(BaseModel):
+    crops: list[CropOptionOut]
 
 
 class OptionsOut(BaseModel):
@@ -304,13 +425,68 @@ def field_to_dict(event, plan=None) -> dict[str, Any]:
         "fieldId": event.field_id,
         "station": event.station,
         "crop": event.crop,
+        "cropVariant": event.crop_variant,
         "sowingDate": event.sowing_date,
         "soilType": event.soil_type,
         "methodName": event.method_name,
         "fieldAreaM2": event.field_area_m2,
         "mulched": event.mulched,
         "nitrogenRegime": event.nitrogen_regime,
+        "restrictingDepthM": event.restricting_depth_m,
+        "emergenceFraction": event.emergence_fraction,
         "daysSinceSowing": event.days_since_sowing(today),
         "seasonDay": (today - event.sown_on).days + 1,
         "notes": event.notes,
+    }
+
+
+def crop_option_to_dict(name: str) -> dict[str, Any]:
+    """
+    One crop's catalogue entry, assembled from the engine's own parameters.
+
+    The method pairing is computed rather than tabulated, so it cannot fall out of
+    step with `crop_and_method_are_compatible`: the reason a pairing is flagged lives
+    in exactly one place and this reports it verbatim.
+
+    Suitable methods are ordered by application efficiency, which is what makes the
+    form's default a defensible choice rather than an arbitrary one. It also gets
+    the two extreme cases right without a per-crop table: rice's only suitable method
+    is the ponded one, because the engine flags every alternative, and a shallow-
+    rooted crop is offered the frequent light applications its roots can use.
+    """
+    from irrigation.data.cultivation import crop_and_method_are_compatible
+
+    parameters = CROPS[name]
+    suitable: list[str] = []
+    warnings: dict[str, str] = {}
+    for method_name in sorted(METHODS, key=lambda m: -METHODS[m].application_efficiency):
+        ok, reason = crop_and_method_are_compatible(parameters, METHODS[method_name])
+        if ok:
+            suitable.append(method_name)
+        elif reason:
+            warnings[method_name] = reason
+    stage_days = [
+        parameters.length_initial_days,
+        parameters.length_development_days,
+        parameters.length_mid_season_days,
+        parameters.length_late_season_days,
+    ]
+    return {
+        "name": name,
+        "kcInitial": parameters.kc_initial,
+        "kcMid": parameters.kc_mid,
+        "kcEnd": parameters.kc_end,
+        "rootDepthMaxM": parameters.root_depth_max_m,
+        "depletionFractionP": parameters.depletion_fraction_p,
+        "optimalPh": list(parameters.optimal_ph),
+        "gddBaseTempC": parameters.gdd_base_temp_c,
+        "gddStageEnds": list(parameters.gdd_stage_ends),
+        "seasonGdd": parameters.gdd_stage_ends[3],
+        "lengthStageDays": stage_days,
+        "seasonDays": sum(stage_days),
+        "ky": parameters.ky,
+        "yieldPotentialTHa": parameters.yield_potential_t_ha,
+        "variants": sorted(parameters.variants),
+        "suitableMethods": suitable,
+        "warnings": warnings,
     }

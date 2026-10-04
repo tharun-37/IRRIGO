@@ -152,6 +152,161 @@ def test_invalid_sowing_date_is_rejected(client):
     assert response.status_code == 422
 
 
+def test_crop_catalogue_carries_the_parameters_that_differ_between_crops(client):
+    """
+    The selector needs to be able to explain the choice, not just collect it.
+
+    A list of fourteen names gives an operator nothing to decide on. These are the
+    numbers that make a cotton field need three times the water of a paddy on the
+    same day, so they have to be on the wire rather than in the engine where the
+    interface cannot reach them.
+    """
+    response = client.get("/api/system/crops")
+    assert response.status_code == 200
+    crops = {entry["name"]: entry for entry in response.json()["crops"]}
+    for name in ("Wheat", "Rice", "Maize", "Cotton", "Barley", "Potato"):
+        assert name in crops, f"{name} missing from the catalogue"
+
+    rice, cotton = crops["Rice"], crops["Cotton"]
+    # Rice starts at FAO-56's flooded-paddy coefficient; cotton starts near bare
+    # soil. This is the whole reason a shared per-field number was wrong.
+    assert rice["kcInitial"] > 2 * cotton["kcInitial"]
+    # Cotton is a deep-rooted crop and tolerates far more depletion before it is
+    # stressed, while a paddy has almost no allowable depletion at all.
+    assert cotton["rootDepthMaxM"] > rice["rootDepthMaxM"]
+    assert cotton["depletionFractionP"] > 5 * rice["depletionFractionP"]
+
+    for entry in crops.values():
+        assert entry["gddStageEnds"] == sorted(entry["gddStageEnds"])
+        assert entry["seasonGdd"] == entry["gddStageEnds"][-1]
+        assert len(entry["lengthStageDays"]) == 4
+        assert entry["seasonDays"] == sum(entry["lengthStageDays"])
+        assert entry["ky"] > 0
+        assert entry["yieldPotentialTHa"] > 0
+        assert entry["suitableMethods"], f"{entry['name']} has no suitable method"
+        assert not set(entry["suitableMethods"]) & set(entry["warnings"])
+
+
+def test_catalogue_warns_about_a_method_that_does_not_suit_the_crop(client):
+    """
+    A pairing that will work but changes what the recommendation means is a warning.
+
+    A paddy under sprinkler is a real practice; it just needs near-daily scheduling
+    with small depths rather than threshold-triggered soil-deficit irrigation. The
+    interface has to be able to say so before the field is registered, because
+    afterwards the only evidence is a recommendation that reads wrong.
+    """
+    crops = {e["name"]: e for e in client.get("/api/system/crops").json()["crops"]}
+    rice = crops["Rice"]
+    assert "Paddy" in rice["suitableMethods"]
+    assert "Sprinkler" in rice["warnings"]
+    # The reason has to be the engine's own sentence, verbatim, and it has to name
+    # the thing that changes - the pond depth - rather than just saying "invalid".
+    assert "pond depth" in rice["warnings"]["Sprinkler"]
+    assert "near-daily" in rice["warnings"]["Sprinkler"]
+    # And the reverse: a ponded method on a crop that is not rice is just as wrong.
+    assert "Paddy" in crops["Wheat"]["warnings"]
+
+
+def test_unknown_reference_values_are_rejected_with_the_valid_set(client):
+    """
+    A typo is a 422 that names the field and lists the alternatives, not a 500.
+
+    The 500 came from `SowingEvent` refusing the name during construction, which put
+    a stack trace in front of an operator who had only misspelled a crop. The message
+    has to be actionable, because the client's only job on a rejection is to show it.
+    """
+    base = {"station": "KOL", "sowingDate": "2024-06-01"}
+    for body, field in (
+        ({**base, "fieldId": "x1", "crop": "Dragonfruit"}, "crop"),
+        ({**base, "fieldId": "x2", "crop": "Maize", "soilType": "Moonsand"}, "soilType"),
+        ({**base, "fieldId": "x3", "crop": "Maize", "methodName": "Telepathy"}, "methodName"),
+        ({**base, "fieldId": "x4", "crop": "Maize", "cropVariant": "Turbo"}, "cropVariant"),
+    ):
+        response = client.post("/api/fields", json=body)
+        assert response.status_code == 422, f"{field} should have been rejected"
+        detail = response.json()["detail"]
+        assert any(field in entry["loc"] for entry in detail), detail
+        assert "unknown" in str(detail).lower()
+
+
+def test_registering_returns_the_plan_it_produces(client):
+    """
+    The form shows what the engine made of the new field without a second call.
+
+    Answering with the stored row alone meant the form rendered an empty shell until
+    the next poll landed, which on a fifteen-second cycle is long enough for an
+    operator to conclude the save failed.
+    """
+    options = client.get("/api/system/options").json()
+    response = client.post(
+        "/api/fields",
+        json={
+            "fieldId": "plan-on-create",
+            "station": options["stations"][0],
+            "crop": "Maize",
+            "sowingDate": "2024-06-01",
+            "soilType": "Loam",
+            "methodName": "Sprinkler",
+            "fieldAreaM2": 1500,
+        },
+    )
+    assert response.status_code == 201, response.text
+    body = response.json()
+    assert body["fieldAreaM2"] == 1500
+    assert body["soilType"] == "Loam"
+    assert body["cropVariant"] is None
+    plan = body["plan"]
+    assert plan["fieldId"] == "plan-on-create"
+    assert plan["stage"]
+    assert plan["tawMm"] > 0
+    assert client.delete("/api/fields/plan-on-create").status_code == 204
+
+
+def test_crop_variant_changes_the_season_it_plans(client):
+    """
+    A named variety finishes earlier, so it is a different water plan.
+
+    If a variety were accepted and then ignored, the field would be planned with the
+    parent's season and would keep recommending water weeks after the real crop had
+    been taken. Thermal time accrued by a given date is a property of the sowing and
+    the weather, so the only thing a variety can move is how far through that season
+    the crop counts as being - which is what this compares.
+    """
+    catalogue = {e["name"]: e for e in client.get("/api/system/crops").json()["crops"]}
+    options = client.get("/api/system/options").json()
+    # Any crop that actually declares a variety, so this does not hard-code a
+    # cultivar name that a future catalogue edit could remove.
+    crop_name, variants = next(
+        (name, entry["variants"]) for name, entry in catalogue.items() if entry["variants"]
+    )
+    plans = {}
+    for label, variant in (("parent", None), ("variant", variants[0])):
+        payload = {
+            "fieldId": f"variant-{label}",
+            "station": options["stations"][0],
+            "crop": crop_name,
+            "sowingDate": "2024-06-01",
+            "soilType": "Loam",
+            "methodName": "Sprinkler",
+        }
+        if variant:
+            payload["cropVariant"] = variant
+        assert client.post("/api/fields", json=payload).status_code == 201
+        plans[label] = client.get(
+            f"/api/plan/{payload['fieldId']}", params={"as_of": "2024-09-01"}
+        ).json()
+
+    # Same sowing, same day, same accumulated heat - so any difference is the
+    # variety's season length reaching the plan.
+    assert plans["variant"]["gddAccumulated"] == pytest.approx(
+        plans["parent"]["gddAccumulated"]
+    )
+    assert plans["variant"]["seasonDay"] == plans["parent"]["seasonDay"]
+    assert client.delete("/api/fields/variant-parent").status_code == 204
+    assert client.delete("/api/fields/variant-variant").status_code == 204
+
+
 def test_as_of_must_be_iso(client):
     assert client.get("/api/fields", params={"as_of": "yesterday"}).status_code == 422
 

@@ -45,6 +45,7 @@ import {
   SkyGlyph,
   ToneBadge,
 } from '../components/ui'
+import { AddField } from '../components/AddField'
 import { int, num, relativeTime, titleCase } from '../lib/format'
 import type { Advisory } from '../types'
 
@@ -243,6 +244,7 @@ const BANNER_STYLE: Record<
 export default function Dashboard() {
   const { bump, refresh } = useLive()
   const [fieldId, setFieldId] = useState<string | null>(null)
+  const [adding, setAdding] = useState(false)
 
   const advisor = usePollingFetch(useCallback(() => api.advisor(), []), bump, REFRESH)
   const analytics = usePollingFetch(useCallback(() => api.analytics(168), []), bump, REFRESH)
@@ -313,6 +315,26 @@ export default function Dashboard() {
             )
           })}
         </div>
+        {/* Add a field, in the same row as the switcher it will add to. The
+            switcher is the one place on the screen that already answers "which
+            fields exist", so putting the button beside it means the action is
+            reachable from where the list it changes is read, rather than from a
+            menu somewhere else.
+
+            Labelled "Add field" rather than a bare "+": the pills immediately to
+            its left are themselves fields, and a lone "+" next to them reads as
+            another field until it is clicked. */}
+        <button
+          type="button"
+          onClick={() => setAdding((open) => !open)}
+          aria-expanded={adding}
+          className="flex shrink-0 items-center gap-1 rounded-pill border border-dashed border-ink-400 px-3 py-1.5 text-[12px] font-semibold text-ink-500 transition-colors hover:border-ink-900 hover:bg-white hover:text-ink-900"
+        >
+          <span aria-hidden="true" className="text-[14px] leading-none">
+            {adding ? '×' : '+'}
+          </span>
+          {adding ? 'Close' : 'Add field'}
+        </button>
         <button
           type="button"
           onClick={refresh}
@@ -325,8 +347,28 @@ export default function Dashboard() {
       <main className="min-h-0 flex-1 overflow-y-auto lg:overflow-hidden">
         {advisor.error ? (
           <p className="p-6 text-[13px] text-status-alert">{advisor.error}</p>
+        ) : adding ? (
+          /* Registration takes over the page rather than being added to it. A form
+             stacked above the field view leaves the operator reading two things at
+             once, and the one underneath is about a field they are not registering
+             - the question in front of them is "which crop, which station, sown
+             when", and every card below it is a distraction from that. */
+          <div className="pad-page mx-auto max-w-[900px]">
+            <AddField
+              onRegistered={(created) => {
+                setFieldId(created)
+                setAdding(false)
+                refresh()
+              }}
+            />
+          </div>
         ) : !field ? (
-          <p className="p-6 text-[13px] text-ink-400">No fields registered yet.</p>
+          <div className="pad-page mx-auto max-w-[1180px] space-y-4">
+            <p className="text-[13px] text-ink-400">
+              No fields registered yet. Add one to start planning.
+            </p>
+            <AddField onRegistered={setFieldId} />
+          </div>
         ) : (
 <div className="pad-page mx-auto flex max-w-[1180px] flex-col gap-[clamp(0.7rem,1.5vw,1.1rem)] lg:h-full lg:max-w-none lg:overflow-y-auto">
             {/* ---- The answer, on its own full-width row --------------- */}
@@ -435,10 +477,16 @@ function Card({
   return (
     <section className={`card flex flex-col ${className}`}>
       <div className="pad-card flex items-baseline justify-between gap-2 pt-[clamp(0.75rem,2cqw,1.1rem)]">
-        <h2 className="type-label font-semibold uppercase tracking-[0.07em] text-ink-500">
+        {/* Titles and hints are one step darker than they were on white cards. A
+            card title is 10-11px uppercase, and it sits at the top-left - exactly
+            where each section's colour wash is strongest. `ink-500` on a 200-level
+            tint measures about 3.6:1, below the 4.5:1 needed for text this size, so
+            a legible title needed either a darker ink or a weaker wash; darkening
+            the ink keeps the colour. */}
+        <h2 className="type-label font-semibold uppercase tracking-[0.07em] text-ink-700">
           {title}
         </h2>
-        {hint && <span className="type-label shrink-0 text-ink-400">{hint}</span>}
+        {hint && <span className="type-label shrink-0 text-ink-500">{hint}</span>}
       </div>
       {/* The body is a column so that when the card is stretched by a taller
           neighbour, the child marked `flex-1` (a chart, a reading row) grows into
@@ -592,7 +640,7 @@ function SensorBoard({ field }: { field: Advisory }) {
   const ecGood = ec <= 2.0
 
   return (
-    <Card title="7-in-1 soil sensor" hint={relativeTime(s.recordedAt)}>
+    <Card title="7-in-1 soil sensor" hint={relativeTime(s.recordedAt)} className="tint-mint">
       {/* Soil readings only. Air temperature and humidity are ambient and belong
           to the sky card; listing them here as well printed the same number in
           two places on one screen. */}
@@ -761,7 +809,7 @@ function AgeCard({ field }: { field: Advisory }) {
   const finished = current === 'post_harvest' || current === 'harvest'
 
   return (
-    <Card title="Crop age" hint={field.crop} className="flex-1 justify-between">
+    <Card title="Crop age" hint={field.crop} className="tint-violet flex-1 justify-between">
       <div className="flex items-end justify-between gap-4">
         <div>
           <span className="tnum text-[clamp(1.75rem,6cqw,2.4rem)] font-semibold leading-none tracking-tight text-ink-900">
@@ -1027,7 +1075,7 @@ function PlanCard({ field }: { field: Advisory }) {
   const unscheduled = total <= 0 && depth > 0
 
   return (
-    <Card title="Next seven days" hint={`${scheduled.length} planned`}>
+    <Card title="Next seven days" hint={`${scheduled.length} planned`} className="tint-sky">
       <div className="flex items-baseline gap-2">
         <span className="tnum text-[30px] font-semibold leading-none tracking-tight text-ink-900">
           {peak > 0 ? num(peak, 0) : '0'}
@@ -1151,7 +1199,7 @@ function BudgetCard({
   const totalArea = fields.reduce((sum, item) => sum + item.areaM2, 0)
 
   return (
-    <Card title="Farm this week" hint={`${fields.length} fields`}>
+    <Card title="Farm this week" hint={`${fields.length} fields`} className="tint-amber">
       <div className="panel flex items-end justify-between gap-3 px-[clamp(0.6rem,1.8cqw,0.95rem)] py-[clamp(0.55rem,1.6cqw,0.85rem)]">
         <div>
           <div className="micro">Recommended</div>
@@ -1247,7 +1295,7 @@ function TrendCard({
   })()
 
   return (
-    <Card title="Water in the soil" hint="last 7 days">
+    <Card title="Water in the soil" hint="last 7 days" className="tint-cyan">
       {trend.length === 0 ? (
         <p className="py-10 text-center text-[12px] text-ink-400">No readings yet.</p>
       ) : (
@@ -1406,7 +1454,7 @@ function FieldStrip({ field }: { field: Advisory }) {
   ]
 
   return (
-    <section className="card pad-card py-[clamp(0.7rem,1.8cqw,1rem)]">
+    <section className="card pad-card tint-slate py-[clamp(0.7rem,1.8cqw,1rem)]">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5">
         <span className="type-label shrink-0 font-semibold uppercase tracking-[0.07em] text-ink-400">
           Field

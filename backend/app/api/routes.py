@@ -22,17 +22,29 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from ..core.config import Settings, get_settings
 from ..schemas import (
+    CropCatalogueOut,
     FieldCreate,
     GrowthOut,
     GrowthPoint,
     HealthOut,
     OptionsOut,
     PlanOut,
+    crop_option_to_dict,
     field_to_dict,
     plan_to_dict,
 )
 from ..services.evaluation import EvaluationService
 from ..services.plans import NotFound, PlanService, ServiceUnavailable
+
+#: The engine's own default for a crop that has not emerged. Imported rather than
+#: restated so a change to the engine's emergence model reaches this endpoint
+#: without a second edit here.
+try:  # pragma: no cover - the engine is a hard dependency of this module
+    from irrigation.data.crops import CROPS
+    from irrigation.sowing import EMERGENCE_STAGE_FRACTION
+except ImportError:  # pragma: no cover
+    CROPS = {}
+    EMERGENCE_STAGE_FRACTION = 0.5
 
 logger = logging.getLogger("iic.routes")
 
@@ -69,6 +81,24 @@ def get_plans_optional(request: Request) -> PlanService | None:
 
 def get_evaluation(request: Request) -> EvaluationService:
     return request.app.state.evaluation
+
+
+def _evaluation_date(plans: PlanService, event) -> date:
+    """
+    The day a field's plan should describe: the latest day its station has weather.
+
+    The same rule the advisor applies, repeated here because a plan computed for the
+    wall clock would be computed against climatology rather than observations - and
+    would then disagree with every other plan the API serves. A sowing dated after the
+    record simply plans for today; there is nothing observed to describe it with.
+    """
+    station = plans.context.stations.get(event.station)
+    frame = getattr(station, "frame", None)
+    if frame is None or len(frame) == 0:
+        return date.today()
+    last = frame["date"].max()
+    last_day = last.date() if hasattr(last, "date") else last
+    return last_day if last_day > event.sown_on else date.today()
 
 
 def _parse_as_of(as_of: str | None) -> date | None:
@@ -145,6 +175,24 @@ def health(
 def options(plans: PlanService = Depends(get_plans)) -> OptionsOut:
     """Valid registry values, taken from the engine's own tables."""
     return OptionsOut(**plans.describe_options())
+
+
+@router.get("/system/crops", response_model=CropCatalogueOut)
+def crop_catalogue() -> CropCatalogueOut:
+    """
+    The crop catalogue, with the parameters that make each crop behave differently.
+
+    `/system/options` answers "which names are legal". This answers "what happens if
+    I pick this one", which is the question a person choosing a crop for a field is
+    actually asking. Registering a field is a decision with a season attached to it,
+    and the difference between a 13 mm recommendation for a barley at peak demand and
+    a 4 mm one for a month-old paddy is entirely in this table.
+
+    Static, and deliberately not behind the plans dependency: a client rendering a
+    form needs the crop list even while the weather corpus is still loading, and a
+    503 on the one screen that would explain the problem is the wrong answer.
+    """
+    return CropCatalogueOut(crops=[crop_option_to_dict(name) for name in sorted(CROPS)])
 
 
 # --------------------------------------------------------------------------
@@ -234,31 +282,71 @@ def register_field(
     plans: PlanService = Depends(get_plans),
     replace: bool = Query(default=False),
 ) -> dict[str, Any]:
-    """Register a sowing. Refuses a duplicate id unless `replace=true`."""
-    from irrigation.sowing import SowingEvent
+    """
+    Register a sowing. Refuses a duplicate id unless `replace=true`.
 
-    event = SowingEvent(
-        field_id=body.fieldId,
-        station=body.station,
-        crop=body.crop,
-        sowing_date=body.sowingDate,
-        soil_type=body.soilType or "Loam",
-        method_name=body.methodName or "Sprinkler",
-        field_area_m2=body.fieldAreaM2,
-        mulched=body.mulched,
-        nitrogen_regime=body.nitrogenRegime,
-        notes=body.notes,
-    )
-    # The event resolves its tables on construction, so an unknown crop, soil or
-    # method fails here with the engine's own message.
+    Answers with the stored field and the plan it produces, rather than the stored
+    field alone. A caller that has just created a field wants to see what the engine
+    makes of it - the stage it is in, the requirement it carries - and making it ask
+    again means the form renders an empty shell until the next poll lands. The plan
+    is the same memoised call `GET /fields` makes, so this costs nothing the next
+    request would not have.
+    """
+    from irrigation.sowing import SowingError, SowingEvent
+
     existing = {f.field_id for f in plans.list_fields()}
     if body.fieldId in existing and not replace:
         raise HTTPException(
             status_code=409,
             detail=f"field {body.fieldId!r} already exists; pass replace=true to overwrite",
         )
+
+    # `SowingEvent` resolves the crop, the variety, the soil and the method against
+    # the engine tables on construction. The schema has already checked all four, so
+    # anything raised here is a rule the schema does not model - a sowing date the
+    # station never saw, say - and it is the operator's input either way.
+    try:
+        event = SowingEvent(
+            field_id=body.fieldId,
+            station=body.station,
+            crop=body.crop,
+            sowing_date=body.sowingDate,
+            soil_type=body.soilType or "Loam",
+            method_name=body.methodName or "Sprinkler",
+            field_area_m2=body.fieldAreaM2,
+            mulched=body.mulched,
+            nitrogen_regime=body.nitrogenRegime,
+            crop_variant=body.cropVariant,
+            restricting_depth_m=body.restrictingDepthM,
+            emergence_fraction=(
+                body.emergenceFraction
+                if body.emergenceFraction is not None
+                else EMERGENCE_STAGE_FRACTION
+            ),
+            notes=body.notes,
+        )
+    except (SowingError, KeyError, ValueError) as error:
+        # A rejected registration is a 422, not a 500. The distinction matters to the
+        # operator: one means fix the input, the other means the server is broken, and
+        # only one of those is something they can act on.
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
     stored = plans.register(event, replace=replace)
-    return field_to_dict(stored)
+
+    # Evaluate on the day the plan would report on, not on the wall clock. Fields are
+    # planned against the last day the weather corpus covers, so a plan taken for today
+    # would be computed against climatology rather than observations and would not
+    # match the rest of the API.
+    when = _evaluation_date(plans, stored)
+    payload = field_to_dict(stored)
+    try:
+        payload["plan"] = plan_to_dict(
+            plans.plan_cached(stored.field_id, when.isoformat(), 0.0, with_season=False)
+        )
+    except Exception as error:  # pragma: no cover - the field is already stored
+        logger.exception("plan failed for new field %s", stored.field_id)
+        payload["planError"] = str(error)
+    return payload
 
 
 @router.get("/fields/{field_id}")

@@ -65,7 +65,7 @@ function StatusBadge({ status }: { status: AdvisoryStatus }) {
 
 function SensorTile({ label, value, unit }: { label: string; value: string; unit?: string }) {
   return (
-    <div className="rounded border border-ink-200 px-3 py-2">
+    <div className="glass-text px-3 py-2">
       <div className="tnum text-[15px] font-semibold text-ink-900">
         {value}
         {unit && <span className="ml-0.5 text-[11px] font-medium text-ink-400">{unit}</span>}
@@ -140,7 +140,7 @@ function ModelFusionCard({ models }: { models: AdvisoryModels }) {
   }
   const interval = models.v2.intervalMm
   return (
-    <div className="rounded border border-ink-200 bg-ink-50 p-3">
+    <div className="glass-text p-3">
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-ink-400">
           Both models
@@ -252,7 +252,7 @@ function AdvisoryCard({ advisory }: { advisory: Advisory }) {
           <p className="text-[12px] leading-relaxed text-ink-600">{advisory.summary}</p>
 
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <div className="rounded border border-ink-200 bg-ink-50 px-3 py-2">
+            <div className="glass-text px-3 py-2">
               <div className="text-[10px] font-medium uppercase tracking-[0.06em] text-ink-400">
                 Day
               </div>
@@ -261,7 +261,7 @@ function AdvisoryCard({ advisory }: { advisory: Advisory }) {
                 <span className="ml-0.5 text-[11px] font-medium text-ink-400">d</span>
               </div>
             </div>
-            <div className="rounded border border-ink-200 bg-ink-50 px-3 py-2">
+            <div className="glass-text px-3 py-2">
               <div className="text-[10px] font-medium uppercase tracking-[0.06em] text-ink-400">
                 Stage
               </div>
@@ -269,7 +269,7 @@ function AdvisoryCard({ advisory }: { advisory: Advisory }) {
                 {advisory.stageLabel}
               </div>
             </div>
-            <div className="rounded border border-ink-200 bg-ink-50 px-3 py-2">
+            <div className="glass-text px-3 py-2">
               <div className="text-[10px] font-medium uppercase tracking-[0.06em] text-ink-400">
                 Season
               </div>
@@ -277,7 +277,7 @@ function AdvisoryCard({ advisory }: { advisory: Advisory }) {
                 {pct(advisory.stageProgress)}
               </div>
             </div>
-            <div className="rounded border border-ink-200 bg-ink-50 px-3 py-2">
+            <div className="glass-text px-3 py-2">
               <div className="text-[10px] font-medium uppercase tracking-[0.06em] text-ink-400">
                 GDD
               </div>
@@ -503,7 +503,7 @@ export default function Advisor() {
                   <div className="text-[10px] text-ink-400">Hold</div>
                 </div>
               </div>
-              <div className="rounded border border-ink-200 bg-ink-50 px-3 py-2">
+              <div className="glass-text px-3 py-2">
                 <div className="text-[10px] font-medium uppercase tracking-[0.06em] text-ink-400">
                   Recommended volume
                 </div>

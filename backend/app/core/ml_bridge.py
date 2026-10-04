@@ -29,11 +29,18 @@ from pathlib import Path
 #: `backend/app/core/ml_bridge.py`, so the backend directory is two parents up.
 _BACKEND_DIR = Path(__file__).resolve().parents[2]
 
-#: The sibling project's ML directory. The absolute path mirrors the constant
-#: already used by `irrigation.physics.climate`; the relative candidate keeps the
-#: pair working if the checkout is moved together.
+#: Where the ML package lives. The copy inside this repository is preferred and is
+#: the one a clone gets; the sibling MP3 checkout is kept only as a fallback so a
+#: machine that still has both trees side by side keeps working.
+#:
+#: This used to list the sibling first, with an absolute path, which made the
+#: project unstartable from a clean clone: the decision bundle that answers "should
+#: we irrigate" resolved to a directory that existed only where two unrelated
+#: checkouts happened to sit next to each other. The absolute candidate is gone for
+#: the same reason - a path that is correct on exactly one machine is not a
+#: dependency, it is a coincidence.
 _CANDIDATES = (
-    Path(r"D:\Codings\MP3\backend\ml"),
+    _BACKEND_DIR / "ml",
     _BACKEND_DIR.parent / "MP3" / "backend" / "ml",
 )
 V1_ML_DIR = next((path for path in _CANDIDATES if path.is_dir()), _CANDIDATES[0])

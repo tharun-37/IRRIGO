@@ -56,19 +56,24 @@
 }
 
 @layer components {
-  /* The shell: a centred white sheet on a tinted page, as in the reference. */
+  /* The shell: a centred translucent plate on a tinted page. */
   .sheet {
-    @apply mx-auto w-full max-w-[1180px] rounded-card bg-white shadow-card;
+    @apply mx-auto w-full max-w-[1180px] rounded-card bg-white/70 shadow-card backdrop-blur-md;
   }
 
+  /* The card. Depth comes from translucency, not from a cast shadow.
+     The shadow is now a hairline contact shadow plus the inner rim that keeps the
+     top edge lit (see the `card` entry in tailwind.config.js); what carries the
+     elevation is the backdrop blur and the fact that the page's warped gradient
+     shows through the plate. That is a real optical cue on a low-contrast
+     background, where a drop shadow has nothing to land against.
+
+     The border moved from ink to translucent white for the same reason: over a
+     pale tinted page an ink hairline read as a drawn outline, while a white one
+     reads as the lit edge of a surface. The rim inside the shadow does the same
+     job one layer in. */
   .card {
-    /* Near-opaque rather than 80% white: a translucent panel over a pale tinted
-       page has almost no luminance step against it, so the shadow had nothing to
-       sit on and the card read as flat. The border is a real ink tone for the
-       same reason — `border-white/70` was invisible on white. One step darker
-       than the original `ink-100/90`: a deeper shadow needs a defined edge to
-       land against, or the rim dissolves into the gradient beneath it. */
-    @apply rounded-card border border-ink-200/80 bg-white/95 shadow-card;
+    @apply rounded-card border border-white/70 bg-white/65 shadow-card backdrop-blur-md;
     /* Each card is its own sizing context, so `cqw` below measures this card
        rather than the viewport. That is what lets one rule serve a card that is
        260px wide on a laptop and 200px on a phone. */
@@ -76,12 +81,45 @@
   }
 
   /* A recessed surface for grouped content inside a card: stat rows, input
-     blocks, reading tiles. Inset shadow rather than a drop shadow, because the
-     grouping is *below* the card surface in the hierarchy. Two levels of depth
-     read as a card with contents; one level reads as a pile of same-weight
-     boxes. */
+     blocks, reading tiles. Translucent and blurred rather than merely sunken, so
+     the hierarchy is carried by how much of the page shows through each layer.
+     Two levels of depth read as a card with contents; one reads as a pile of
+     same-weight boxes. */
   .panel {
-    @apply rounded-card border border-ink-200/70 bg-ink-50/70 shadow-panel;
+    @apply rounded-card border border-white/60 bg-white/40 shadow-panel backdrop-blur-sm;
+  }
+
+  /* The glass treatment, for surfaces that carry text.
+
+     This is where the depth went. A card used to be separated from the page by
+     the weight of its shadow and its interior blocks by an inset; now the
+     interior is a pane of frosted glass with the card behind it showing through,
+     which is a stronger and cheaper cue than a second shadow and it keeps the
+     text legible against whatever the gradient is doing underneath.
+
+     `saturate` matters more than it looks: a blur alone over a coloured
+     background greys the colour out, and text on a desaturated grey plate loses
+     contrast. Pushing saturation back up keeps the tint legible underneath the
+     text.
+
+     Applied to text surfaces rather than to whole cards on purpose. Every
+     element with a backdrop filter samples what is behind it and forces its
+     ancestors to be composited, so a page of them costs real frames; the small
+     number of blocks that actually carry prose is where it is worth paying. */
+  .glass-text {
+    @apply rounded-card border border-white/60 bg-white/45 backdrop-blur-sm backdrop-saturate-150;
+    /* An inset rim rather than a cast: light catching the top edge of the pane,
+       which is what separates glass from a grey box. */
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  }
+
+  /* The elevated glass surface: the switcher, the registration form, and
+     anything that sits above another glass surface rather than inside a card.
+     Stronger blur and a lower fill than `.glass-text`, because it has more
+     distance between it and what it is sampling. */
+  .glass {
+    @apply rounded-card border border-white/70 bg-white/55 backdrop-blur-xl backdrop-saturate-150;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
   }
 
   /* Fluid type.
@@ -157,19 +195,26 @@
 
   /* A wash of colour for a card that carries a headline figure, tinted by what
      the figure means: dry soil, a healthy profile, or a resting field. */
-  /* Glass. A translucent panel that samples what is behind it, used where a
-     gradient sits underneath and the panel should read as part of it rather
-     than on top of it. */
-  .glass {
-    @apply border border-white/60 bg-white/55 backdrop-blur-xl backdrop-saturate-150;
-  }
-
   /* The sky card's gradient. Named rather than inline so the same wash can be
      referenced by the chip, the glow and the hover state. */
   .sky-wash {
     background-image: linear-gradient(145deg, #4f7fe0 0%, #3b5fc0 48%, #2f3f8f 100%);
   }
 
+  /* Section tints.
+     One hue per section, so a glance down the page tells you which card you are
+     looking at before you read its title. The hue is a wash that fades to white
+     rather than a fill: the titles are 10-11px uppercase ink-500, and a saturated
+     fill drops that below a readable contrast. Keeping the colour in the 100/200
+     range keeps ink-900 body text and ink-500 titles both legible while still
+     reading as colour rather than as grey.
+
+     The corner glow on top of the wash is what makes it read as lit rather than
+     flat - a single linear ramp from a pale tint to white looks like a printing
+     error at this size, while the same hue falling off radially looks deliberate.
+
+     Gradients set `background-image`, so they layer over the `.card` fill rather
+     than replacing it, and no card needs its background overridden per use. */
   .tint-dry {
     background-image: linear-gradient(150deg, #fff7ed 0%, rgba(255, 255, 255, 0.86) 55%);
   }
@@ -184,6 +229,59 @@
 
   .tint-rest {
     background-image: linear-gradient(150deg, #f8fafc 0%, rgba(255, 255, 255, 0.86) 55%);
+  }
+
+  /* The rest of the page's sections. Hues are assigned by what the card is
+     about, so the colour carries meaning rather than decorating it: the season
+     is violet, the week ahead is sky, the measurements are mint, the money is
+     amber. */
+  .tint-mint {
+    background-image:
+      radial-gradient(130% 105% at 6% 0%, #a7f3d0 0%, rgba(167, 243, 208, 0) 58%),
+      linear-gradient(155deg, #ecfdf5 0%, rgba(255, 255, 255, 0.9) 70%);
+  }
+
+  .tint-sky {
+    background-image:
+      radial-gradient(130% 105% at 6% 0%, #bae6fd 0%, rgba(186, 230, 253, 0) 58%),
+      linear-gradient(155deg, #f0f9ff 0%, rgba(255, 255, 255, 0.9) 70%);
+  }
+
+  .tint-cyan {
+    background-image:
+      radial-gradient(130% 105% at 6% 0%, #a5f3fc 0%, rgba(165, 243, 252, 0) 58%),
+      linear-gradient(155deg, #ecfeff 0%, rgba(255, 255, 255, 0.9) 70%);
+  }
+
+  .tint-violet {
+    background-image:
+      radial-gradient(130% 105% at 6% 0%, #ddd6fe 0%, rgba(221, 214, 254, 0) 58%),
+      linear-gradient(155deg, #f5f3ff 0%, rgba(255, 255, 255, 0.9) 70%);
+  }
+
+  .tint-rose {
+    background-image:
+      radial-gradient(130% 105% at 6% 0%, #fbcfe8 0%, rgba(251, 207, 232, 0) 58%),
+      linear-gradient(155deg, #fdf2f8 0%, rgba(255, 255, 255, 0.9) 70%);
+  }
+
+  .tint-amber {
+    background-image:
+      radial-gradient(130% 105% at 6% 0%, #fde68a 0%, rgba(253, 230, 138, 0) 58%),
+      linear-gradient(155deg, #fffbeb 0%, rgba(255, 255, 255, 0.9) 70%);
+  }
+
+  .tint-lime {
+    background-image:
+      radial-gradient(130% 105% at 6% 0%, #d9f99d 0%, rgba(217, 249, 157, 0) 58%),
+      linear-gradient(155deg, #f7fee7 0%, rgba(255, 255, 255, 0.9) 70%);
+  }
+
+  /* Metadata: present, factual, not a reading worth a colour of its own. */
+  .tint-slate {
+    background-image:
+      radial-gradient(130% 105% at 6% 0%, #cbd5e1 0%, rgba(203, 213, 225, 0) 58%),
+      linear-gradient(155deg, #f8fafc 0%, rgba(255, 255, 255, 0.9) 70%);
   }
 
   /* The stage track's active segment, with a gradient so the position of the
@@ -227,13 +325,6 @@
   .blob {
     filter: url(#blob-grain);
     pointer-events: none;
-  }
-
-  /* Translucent pill, for the field switcher. */
-  .glass {
-    background-color: rgba(255, 255, 255, 0.55);
-    backdrop-filter: blur(14px);
-    border: 1px solid rgba(255, 255, 255, 0.75);
   }
 
   /* The average marker on a bar chart, with its label riding the line. */
@@ -320,12 +411,9 @@
     @apply flex min-h-0 flex-1 flex-col gap-px overflow-hidden bg-ink-200;
   }
 
-  .panel {
-    @apply bg-white;
-  }
-
   /* Bento cell: a card with no chrome of its own, so a grid of them reads as
-     one surface divided by hairlines rather than as stacked boxes. */
+     one surface divided by hairlines rather than as stacked boxes. `bg-white/65`
+     matches `.card`: the divider is the grid's job here, not the cells'. */
   .cell {
     @apply bg-white p-5;
     container-type: inline-size;

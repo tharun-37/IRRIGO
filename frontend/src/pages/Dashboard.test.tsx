@@ -7,7 +7,7 @@
  * instruction with jargon would pass a type check and fail here.
  */
 
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../App'
@@ -197,6 +197,14 @@ const ANALYTICS = {
 }
 
 function route(url: string): unknown {
+  if (url.includes('/system/crops')) return { crops: [CROP_OPTION] }
+  if (url.includes('/system/options'))
+    return {
+      stations: ['LKO', 'PNQ'],
+      crops: ['Barley', 'Cotton'],
+      soils: ['Loam', 'Silt_Loam'],
+      methods: ['Basin', 'Drip', 'Paddy', 'Sprinkler'],
+    }
   if (url.includes('/advisor')) return FEED
   if (url.includes('/alerts')) return { alerts: [] }
   if (url.includes('/analytics')) return ANALYTICS
@@ -204,8 +212,28 @@ function route(url: string): unknown {
   return { readings: [], recommendations: [], devices: [], zones: [], events: [] }
 }
 
-function renderShell() {
-  return render(
+/** One catalogue entry, enough for the form to render a crop card. */
+const CROP_OPTION = {
+  name: 'Barley',
+  kcInitial: 0.35,
+  kcMid: 1.15,
+  kcEnd: 0.4,
+  rootDepthMaxM: 1.2,
+  depletionFractionP: 0.55,
+  optimalPh: [6, 7.5],
+  gddBaseTempC: 5,
+  gddStageEnds: [350, 850, 1350, 1650],
+  seasonGdd: 1650,
+  lengthStageDays: [20, 30, 90, 25],
+  seasonDays: 165,
+  ky: 1.1,
+  yieldPotentialTHa: 4.2,
+  variants: [],
+  suitableMethods: ['Sprinkler', 'Basin'],
+  warnings: {},
+}
+
+function renderShell() {  return render(
     <MemoryRouter initialEntries={['/']}>
       <App />
     </MemoryRouter>,
@@ -422,5 +450,39 @@ it('puts soil dryness and crop age first, as the two deciding facts', async () =
     expect(screen.queryByText('Overview')).toBeNull()
     expect(screen.queryByText('Analytics')).toBeNull()
     expect(screen.queryByText(/Schematic parcel/)).toBeNull()
+  })
+
+  it('offers to add a field from the switcher it will add to', async () => {
+    renderShell()
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy())
+
+    // The button belongs in the switcher row, alongside the field pills: that row
+    // is the one place on the screen that already answers "which fields exist".
+    const add = screen.getByRole('button', { name: /Add field/i })
+    const lastField = screen.getByRole('button', { name: /PNQ-wheat-01/ })
+    expect(add.getAttribute('aria-expanded')).toBe('false')
+    expect(add.closest('header')).toBe(lastField.closest('header'))
+
+    // Opening it takes over the page rather than being added to it. The field view
+    // underneath is about a field the operator is not registering, and every card
+    // in it is a distraction from "which crop, which station, sown when".
+    fireEvent.click(add)
+    expect(await screen.findByText('Register a field')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Close/i }).getAttribute('aria-expanded')).toBe(
+      'true',
+    )
+    // The crop cards come from the engine's catalogue rather than a hard-coded list,
+    // and every catalogue entry is selectable - including Barley, which is not one
+    // of the four headline crops but is cropped on this farm.
+    expect(screen.getByRole('button', { name: /^Barley\b/i })).toBeTruthy()
+    // And the field view is not rendered underneath it.
+    expect(screen.queryByText('Soil water')).toBeNull()
+    expect(screen.queryByText('Crop age')).toBeNull()
+    expect(screen.queryByRole('heading', { name: 'Water today' })).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: /Close/i }))
+    await waitFor(() => expect(screen.queryByText('Register a field')).toBeNull())
+    // Closing gives the field view back, unchanged.
+    expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy()
   })
 })

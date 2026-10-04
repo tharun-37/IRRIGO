@@ -44,33 +44,31 @@ export default {
         mono: ['JetBrains Mono', 'Consolas', 'ui-monospace', 'monospace'],
       },
       boxShadow: {
-        // A card is a raised surface, so it needs several layers to read as
-        // one: a hairline contact shadow where it meets the page, a tight
-        // ambient shadow for the edge, a soft bloom under the body, and a wide
-        // one for the lift. Four rather than three, with the outer two carrying
-        // more alpha, because at the previous weights the shadow died before it
-        // reached the tinted page and adjacent cards separated by a hairline
-        // border alone. The inner white rim is kept: without it the top edge
-        // loses the light source and the card reads as a hole rather than a
-        // plate sitting above the page.
-        card:
-          '0 1px 2px rgba(15, 23, 42, 0.06), 0 3px 8px -2px rgba(15, 23, 42, 0.08), ' +
-          '0 16px 34px -10px rgba(15, 23, 42, 0.20), ' +
-          '0 32px 64px -24px rgba(15, 23, 42, 0.24), ' +
-          'inset 0 1px 0 rgba(255, 255, 255, 0.95)',
+        // A card is a raised surface, and it was spending four drop-shadow layers
+        // and two large blurs to say so. Over a page that already has a warped
+        // gradient behind it, all of that weight did not read as elevation - it
+        // read as dirt, and it darkened the tinted background immediately around
+        // every card so a grid of them sat on a visible grey field.
+        //
+        // The depth is now carried by translucency instead: the card is a
+        // translucent plate with a backdrop blur (see `.card` in index.css), so
+        // what sits behind it shows through and softens. That is a real optical
+        // depth cue, and it survives on a low-contrast background where a drop
+        // shadow has nothing to land against and dies.
+        //
+        // What is left is the minimum a plate needs: a hairline contact shadow
+        // where it meets the page, and the inner white rim that keeps the top edge
+        // lit. Without the rim the card reads as a hole rather than a surface.
+        card: '0 1px 2px rgba(15, 23, 42, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
         // Grouped content *inside* a card is recessed rather than raised, so the
-        // eye reads card-then-panel as two depths instead of everything floating
-        // at the same level. Deepened alongside `card`: a raised card over a
-        // barely-sunk panel gave one step of depth, where the nesting is the
-        // whole point of the two-level hierarchy.
-        panel:
-          'inset 0 2px 4px rgba(15, 23, 42, 0.09), inset 0 1px 2px rgba(15, 23, 42, 0.05), ' +
-          '0 1px 0 rgba(255, 255, 255, 0.85)',
-        // Interactive chrome, above cards: it must clear the card it sits on.
-        lift:
-          '0 2px 4px rgba(15, 23, 42, 0.08), 0 10px 20px -6px rgba(15, 23, 42, 0.16), ' +
-          '0 24px 48px -12px rgba(15, 23, 42, 0.26)',
-        nav: '0 1px 2px rgba(15, 23, 42, 0.06), 0 8px 24px -12px rgba(15, 23, 42, 0.18)',
+        // eye reads card-then-panel as two depths. Halved from the previous inset:
+        // at the old depth a nested surface looked like a separate card that had
+        // been dropped into another one, which is not the relationship.
+        panel: 'inset 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 0 rgba(255, 255, 255, 0.7)',
+        // Interactive chrome, above cards: it must clear the card it sits on, so
+        // this one keeps a genuine cast rather than a tint.
+        lift: '0 1px 2px rgba(15, 23, 42, 0.07), 0 6px 14px -6px rgba(15, 23, 42, 0.14)',
+        nav: '0 1px 2px rgba(15, 23, 42, 0.05)',
       },
       borderRadius: {
         card: '12px',

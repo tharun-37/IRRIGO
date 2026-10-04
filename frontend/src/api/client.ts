@@ -11,10 +11,14 @@ import type {
   AdvisorFeed,
   Alert,
   AnalyticsOverview,
+  CropCatalogue,
   Device,
   DriftReport,
   EventRecord,
+  FieldCreate,
+  FieldRecord,
   Recommendation,
+  RegistryOptions,
   SystemHealth,
   Telemetry,
   ZoneSummary,
@@ -31,6 +35,34 @@ export class ApiError extends Error {
     super(message)
     this.name = 'ApiError'
   }
+}
+
+/**
+ * Pull the human-readable part out of a FastAPI error body.
+ *
+ * FastAPI has two error shapes and only one of them is a string. A raised
+ * `HTTPException` gives `{"detail": "..."}`, which is the message an operator
+ * should read. A request that fails *validation* gives
+ * `{"detail": [{"loc": [...], "msg": "..."}]}`, and collapsing that to
+ * "422 Unprocessable Entity" throws away the only part anyone can act on - which
+ * field was wrong and what the accepted values are.
+ */
+function readableDetail(detail: unknown, fallback: string): string {
+  if (typeof detail === 'string' && detail.length > 0) return detail
+  if (Array.isArray(detail)) {
+    const messages = detail
+      .map((entry) => {
+        if (typeof entry !== 'object' || entry === null) return null
+        const item = entry as { loc?: unknown[]; msg?: string }
+        const field = Array.isArray(item.loc) ? item.loc.filter((p) => p !== 'body').join('.') : ''
+        const msg = (item.msg ?? '').replace(/^Value error,\s*/, '')
+        if (!msg) return null
+        return field ? `${field}: ${msg}` : msg
+      })
+      .filter((line): line is string => Boolean(line))
+    if (messages.length > 0) return messages.join('; ')
+  }
+  return fallback
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -57,16 +89,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       detail = await response.text()
     }
-    // FastAPI rejects control requests with `{"detail": "..."}`, and that is
-    // the message an operator should actually read (e.g. "no reading stored").
-    const readable =
-      typeof detail === 'object' &&
-      detail !== null &&
-      'detail' in detail &&
-      typeof (detail as { detail: unknown }).detail === 'string'
-        ? ((detail as { detail: unknown }).detail as string)
-        : `${response.status} ${response.statusText}`
-    throw new ApiError(readable, response.status, detail)
+    const body = typeof detail === 'object' && detail !== null ? (detail as { detail?: unknown }).detail : detail
+    throw new ApiError(
+      readableDetail(body, `${response.status} ${response.statusText}`),
+      response.status,
+      detail,
+    )
   }
 
   if (response.status === 204) return undefined as T
@@ -89,6 +117,32 @@ export const api = {
   device: (id: string) => request<Device>(`/devices/${id}`),
 
   zones: () => request<{ zones: ZoneSummary[] }>('/zones'),
+
+  /**
+   * Legal values for every reference field on a sowing. The engine's own tables,
+   * so the form can never offer a name the registry would refuse.
+   */
+  options: () => request<RegistryOptions>('/system/options'),
+
+  /**
+   * The crop catalogue with the parameters behind each crop.
+   *
+   * Deliberately not behind the planning dependency: the form needs the crop list
+   * while the weather corpus is still loading, and a 503 on the screen that would
+   * explain the problem is the wrong answer.
+   */
+  crops: () => request<CropCatalogue>('/system/crops'),
+
+  /** Register a sowing. Answers with the stored field and the plan it produces. */
+  createField: (body: FieldCreate, replace = false) =>
+    request<FieldRecord>(`/fields${query({ replace })}`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  field: (id: string) => request<FieldRecord>(`/fields/${id}`),
+
+  deleteField: (id: string) => request<void>(`/fields/${id}`, { method: 'DELETE' }),
 
   /**
    * The water advisor: every field's irrigation answer with its reasoning,

@@ -15,7 +15,10 @@ run it and how far to believe it.
 ## Quick start
 
 ```powershell
-$py = "D:\Codings\MP3\.venv\Scripts\python.exe"
+# This project's own virtual environment. Created once with:
+#   python -m venv .venv
+#   .venv\Scripts\python -m pip install -r backend\requirements.txt
+$py = ".\.venv\Scripts\python.exe"
 
 # a worked example, printed to the console
 & $py scripts\sow_field.py demo

@@ -124,7 +124,7 @@ export default function Zones() {
                   </dl>
 
                   {recommendation && (
-                    <div className="rounded border border-ink-200 bg-ink-50 p-3">
+                    <div className="glass-text p-3">
                       <div className="flex items-center justify-between text-[12px]">
                         <span className="font-medium text-ink-900">
                           {recommendation.shouldIrrigate ? 'Irrigate' : 'Hold'} &middot;{' '}

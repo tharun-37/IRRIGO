@@ -46,9 +46,26 @@ import numpy as np
 import pandas as pd
 
 # The previous generation's weather module, imported rather than reimplemented.
-# Path is resolved relative to this file so the dependency is explicit and fails
-# loudly at import time if the sibling project is missing.
-V1_ML_DIR = Path(r"D:\Codings\MP3\backend\ml")
+#
+# It ships inside this repository at `backend/ml`, and that copy is preferred. The
+# sibling MP3 checkout used to be listed first, which meant a clean clone of this
+# project could not start: the NASA POWER client and the FAO-56 Penman-Monteith
+# implementation resolved to a directory that only existed on the machine that
+# happened to have both trees checked out beside each other. The sibling is still
+# accepted as a fallback so an existing pair of checkouts keeps working, but nothing
+# depends on it.
+_ML_DIR = Path(__file__).resolve().parents[3] / "backend" / "ml"
+V1_ML_DIR = next(
+    (
+        candidate
+        for candidate in (
+            _ML_DIR,
+            Path(__file__).resolve().parents[3].parent / "MP3" / "backend" / "ml",
+        )
+        if candidate.is_dir()
+    ),
+    _ML_DIR,
+)
 if str(V1_ML_DIR) not in sys.path:
     sys.path.insert(0, str(V1_ML_DIR))
 
@@ -56,9 +73,9 @@ try:
     import real_data as _power  # type: ignore
 except ImportError as error:  # pragma: no cover - configuration failure
     raise ImportError(
-        "MP3-V2 reuses the validated NASA POWER client and FAO-56 ET0 "
-        "implementation from the sibling project. Expected it at "
-        f"{V1_ML_DIR}. Either restore that path or replace this import."
+        "This project reuses the validated NASA POWER client and FAO-56 "
+        f"Penman-Monteith implementation from backend/ml. Expected it at "
+        f"{V1_ML_DIR}. Either restore that directory or replace this import."
     ) from error
 
 
