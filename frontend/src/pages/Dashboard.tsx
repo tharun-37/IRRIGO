@@ -32,7 +32,6 @@ import {
   RainGlyph,
   Reading,
   SkyGlyph,
-  ToneBadge,
 } from '../components/ui'
 import { AddField } from '../components/AddField'
 import { int, num, relativeTime, titleCase } from '../lib/format'
@@ -1204,70 +1203,23 @@ function SkyCard({ field }: { field: Advisory }) {
  * "which field is this, and what is it" before it answers "what should I do".
  */
 function FieldDetails({ field }: { field: Advisory }) {
-  const riskTone =
-    field.risk.riskLevel === 'risk' ? 'alert' : field.risk.riskLevel === 'watch' ? 'warn' : 'healthy'
-
-const season = field.season
-
-  const sown = new Date(field.sowingDate).toLocaleDateString([], {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
-
-  // Only what this block is the sole place to read. Crop age, stage and roots are
-  // already printed by the decision hero and again by the readings, and season
-  // length and season water are printed by the crop-age panel, so all five are
-  // left out here rather than said twice on one screen. What remains is the
-  // field's identity, the shape of the plot, and the two season-to-date figures
-  // nothing else carries.
-  const groups: { caption: string; rows: { label: string; value: string }[] }[] = [
+  // Only the physical basics, and only the ones nothing else on this screen
+  // prints. The field name and crop are on the switcher and the crop-age card,
+  // the station is the weather card's title, day and stage are on the hero's
+  // crop-need line, roots are in the soil water card, the season figures are in
+  // the crop-age panel, and the risk and yield numbers were a list nobody acted
+  // on. What is left is four facts this is the only place to read.
+  const rows: { label: string; value: string }[] = [
+    { label: 'Soil', value: titleCase(field.soilType) },
+    { label: 'Area', value: `${num(field.areaM2 / 10_000, 2)} ha` },
+    { label: 'Irrigation', value: titleCase(field.method) },
     {
-      caption: 'Field record',
-      rows: [
-        { label: 'Name', value: field.fieldId },
-        { label: 'Crop', value: titleCase(field.crop) },
-        { label: 'Station', value: field.station },
-        { label: 'Sown', value: sown },
-      ],
-    },
-    {
-      caption: 'Plot',
-      rows: [
-        { label: 'Soil', value: titleCase(field.soilType) },
-        { label: 'Irrigation', value: titleCase(field.method) },
-        { label: 'Area', value: `${num(field.areaM2 / 10_000, 2)} ha` },
-      ],
-    },
-    {
-      caption: 'Season to date',
-      rows: [{ label: 'Degree days', value: `${num(field.gdd, 0)} °C·d` }],
-    },
-  ]
-
-  // Only planned once a season exists for the field, so the row is left out
-  // entirely rather than printed as a dash.
-  if (season) {
-    groups[2].rows.push({
-      label: 'Rain',
-      value: `${num(season.seasonRainMm, 0)} mm`,
-    })
-  }
-
-  const outcomes: { label: string; value: string }[] = [
-    { label: 'Disease risk', value: titleCase(field.risk.diseaseRisk) },
-    {
-      label: 'Confidence',
-      value: `${Math.round((field.risk.diseaseConfidence ?? 0) * 100)}%`,
-    },
-    { label: 'Crop stress index', value: num(field.risk.cropStressIndex, 2) },
-    { label: 'Yield outlook', value: `${num(field.risk.yieldTPerHa, 1)} t/ha` },
-    {
-      label: 'Stress in',
-      value:
-        field.water.daysUntilStress === null
-          ? 'Not forecast'
-          : `${Math.round(field.water.daysUntilStress)} days`,
+      label: 'Sown',
+      value: new Date(field.sowingDate).toLocaleDateString([], {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      }),
     },
   ]
 
@@ -1277,36 +1229,9 @@ const season = field.season
         Field details
       </h2>
 
-      <div className="mt-3 grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
-        {groups.map((group) => (
-          <div key={group.caption} className="min-w-0">
-            <h3 className="micro">{group.caption}</h3>
-            <dl className="mt-1 space-y-0.5 text-[11px]">
-              {group.rows.map((row) => (
-                <Line key={row.label} label={row.label} value={row.value} />
-              ))}
-            </dl>
-          </div>
-        ))}
-      </div>
-
-      {/* The numbers behind the recommendation, label and value on one line so a
-          short figure like "100%" is not stranded at the left of a wide column.
-          Disease risk keeps its colour here rather than in a badge of its own in
-          the header, which said the same thing twice. No rule above them: the
-          border and the padding under it were a blank band across this card. */}
-      <dl className="mt-3 grid gap-x-6 gap-y-1 text-[11px] sm:grid-cols-3 xl:grid-cols-5">
-        {outcomes.map((fact) => (
-          <div key={fact.label} className="flex items-baseline justify-between gap-2">
-            <dt className="shrink-0 text-ink-500">{fact.label}</dt>
-            {fact.label === 'Disease risk' ? (
-              <dd>
-                <ToneBadge tone={riskTone}>{fact.value}</ToneBadge>
-              </dd>
-            ) : (
-              <dd className="tnum truncate text-right font-medium text-ink-900">{fact.value}</dd>
-            )}
-          </div>
+      <dl className="mt-2 grid gap-x-6 gap-y-1 text-[11px] sm:grid-cols-2 lg:grid-cols-4">
+        {rows.map((row) => (
+          <Line key={row.label} label={row.label} value={row.value} />
         ))}
       </dl>
     </section>

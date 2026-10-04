@@ -319,20 +319,29 @@ describe('Field view', () => {
     const details = screen.getByRole('heading', { name: 'Field details' }).closest('section')
     expect(details).toBeTruthy()
 
-    // Grouped into captioned lists rather than one long grid of label/value
-    // pairs, which read as a wall with nothing saying which facts went together.
-    for (const caption of ['Field record', 'Plot', 'Season to date']) {
-      expect(within(details as HTMLElement).getByRole('heading', { name: caption })).toBeTruthy()
-    }
-
-    // What this block is the only place to read.
-    for (const fact of ['Name', 'Crop', 'Station', 'Sown', 'Soil', 'Irrigation', 'Area']) {
+    // A short strip of the physical basics, and only the ones nothing else on the
+    // screen prints: the name and crop are on the switcher and the crop-age
+    // card, the station titles the weather card, day and stage are on the hero,
+    // roots are in soil water and the season figures are in the crop-age panel.
+    const detailText = (details as HTMLElement).textContent ?? ''
+    for (const fact of ['Soil', 'Area', 'Irrigation', 'Sown']) {
       expect(within(details as HTMLElement).getByText(fact)).toBeTruthy()
     }
-
-    // And the numbers behind the recommendation, not just the field's own facts.
-    for (const outcome of ['Disease risk', 'Crop stress index', 'Yield outlook']) {
-      expect(within(details as HTMLElement).getByText(outcome)).toBeTruthy()
+    for (const dropped of [
+      'Name',
+      'Crop',
+      'Station',
+      'Roots',
+      'Stage',
+      'Crop age',
+      'Degree days',
+      'Disease risk',
+      'Confidence',
+      'Crop stress index',
+      'Yield outlook',
+      'Stress in',
+    ]) {
+      expect(detailText).not.toContain(dropped)
     }
 
     // The decision leads what follows. It shares its row with the farm total,
@@ -423,7 +432,7 @@ describe('Field view', () => {
     expect(sky?.querySelector('.text-\\[clamp\\(2\\.25rem\\,15cqw\\,4\\.25rem\\)\\]')).toBeTruthy()
   })
 
-  it('groups the field details into captioned lists, not one flat grid', async () => {
+  it('keeps the field details to the four facts nothing else states', async () => {
     renderShell()
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
@@ -431,38 +440,18 @@ describe('Field view', () => {
 
     const details = screen.getByRole('heading', { name: 'Field details' }).closest('section')
 
-    // Three captioned groups, each a vertical list. A wrapping grid of every fact
-    // left dead cells whenever the count was not a multiple of the columns; a
-    // column of rows cannot have a hole in it.
-    const groups = Array.from(details?.querySelectorAll('h3') ?? [])
-    expect(groups.map((node) => node.textContent)).toEqual([
-      'Field record',
-      'Plot',
-      'Season to date',
-    ])
-    for (const caption of groups) {
-      const list = caption.parentElement?.querySelector('dl')
-      expect(list?.children.length).toBeGreaterThan(0)
-    }
-
-    // Nothing here repeats what another widget already says. The hero prints
-    // day and stage, soil water prints roots, and the crop-age panel prints
-    // season length and season water, so none of those belong in this block.
-    const detailText = details?.textContent ?? ''
-    for (const repeated of ['Roots', 'Stage', 'Crop age', 'Length', 'Growing degree days']) {
-      expect(detailText).not.toContain(repeated)
-    }
-
-    // The outcome figures share the one-line label/value shape, so a short
-    // value is not stranded at the left of a very wide column. It is the only
-    // `dl` that is a direct child of the section rather than of a group.
-    const outcomes = details?.querySelector(':scope > dl')
-    expect(outcomes?.children).toHaveLength(5)
-    expect(outcomes?.className).toContain('xl:grid-cols-5')
-    for (const row of Array.from(outcomes?.children ?? [])) {
+    // One short list, one row of four, no captions and no second block.
+    expect(details?.querySelectorAll('h3')).toHaveLength(0)
+    const list = details?.querySelector('dl')
+    expect(list?.children).toHaveLength(4)
+    for (const row of Array.from(list?.children ?? [])) {
       expect(row.querySelector('dt')).toBeTruthy()
       expect(row.querySelector('dd')).toBeTruthy()
     }
+
+    // Soil type is the fact this block exists for. The fixture's is 'clay', so the
+    // title-cased rendering is checked rather than the raw value.
+    expect(within(details as HTMLElement).getByText('Clay')).toBeTruthy()
   })
 
   it('places the stage marker inside the active segment, not at its edge', async () => {
