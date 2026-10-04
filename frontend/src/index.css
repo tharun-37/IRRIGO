@@ -20,7 +20,7 @@
        flat. Stepping the page down puts each card back above its background, which
        is where separation has to come from - filling the cards instead was tried
        and turned them into slabs. */
-    background-color: #e9edf5;
+    background-color: #dde3ee;
   }
 
   /* Film grain, as an actual displacement rather than a tiled overlay.
@@ -57,10 +57,10 @@
     transform: translateZ(0);
     backface-visibility: hidden;
     background-image:
-      radial-gradient(60% 55% at 18% 8%, #b7ccf9 0%, transparent 62%),
-      radial-gradient(52% 48% at 88% 12%, #d3c4f8 0%, transparent 60%),
-      radial-gradient(70% 60% at 50% 104%, #bce7ce 0%, transparent 64%),
-      linear-gradient(180deg, #e9edf5 0%, #dbe2f6 100%);
+      radial-gradient(60% 55% at 18% 8%, #a3bdf5 0%, transparent 62%),
+      radial-gradient(52% 48% at 88% 12%, #bfaef2 0%, transparent 60%),
+      radial-gradient(70% 60% at 50% 104%, #a8dcc0 0%, transparent 64%),
+      linear-gradient(180deg, #dde3ee 0%, #ccd6ee 100%);
   }
 
   /* Content rides above the warped layer. */
