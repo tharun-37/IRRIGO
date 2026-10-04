@@ -248,62 +248,6 @@
     background-image: linear-gradient(145deg, #4f7fe0 0%, #3b5fc0 48%, #2f3f8f 100%);
   }
 
-  /* Section identity: a coloured edge on a white plate, not a coloured plate.
-     Each section keeps its own hue, so a glance down the page still says which
-     card you are looking at - but the hue is a 3px band along the top edge rather
-     than the whole surface. That is what keeps a large card like the sensor board
-     reading as one white object sitting on the page, instead of a slab of colour
-     with text floating in it.
-
-     `currentColor` carries each hue into its own title and rules, so the title
-     picks up the section identity without needing a second class.
-
-     Values are the 600 level, not 400: this is now a thin 3px line and a small
-     uppercase title, and both have to clear contrast against a white plate. */
-  .section-mint {
-    color: #059669;
-  }
-
-  .section-sky {
-    color: #0284c7;
-  }
-
-  .section-cyan {
-    color: #0891b2;
-  }
-
-  .section-violet {
-    color: #7c3aed;
-  }
-
-  .section-amber {
-    color: #d97706;
-  }
-
-  .section-rose {
-    color: #e11d48;
-  }
-
-  /* Metadata: present and factual, so it takes neutral ink rather than a hue that
-     would imply it is a reading worth telling apart from the others. */
-  .section-slate {
-    color: #475569;
-  }
-
-  /* Drawn with `inset` rather than as a thicker top border, because a thicker
-     border would change the card's box and push every section below it down the
-     page. Inset shadows do not affect layout at all. */
-  .section-edge::after {
-    content: '';
-    position: absolute;
-    inset-inline: 0;
-    top: 0;
-    height: 3px;
-    background: currentColor;
-    border-start-start-radius: inherit;
-    border-start-end-radius: inherit;
-    pointer-events: none;
-  }
 
   /* The stage track's active segment, with a gradient so the position of the
      crop reads as lit rather than merely coloured. */

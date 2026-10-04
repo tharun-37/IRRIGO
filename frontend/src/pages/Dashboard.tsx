@@ -23,16 +23,6 @@
 
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
 import { api } from '../api/client'
 import { useLive } from '../App'
 import { usePollingFetch } from '../hooks/usePollingFetch'
@@ -50,9 +40,6 @@ import { int, num, relativeTime, titleCase } from '../lib/format'
 import type { Advisory } from '../types'
 
 const REFRESH = 15_000
-
-/** The per-section hues, one per card. Drawn as a top edge, not a fill. */
-type Section = 'mint' | 'sky' | 'cyan' | 'violet' | 'amber' | 'slate'
 
 type Band = 'dry' | 'good' | 'wet' | 'rest' | 'none'
 
@@ -250,7 +237,6 @@ export default function Dashboard() {
   const [adding, setAdding] = useState(false)
 
   const advisor = usePollingFetch(useCallback(() => api.advisor(), []), bump, REFRESH)
-  const analytics = usePollingFetch(useCallback(() => api.analytics(168), []), bump, REFRESH)
 
   const feed = advisor.data
   const fields = useMemo(() => feed?.fields ?? [], [feed])
@@ -262,17 +248,6 @@ export default function Dashboard() {
   const depth = field ? depthOf(field) : 0
   const soil = field ? wetness(field) : { remaining: 0, band: 'none' as Band }
   const totalMm = fields.reduce((sum, item) => sum + depthOf(item), 0)
-
-  // Available water over the recent record, which is the dryness trend a farmer
-  // reads: rising means the soil is giving up water faster than it is replaced.
-  const trend = useMemo(
-    () =>
-      (analytics.data?.series ?? []).map((point) => ({
-        label: point.label,
-        available: Math.max(0, Math.min(100, Math.round((1 - point.depletionFraction) * 100))),
-      })),
-    [analytics.data],
-  )
 
   return (
     <div className="grain min-h-screen lg:flex lg:flex-col lg:overflow-hidden lg:h-screen">
@@ -374,17 +349,22 @@ export default function Dashboard() {
           </div>
         ) : (
 <div className="scroll-smooth pad-page mx-auto flex max-w-[1180px] flex-col gap-[clamp(0.7rem,1.5vw,1.1rem)] lg:h-full lg:max-w-none lg:overflow-y-auto">
-            {/* ---- The answer, on its own full-width row --------------- */}
-            {/* This is what the operator opened the page for, so it is not made
-                to share a row with three supporting readings and shrink to fit
-                beside them. */}
-            {/* `shrink-0` on the row wrappers matters. A flex child that clips its own
+            {/* ---- The answer, and the week's bill, side by side ---------- */}
+            {/* What this field needs and what the whole farm needs are the same
+                question at two scales, so they sit together on the first row
+                rather than the farm total being pushed to the bottom of the page
+                under three charts. Half and half: the hero is the widest thing on
+                the screen but it does not need full width to say "water 10.8 mm",
+                and splitting the row means a 1080p screen shows the operator's
+                whole decision without scrolling.
+
+                `shrink-0` on the wrapper matters. A flex child that clips its own
                 overflow (`overflow-hidden` on the hero and the sky card) loses
                 its automatic minimum size, so the column was free to squash it
-                below its content and the decision's detail lines were cut off.
-                The column scrolls; the cards keep their natural height. */}
-            <div className="shrink-0">
+                below its content and the decision's detail lines were cut off. */}
+            <div className="grid shrink-0 gap-[clamp(0.7rem,1.5vw,1.1rem)] lg:grid-cols-2">
               <DecisionHero field={field} depth={depth} band={soil.band} />
+              <BudgetCard fields={fields} totalMm={totalMm} />
             </div>
 
             {/* ---- The evidence for it: three compact readings ---------- */}
@@ -418,29 +398,6 @@ export default function Dashboard() {
               <SensorBoard field={field} />
             </div>
 
-            {/* ---- The week ahead ---------------------------------------- */}
-            {/* Equal heights again, with the slack handed to the two charts:
-                both are `flex-1` inside the card body, so the bars and the area
-                plot get taller rather than the cards ending three lines apart. */}
-            <div className="grid shrink-0 gap-[clamp(0.7rem,1.5vw,1.1rem)] lg:grid-cols-3">
-              <PlanCard field={field} />
-              <TrendCard
-                trend={trend}
-                band={soil.band}
-                refill={
-                  field.water.tawMm > 0
-                    ? Math.round(
-                        Math.max(
-                          0,
-                          Math.min(100, (field.water.rawMm / field.water.tawMm) * 100),
-                        ),
-                      )
-                    : 50
-                }
-              />
-              <BudgetCard fields={fields} totalMm={totalMm} />
-            </div>
-
             <p className="pb-2 pt-1 text-center">
               <Link to="/model" className="text-[11px] text-ink-400 hover:text-ink-700">
                 How this recommendation is calculated
@@ -469,21 +426,16 @@ export default function Dashboard() {
 function Card({
   title,
   hint,
-  section,
   children,
   className = '',
 }: {
   title: string
   hint?: string
-  /** Section hue, drawn as a 3px band along the top edge. */
-  section?: Section
   children: ReactNode
   className?: string
 }) {
   return (
-    <section
-      className={`card ${section ? `section-${section} section-edge` : ''} flex flex-col ${className}`}
-    >
+    <section className={`card flex flex-col ${className}`}>
       <div className="pad-card flex items-baseline justify-between gap-2 pt-[clamp(0.75rem,2cqw,1.1rem)]">
         {/* Title and hint are `ink-700` rather than `ink-500`: both are 10-11px
             uppercase, and at this size the lighter ink sits close to the 4.5:1
@@ -567,7 +519,13 @@ function DecisionHero({
           reads as evidence sitting under the answer rather than competing with
           it, then the sentence that ties them together. */}
       <div className="pad-card border-t border-ink-100/80 py-[clamp(0.6rem,1.6cqw,1rem)]">
-        <div className="panel grid gap-x-5 gap-y-3 px-[clamp(0.7rem,2cqw,1.1rem)] py-[clamp(0.6rem,1.6cqw,0.9rem)] sm:grid-cols-3">
+        {/* Three across, but only once the hero is actually in a wide column.
+            `sm:` is a viewport breakpoint, and the hero now shares a row with the
+            farm total - so on a desktop at `sm` the three inputs were being laid
+            across half the screen, roughly 150px each, which is where the cramped
+            half-row text came from. Keyed to `lg`, the same breakpoint that splits
+            the row in the first place, so the two cannot disagree. */}
+        <div className="panel grid gap-x-5 gap-y-3 px-[clamp(0.7rem,2cqw,1.1rem)] py-[clamp(0.6rem,1.6cqw,0.9rem)] lg:grid-cols-3">
           <Input
             label="Soil"
             value={`${num(field.sensors.soilMoisture, 0)}%`}
@@ -646,7 +604,7 @@ function SensorBoard({ field }: { field: Advisory }) {
   const ecGood = ec <= 2.0
 
   return (
-    <Card title="7-in-1 soil sensor" hint={relativeTime(s.recordedAt)} section="mint">
+    <Card title="7-in-1 soil sensor" hint={relativeTime(s.recordedAt)}>
       {/* Soil readings only. Air temperature and humidity are ambient and belong
           to the sky card; listing them here as well printed the same number in
           two places on one screen. */}
@@ -734,18 +692,9 @@ function WetnessCard({
   const circumference = 2 * Math.PI * radius
   const refill = field.water.tawMm > 0 ? Math.min(1, field.water.rawMm / field.water.tawMm) : 0.5
   const fill = Math.max(0, Math.min(1, remaining))
-  // The section hue follows the verdict rather than being fixed: a card about dry
-  // soil should not be capped in sky blue, and the ring, the verdict and the edge
-  // reading as one signal is worth more than a stable colour for its own sake.
-  const section: Section =
-    band === 'dry' ? 'amber' : band === 'wet' ? 'sky' : band === 'rest' ? 'slate' : 'mint'
 
   return (
-    <Card
-      title="Soil water"
-      hint={`${num(field.sensors.soilMoisture, 0)}% moisture`}
-      section={section}
-    >
+    <Card title="Soil water" hint={`${num(field.sensors.soilMoisture, 0)}% moisture`}>
       {/* Horizontal: the ring carries the proportion on the left and the verdict
           and numbers sit beside it. `flex-1` so a stretched card centres this row
           in the extra height rather than dropping its footnote into it. */}
@@ -816,7 +765,7 @@ function AgeCard({ field }: { field: Advisory }) {
   const finished = current === 'post_harvest' || current === 'harvest'
 
   return (
-    <Card title="Crop age" hint={field.crop} section="violet" className="flex-1 justify-between">
+    <Card title="Crop age" hint={field.crop} className="flex-1 justify-between">
       <div className="flex items-end justify-between gap-4">
         <div>
           <span className="tnum text-[clamp(1.75rem,6cqw,2.4rem)] font-semibold leading-none tracking-tight text-ink-900">
@@ -1057,138 +1006,18 @@ function StageTrack({
   )
 }
 
-/**
- * Seven days of planned water, as a grower reads it off a diary.
+ /**
+ * The whole farm's week, beside the decision above it.
  *
- * Drawn the way a bar-chart card reads: the range across the top so the week is
- * legible as a quantity, an average line through the bars so a single tall day
- * can be judged against the rest, and the days themselves listed underneath
- * rather than only drawn. A bar chart with no numbers is a picture, not a plan.
- */
-function PlanCard({ field }: { field: Advisory }) {
-  const scheduled = field.schedule.filter((day) => day.grossMm > 0)
-  const peak = Math.max(...field.schedule.map((day) => day.grossMm), 0)
-  const mean =
-    scheduled.length > 0
-      ? scheduled.reduce((sum, day) => sum + day.grossMm, 0) / scheduled.length
-      : 0
-  const total = field.schedule.reduce((sum, day) => sum + day.grossMm, 0)
-  const depth = depthOf(field)
-
-  // The engine schedules nothing when the root zone is already full, while the
-  // models may still call for water inside the fortnight. Saying "0 planned"
-  // beside a 10.8 mm recommendation reads as a broken card; naming the
-  // disagreement reads as the thing it is.
-  const unscheduled = total <= 0 && depth > 0
-
-  return (
-    <Card title="Next seven days" hint={`${scheduled.length} planned`} section="sky">
-      <div className="flex items-baseline gap-2">
-        <span className="tnum text-[30px] font-semibold leading-none tracking-tight text-ink-900">
-          {peak > 0 ? num(peak, 0) : '0'}
-        </span>
-        <span className="text-[19px] font-light leading-none text-ink-300">mm</span>
-        <span className="ml-1 text-[11px] text-ink-400">largest single day</span>
-      </div>
-
-      {unscheduled ? (
-        <div className="mt-4 rounded-card border border-brand-100 bg-brand-50/70 px-3 py-2.5">
-          <p className="text-[11px] leading-relaxed text-brand-900">
-            The root zone is still full, so the engine has nothing scheduled this week. The
-            models still advise{' '}
-            <span className="tnum font-semibold">{num(depth, 1)} mm</span> inside the
-            fortnight — see the decision above.
-          </p>
-        </div>
-      ) : (
-        <>
-          <div className="relative mt-4 h-[74px] min-h-[74px] flex-1">
-            {mean > 0 && (
-              <>
-                <div
-                  className="absolute inset-x-0 border-t border-dashed border-ink-300"
-                  style={{ bottom: `${(mean / peak) * 100}%` }}
-                />
-                <span
-                  className="absolute right-0 -translate-y-full rounded bg-ink-900 px-1.5 py-0.5 text-[9px] font-semibold text-white"
-                  style={{ bottom: `calc(${(mean / peak) * 100}% + 2px)` }}
-                >
-                  avg {num(mean, 0)}
-                </span>
-              </>
-            )}
-
-            <div className="flex h-full items-end justify-between gap-1.5">
-              {field.schedule.map((day) => {
-                const height = peak > 0 ? (day.grossMm / peak) * 100 : 0
-                const date = new Date(day.date)
-                return (
-                  <div key={day.date} className="flex flex-1 flex-col items-center gap-1">
-                    <div className="flex h-full w-full items-end">
-                      <div
-                        className={`w-full rounded-t-[3px] ${
-                          day.grossMm > 0
-                            ? 'bg-gradient-to-t from-brand-700 to-brand-500'
-                            : 'bg-ink-200/70'
-                        }`}
-                        style={{ height: `${Math.max(height, 3)}%` }}
-                        title={`${date.toDateString()}: ${num(day.grossMm, 1)} mm gross`}
-                      />
-                    </div>
-                    <span className="text-[9px] font-medium text-ink-400">
-                      {date.toLocaleDateString([], { weekday: 'narrow' })}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-
-          <dl className="mt-3 border-t border-ink-100 pt-1">
-            {field.schedule.slice(0, 3).map((day) => {
-              const date = new Date(day.date)
-              return (
-                <div
-                  key={day.date}
-                  className="flex items-baseline justify-between border-b border-ink-50 py-1.5 last:border-b-0"
-                >
-                  <dt className="text-[10px] text-ink-400">
-                    {date.toLocaleDateString([], { weekday: 'short', day: 'numeric' })}
-                  </dt>
-                  <dd
-                    className={`tnum text-[12px] font-semibold ${
-                      day.grossMm > 0 ? 'text-ink-900' : 'text-ink-300'
-                    }`}
-                  >
-                    {day.grossMm > 0 ? `${num(day.grossMm, 1)} mm` : '—'}
-                  </dd>
-                </div>
-              )
-            })}
-          </dl>
-        </>
-      )}
-
-      {/* `mt-auto`: when the chart is present the chart is `flex-1` and this
-          already lands on the base; when the engine has scheduled nothing there
-          is no chart, and without this the note sat under the message with the
-          card's spare height left as a hole at the bottom. */}
-      <p className="mt-auto pt-2.5 text-[10px] text-ink-400">
-        Gross water at the pump, including application losses. Week total{' '}
-        {num(total, 0)} mm.
-      </p>
-    </Card>
-  )
-}
-
-/**
- * The whole farm's week.
+ * This answers the question the per-field cards structurally cannot: what does
+ * this week cost the farm in water, in pump time, and how do the fields compare
+ * with one another. It shares the top row with the decision because those are the
+ * same question at two scales - what this field needs, and what the farm needs -
+ * and answering them on opposite ends of the page made the operator scroll between
+ * them to work out whether the recommendation was affordable.
  *
- * The plan and the soil trend are both single-field and read thin alone, so the
- * third slot answers the question neither can: what does this week cost the
- * farm, in water and in money-equivalent volume, and how do the fields compare.
- * Fleet figures come from the same advisory payload the decision above was
- * computed from, so the totals cannot disagree with the cards above.
+ * Fleet figures come from the same advisory payload the decision above was computed
+ * from, so the total cannot disagree with the card beside it.
  */
 function BudgetCard({
   fields,
@@ -1206,7 +1035,7 @@ function BudgetCard({
   const totalArea = fields.reduce((sum, item) => sum + item.areaM2, 0)
 
   return (
-    <Card title="Farm this week" hint={`${fields.length} fields`} section="amber">
+    <Card title="Farm this week" hint={`${fields.length} fields`}>
       <div className="panel flex items-end justify-between gap-3 px-[clamp(0.6rem,1.8cqw,0.95rem)] py-[clamp(0.55rem,1.6cqw,0.85rem)]">
         <div>
           <div className="micro">Recommended</div>
@@ -1264,107 +1093,6 @@ function BudgetCard({
             })}
         </div>
       </div>
-    </Card>
-  )
-}
-
-function TrendCard({
-  trend,
-  band,
-  refill,
-}: {
-  trend: { label: string; available: number }[]
-  band: Band
-  refill: number
-}) {
-  const color =
-    band === 'dry' ? '#f59e0b' : band === 'wet' ? '#2563eb' : band === 'rest' ? '#94a3b8' : '#16a34a'
-
-  /**
-   * A y-domain fitted to the data instead of a fixed 0-100.
-   *
-   * The series sits wherever the soil happens to be — a field at 85% available
-   * barely moves in a week — so a 0-100 axis compresses it into a few pixels at
-   * the top and the card reads as an empty plot with a stray dashed line. The
-   * domain still has to contain the refill point, because comparing the two is
-   * the entire purpose of the chart, and it is padded so the line never lands on
-   * the frame.
-   */
-  const domain = (() => {
-    if (trend.length === 0) return [0, 100] as [number, number]
-    const values = trend.map((point) => point.available)
-    const low = Math.min(...values, refill)
-    const high = Math.max(...values, refill)
-    const pad = Math.max(6, (high - low) * 0.25)
-    const min = Math.max(0, Math.floor((low - pad) / 5) * 5)
-    const max = Math.min(100, Math.ceil((high + pad) / 5) * 5)
-    return [min, max === min ? min + 10 : max] as [number, number]
-  })()
-
-  return (
-    <Card title="Water in the soil" hint="last 7 days" section="cyan">
-      {trend.length === 0 ? (
-        <p className="py-10 text-center text-[12px] text-ink-400">No readings yet.</p>
-      ) : (
-        <div className="h-[130px] min-h-[130px] flex-1">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={trend} margin={{ top: 6, right: 8, left: -26, bottom: 0 }}>
-              <defs>
-                {/* Opaque enough at the curve to actually read as an area; the
-                    earlier 0.28-to-0.02 ramp assumed a full-height series and
-                    left a nearly flat line looking like no line at all. */}
-                <linearGradient id="soilFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={color} stopOpacity={0.34} />
-                  <stop offset="100%" stopColor={color} stopOpacity={0.06} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="2 4" stroke="#e2e8f0" vertical={false} />
-              <XAxis
-                dataKey="label"
-                tick={{ fontSize: 9, fill: '#94a3b8' }}
-                axisLine={false}
-                tickLine={false}
-                interval="preserveStartEnd"
-              />
-              <YAxis
-                domain={domain}
-                tick={{ fontSize: 9, fill: '#94a3b8' }}
-                axisLine={false}
-                tickLine={false}
-                width={44}
-              />
-              <Tooltip
-                contentStyle={{ fontSize: 11, borderRadius: 10, border: '1px solid #e2e8f0' }}
-              />
-              <ReferenceLine
-                y={refill}
-                stroke="#f59e0b"
-                strokeDasharray="4 4"
-                label={{
-                  value: 'refill',
-                  position: 'insideBottomRight',
-                  fill: '#b45309',
-                  fontSize: 9,
-                }}
-              />
-              <Area
-                type="monotone"
-                dataKey="available"
-                name="Available"
-                stroke={color}
-                strokeWidth={2}
-                fill="url(#soilFill)"
-                dot={{ r: 2, fill: color, strokeWidth: 0 }}
-                activeDot={{ r: 4 }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-      <p className="mt-2.5 text-[11px] text-ink-400">
-        Share of plantable water still in the root zone. Below the refill line the crop
-        needs water.
-      </p>
     </Card>
   )
 }
@@ -1461,7 +1189,7 @@ function FieldStrip({ field }: { field: Advisory }) {
   ]
 
   return (
-    <section className="card section-slate pad-card py-[clamp(0.7rem,1.8cqw,1rem)]">
+    <section className="card pad-card py-[clamp(0.7rem,1.8cqw,1rem)]">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5">
         <span className="type-label shrink-0 font-semibold uppercase tracking-[0.07em] text-ink-400">
           Field

@@ -1,25 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
-  // Section hues are composed at runtime - `section-${section}` in the Card
-  // primitive - so the scanner sees only the template literal and none of the real
-  // names. Without this it strips every one of them from the build and the cards
-  // silently lose their edges, which is the kind of failure that survives a type
-  // check and a passing test run and only shows up on screen.
-  safelist: [
-    'section-edge',
-    // The edge is drawn on a pseudo-element, and a safelist entry for that has to
-    // be the variant form. Without this second entry `section-edge` survives and
-    // `section-edge::after` does not, which is a card with a hue and no edge.
-    'section-edge:after',
-    'section-mint',
-    'section-sky',
-    'section-cyan',
-    'section-violet',
-    'section-amber',
-    'section-rose',
-    'section-slate',
-  ],
   theme: {
     extend: {
       colors: {

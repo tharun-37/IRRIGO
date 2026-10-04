@@ -312,10 +312,16 @@ describe('Field view', () => {
       expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
     )
 
-    // The decision leads, on its own full-width row rather than as one of four
-    // equal cards.
+    // The decision leads. It shares the top row with the farm total, which is the
+    // same question at two scales: what this field needs, and what the farm needs.
     expect(screen.getByText('Recommended depth')).toBeTruthy()
     expect(screen.getByRole('heading', { level: 1 })).toBeTruthy()
+    expect(screen.getByText('Farm this week')).toBeTruthy()
+    expect(screen.getByText('By depth')).toBeTruthy()
+
+    // The decision and the farm total are neighbours, not a screen apart.
+    const topRow = screen.getByText('Recommended depth').closest('section')?.parentElement
+    expect(topRow).toBe(screen.getByText('Farm this week').closest('section')?.parentElement)
 
     // Then the three supporting readings.
     expect(screen.getByText('Soil water')).toBeTruthy()
@@ -330,20 +336,19 @@ describe('Field view', () => {
     expect(screen.queryByText('Showing above · hover for detail')).toBeNull()
     expect(screen.queryByText(/Click to view/)).toBeNull()
 
-    // The week has a fleet card, so the third slot carries meaning.
-    expect(screen.getByText('Farm this week')).toBeTruthy()
-    expect(screen.getByText('By depth')).toBeTruthy()
+    // The two charts are gone as well. They were the only reason this page pulled
+    // the 168-hour analytics series, so that request went with them.
+    expect(screen.queryByText('Next seven days')).toBeNull()
+    expect(screen.queryByText('Water in the soil')).toBeNull()
 
-    // Vertical order: decision, the three readings, field strip, age, sensors, week.
+    // Vertical order: farm total, the three readings, field strip, sensors.
     const order = Array.from(container.querySelectorAll('section'))
       .map((node) => node.querySelector('h2')?.textContent ?? '')
       .filter(Boolean)
-    expect(order.indexOf('Soil water')).toBeGreaterThanOrEqual(0)
+    expect(order.indexOf('Farm this week')).toBeGreaterThanOrEqual(0)
+    expect(order.indexOf('Soil water')).toBeGreaterThan(order.indexOf('Farm this week'))
     expect(order.indexOf('Crop age')).toBeGreaterThan(order.indexOf('Soil water'))
     expect(order.indexOf('7-in-1 soil sensor')).toBeGreaterThan(order.indexOf('Crop age'))
-    expect(order.indexOf('Farm this week')).toBeGreaterThan(
-      order.indexOf('7-in-1 soil sensor'),
-    )
   })
 
   it('places the stage marker inside the active segment, not at its edge', async () => {
