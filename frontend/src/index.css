@@ -104,37 +104,48 @@
   }
 
   /* The card. Depth comes from translucency, not from a cast shadow.
-     The shadow is now a hairline contact shadow plus the inner rim that keeps the
+     The shadow is a hairline contact shadow plus the inner rim that keeps the
      top edge lit (see the `card` entry in tailwind.config.js); what carries the
      elevation is the backdrop blur and the fact that the page's warped gradient
      shows through the plate. That is a real optical cue on a low-contrast
      background, where a drop shadow has nothing to land against.
 
-     The border moved from ink to translucent white for the same reason: over a
-     pale tinted page an ink hairline read as a drawn outline, while a white one
-     reads as the lit edge of a surface. The rim inside the shadow does the same
-     job one layer in. */
-  /* The card: a white plate, the way the reference reads.
-     The separation on this page comes from the page behind, not from the card. The
-     background is a deeper wash than it was, so a white plate on it is a distinctly
-     brighter object with a visible gap either side. Filling the cards themselves was
-     tried and removed: the plates merged into slabs and a large card became a wall
-     of colour with text floating in it. */
+     These are the values `.glass` uses, so a card and the registration form
+     read as the same material. An earlier fill of white/80 was opaque enough
+     that the gradient behind it barely registered and the dashboard read as flat
+     white boxes rather than glass. At white/55 the page's tint comes through and
+     each card is separated from the one beside it by colour rather than by a
+     line.
+
+     `saturate` matters more than it looks: a blur alone over a coloured
+     background greys the colour out, and dark text on a desaturated plate loses
+     contrast. Pushing saturation back up keeps the tint legible underneath.
+
+     The border is translucent white rather than ink for the same reason the fill
+     is translucent: over a pale page an ink hairline read as a drawn outline,
+     while a white one reads as the lit edge of a surface.
+
+     Cost: every element with a backdrop filter samples what is behind it and
+     forces its ancestors to be composited. Cards already paid for a blur at
+     `md`, so this raises the radius and adds a saturate filter on each. If the
+     page ever stutters on a low-powered machine, this is the first thing to
+     revisit. */
   .card {
-    @apply relative rounded-card border border-ink-200/70 bg-white/80 shadow-card backdrop-blur-md;
+    @apply relative rounded-card border border-white/70 bg-white/55 shadow-card backdrop-blur-xl backdrop-saturate-150;
     /* Each card is its own sizing context, so `cqw` below measures this card
        rather than the viewport. That is what lets one rule serve a card that is
        260px wide on a laptop and 200px on a phone. */
     container-type: inline-size;
   }
 
-  /* A recessed surface for grouped content inside a card: stat rows, input
-     blocks, reading tiles. Translucent and blurred rather than merely sunken, so
-     the hierarchy is carried by how much of the page shows through each layer.
-     Two levels of depth read as a card with contents; one reads as a pile of
-     same-weight boxes. */
+  /* A surface for grouped content inside a card: stat rows, input blocks,
+     reading tiles. The registration form's own inner cards are white/70 on a
+     glass plate, and these match them, so a reading tile inside a dashboard card
+     looks like the crop tiles inside the form rather than a grey box dropped
+     into a white one. The step from card to panel is now carried by the fill
+     difference and the hairline rather than by a grey cast. */
   .panel {
-    @apply rounded-card border border-ink-200/60 bg-ink-50/80 shadow-panel;
+    @apply rounded-card border border-ink-200/70 bg-white/70 shadow-panel;
   }
 
   /* The glass treatment, for surfaces that carry text.
