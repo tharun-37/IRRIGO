@@ -392,17 +392,32 @@ describe('Field view', () => {
     const readingsRow = screen.getByText('Soil water').closest('section')?.parentElement
     expect(readingsRow?.className).not.toContain('items-start')
 
-    // And the height a taller neighbour imposes is handed to a bordered surface
-    // rather than left as blank card. One growing surface per card in the row.
-    // By heading role: "Crop age" is also a fact in the field details block.
+    // Every card fills the grid cell it is given. Crop age is not a direct grid
+    // item — it sits in a wrapper so it can span two columns on md — and a
+    // stretched wrapper does not stretch the card inside it, which is what left
+    // it the shortest card in the row.
     for (const title of ['Soil water', 'Crop age', 'Farm this week']) {
       const card = screen.getByRole('heading', { name: title }).closest('section')
-      expect(card?.querySelector('.flex-1')).toBeTruthy()
+      expect(card?.className).toContain('h-full')
     }
-    // The sky card is not a `Card`, so its humidity box is the surface that
-    // grows there.
     const sky = screen.getByText(/· now/).closest('section')
-    expect(sky?.querySelector('dl.flex-1')).toBeTruthy()
+    expect(sky?.className).toContain('h-full')
+  })
+
+  it('does not fill the sky card by growing its one-row humidity box', async () => {
+    renderShell()
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
+    )
+
+    // The sky card has the least content in its row, so it used to be padded out
+    // by stretching the humidity box into a tall frame around a single line. It
+    // fills honestly instead: the temperature is sized from the card's own width,
+    // and the box is left at its natural height.
+    const sky = screen.getByText(/· now/).closest('section')
+    const box = sky?.querySelector('dl')
+    expect(box?.className).not.toContain('flex-1')
+    expect(sky?.querySelector('.text-\\[clamp\\(2rem\\,13cqw\\,4rem\\)\\]')).toBeTruthy()
   })
 
   it('fills every row of the field details, with no dead cells', async () => {

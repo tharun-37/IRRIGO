@@ -428,8 +428,13 @@ function Card({
   children: ReactNode
   className?: string
 }) {
+  // `h-full` matters for the card that is not a direct grid item: crop age sits
+  // in a wrapper so it can span two columns on md, and the grid stretches that
+  // wrapper without stretching the card inside it, which left it the shortest
+  // card in the row. Against an auto-height parent the percentage resolves to
+  // auto, so this is a no-op everywhere else.
   return (
-    <section className={`card flex flex-col ${className}`}>
+    <section className={`card flex h-full flex-col ${className}`}>
       <div className="pad-card flex items-baseline justify-between gap-2 pt-[clamp(0.75rem,2cqw,1.1rem)]">
         {/* Title and hint are `ink-700` rather than `ink-500`: both are 10-11px
             uppercase, and at this size the lighter ink sits close to the 4.5:1
@@ -1129,7 +1134,7 @@ function SkyCard({ field }: { field: Advisory }) {
   const Glyph = wet ? RainGlyph : SkyGlyph
 
   return (
-    <section className="sky-wash card relative flex flex-col overflow-hidden text-white">
+    <section className="sky-wash card relative flex h-full flex-col overflow-hidden text-white">
       {/* In the corner, behind nothing. */}
       <Glyph size={104} className="pointer-events-none absolute right-2 top-2 text-white/15" />
 
@@ -1144,18 +1149,21 @@ function SkyCard({ field }: { field: Advisory }) {
         </div>
 
         {/* Stacked, not side by side: a row of label/value pairs beside a large
-            figure left each pair about forty pixels wide. The group grows and
-            passes the height on to the humidity box, so this card ends on the
-            row's line with the box filling the difference rather than the card
-            ending with bare blue under the footnote. */}
-        <div className="flex flex-1 flex-col pt-3">
-          <span className="tnum block shrink-0 text-[clamp(2rem,9cqw,2.9rem)] font-semibold leading-none tracking-tight">
+            figure left each pair about forty pixels wide. The temperature is the
+            card's headline and is sized from the card's own width, so it does
+            most of the filling: this card has the least content in its row, and
+            the alternative was growing the humidity box until it was a tall
+            empty frame around one line. `justify-center` so the few pixels left
+            over split above and below rather than pooling under the box. */}
+        <div className="flex flex-1 flex-col justify-center pt-3">
+          <span className="tnum block shrink-0 text-[clamp(2rem,13cqw,4rem)] font-semibold leading-none tracking-tight">
             {num(temp, 0)}°
           </span>
 
-          {/* Recessed with a translucent white so the group sits into the blue
-              rather than floating on it. */}
-          <dl className="mt-3 flex flex-1 flex-col justify-center rounded-card border border-white/15 bg-white/10 px-[clamp(0.6rem,1.8cqw,0.95rem)] py-[clamp(0.5rem,1.5cqw,0.8rem)] text-[11px] shadow-[inset_0_1px_2px_rgba(15,23,42,0.18)]">
+          {/* Natural height, not a fill surface: one row in a stretched box reads
+              as an empty frame. Recessed with a translucent white so the group
+              sits into the blue rather than floating on it. */}
+          <dl className="mt-3 rounded-card border border-white/15 bg-white/10 px-[clamp(0.6rem,1.8cqw,0.95rem)] py-[clamp(0.5rem,1.5cqw,0.8rem)] text-[11px] shadow-[inset_0_1px_2px_rgba(15,23,42,0.18)]">
             {/* Humidity only. Air temperature is the headline above it and rain
                 today is one of the three decision inputs further up the page, so
                 listing either here just printed the same figure twice. */}
