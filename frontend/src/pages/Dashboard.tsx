@@ -51,6 +51,9 @@ import type { Advisory } from '../types'
 
 const REFRESH = 15_000
 
+/** The per-section hues, one per card. Drawn as a top edge, not a fill. */
+type Section = 'mint' | 'sky' | 'cyan' | 'violet' | 'amber' | 'slate'
+
 type Band = 'dry' | 'good' | 'wet' | 'rest' | 'none'
 
 const BAND_STYLE: Record<Band, { ring: string; text: string; label: string; word: string }> = {
@@ -466,27 +469,30 @@ export default function Dashboard() {
 function Card({
   title,
   hint,
+  section,
   children,
   className = '',
 }: {
   title: string
   hint?: string
+  /** Section hue, drawn as a 3px band along the top edge. */
+  section?: Section
   children: ReactNode
   className?: string
 }) {
   return (
-    <section className={`card flex flex-col ${className}`}>
+    <section
+      className={`card ${section ? `section-${section} section-edge` : ''} flex flex-col ${className}`}
+    >
       <div className="pad-card flex items-baseline justify-between gap-2 pt-[clamp(0.75rem,2cqw,1.1rem)]">
-        {/* Title and hint are both `ink-700`. They were `ink-500` and `ink-400`
-            when the section fills were a white-to-tint gradient fading out well
-            before this corner; against a solid 100-level fill `ink-500` measures
-            about 4.1:1, which is under the 4.5:1 small text needs, and `ink-400`
-            is far worse. The hierarchy between a title and its hint is already
-            carried by size, weight and case, so the colour does not have to do it. */}
+        {/* Title and hint are `ink-700` rather than `ink-500`: both are 10-11px
+            uppercase, and at this size the lighter ink sits close to the 4.5:1
+            threshold on a white plate. The hierarchy between a title and its hint
+            is already carried by size, weight and case. */}
         <h2 className="type-label font-semibold uppercase tracking-[0.07em] text-ink-700">
           {title}
         </h2>
-        {hint && <span className="type-label shrink-0 text-ink-700/80">{hint}</span>}
+        {hint && <span className="type-label shrink-0 text-ink-500">{hint}</span>}
       </div>
       {/* The body is a column so that when the card is stretched by a taller
           neighbour, the child marked `flex-1` (a chart, a reading row) grows into
@@ -640,7 +646,7 @@ function SensorBoard({ field }: { field: Advisory }) {
   const ecGood = ec <= 2.0
 
   return (
-    <Card title="7-in-1 soil sensor" hint={relativeTime(s.recordedAt)} className="tint-mint">
+    <Card title="7-in-1 soil sensor" hint={relativeTime(s.recordedAt)} section="mint">
       {/* Soil readings only. Air temperature and humidity are ambient and belong
           to the sky card; listing them here as well printed the same number in
           two places on one screen. */}
@@ -728,17 +734,18 @@ function WetnessCard({
   const circumference = 2 * Math.PI * radius
   const refill = field.water.tawMm > 0 ? Math.min(1, field.water.rawMm / field.water.tawMm) : 0.5
   const fill = Math.max(0, Math.min(1, remaining))
-  const tint =
-    band === 'dry'
-      ? 'tint-dry'
-      : band === 'wet'
-        ? 'tint-wet'
-        : band === 'rest'
-          ? 'tint-rest'
-          : 'tint-good'
+  // The section hue follows the verdict rather than being fixed: a card about dry
+  // soil should not be capped in sky blue, and the ring, the verdict and the edge
+  // reading as one signal is worth more than a stable colour for its own sake.
+  const section: Section =
+    band === 'dry' ? 'amber' : band === 'wet' ? 'sky' : band === 'rest' ? 'slate' : 'mint'
 
   return (
-    <Card title="Soil water" hint={`${num(field.sensors.soilMoisture, 0)}% moisture`} className={tint}>
+    <Card
+      title="Soil water"
+      hint={`${num(field.sensors.soilMoisture, 0)}% moisture`}
+      section={section}
+    >
       {/* Horizontal: the ring carries the proportion on the left and the verdict
           and numbers sit beside it. `flex-1` so a stretched card centres this row
           in the extra height rather than dropping its footnote into it. */}
@@ -809,7 +816,7 @@ function AgeCard({ field }: { field: Advisory }) {
   const finished = current === 'post_harvest' || current === 'harvest'
 
   return (
-    <Card title="Crop age" hint={field.crop} className="tint-violet flex-1 justify-between">
+    <Card title="Crop age" hint={field.crop} section="violet" className="flex-1 justify-between">
       <div className="flex items-end justify-between gap-4">
         <div>
           <span className="tnum text-[clamp(1.75rem,6cqw,2.4rem)] font-semibold leading-none tracking-tight text-ink-900">
@@ -1075,7 +1082,7 @@ function PlanCard({ field }: { field: Advisory }) {
   const unscheduled = total <= 0 && depth > 0
 
   return (
-    <Card title="Next seven days" hint={`${scheduled.length} planned`} className="tint-sky">
+    <Card title="Next seven days" hint={`${scheduled.length} planned`} section="sky">
       <div className="flex items-baseline gap-2">
         <span className="tnum text-[30px] font-semibold leading-none tracking-tight text-ink-900">
           {peak > 0 ? num(peak, 0) : '0'}
@@ -1199,7 +1206,7 @@ function BudgetCard({
   const totalArea = fields.reduce((sum, item) => sum + item.areaM2, 0)
 
   return (
-    <Card title="Farm this week" hint={`${fields.length} fields`} className="tint-amber">
+    <Card title="Farm this week" hint={`${fields.length} fields`} section="amber">
       <div className="panel flex items-end justify-between gap-3 px-[clamp(0.6rem,1.8cqw,0.95rem)] py-[clamp(0.55rem,1.6cqw,0.85rem)]">
         <div>
           <div className="micro">Recommended</div>
@@ -1295,7 +1302,7 @@ function TrendCard({
   })()
 
   return (
-    <Card title="Water in the soil" hint="last 7 days" className="tint-cyan">
+    <Card title="Water in the soil" hint="last 7 days" section="cyan">
       {trend.length === 0 ? (
         <p className="py-10 text-center text-[12px] text-ink-400">No readings yet.</p>
       ) : (
@@ -1454,7 +1461,7 @@ function FieldStrip({ field }: { field: Advisory }) {
   ]
 
   return (
-    <section className="card pad-card tint-slate py-[clamp(0.7rem,1.8cqw,1rem)]">
+    <section className="card section-slate pad-card py-[clamp(0.7rem,1.8cqw,1rem)]">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5">
         <span className="type-label shrink-0 font-semibold uppercase tracking-[0.07em] text-ink-400">
           Field
