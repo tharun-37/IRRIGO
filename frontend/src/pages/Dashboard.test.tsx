@@ -410,23 +410,25 @@ describe('Field view', () => {
       expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
     )
 
-    // The sky card has the least content in its row, so it used to be padded out
-    // by stretching the humidity box into a tall frame around a single line. It
-    // fills honestly instead: the temperature is sized from the card's own width
-    // and the box is left at its natural height.
+    // The sky card has the least content in its row, so it has height to absorb.
+// That height goes to the humidity box, a bordered surface that reads as
+// deliberate when it grows, rather than to bare blue space above the header.
     const sky = screen.getByText(/· now/).closest('section')
-    const box = sky?.querySelector('dl')
-    expect(box?.className).not.toContain('flex-1')
-    expect(sky?.querySelector('.text-\\[clamp\\(2\\.25rem\\,18cqw\\,5rem\\)\\]')).toBeTruthy()
-
-    // And the slack is not opened up as a band under the header: the body
-    // centres all three blocks together, so what is left over sits at the top
-    // and bottom edges as matching padding.
     const body = sky?.querySelector(':scope > div')
-    expect(body?.className).toContain('justify-center')
     const group = body?.querySelector(':scope > div.flex-col')
-    expect(group?.className).not.toContain('justify-center')
-    expect(group?.className).not.toContain('flex-1')
+
+    // Top-aligned: `justify-center` on the body pushed the header off the top
+    // edge, and would clip it outright on a card whose content outgrew it.
+    expect(body?.className).not.toContain('justify-center')
+
+    // The group grows and passes the slack to the box.
+    expect(group?.className).toContain('flex-1')
+    const box = group?.querySelector('dl')
+    expect(box?.className).toContain('flex-1')
+
+    // And the temperature is sized from the card's own width so it absorbs more
+    // of that slack before any of it reaches the box.
+    expect(sky?.querySelector('.text-\\[clamp\\(2\\.25rem\\,18cqw\\,5rem\\)\\]')).toBeTruthy()
   })
 
   it('fills every row of the field details, with no dead cells', async () => {

@@ -1145,13 +1145,13 @@ function SkyCard({ field }: { field: Advisory }) {
       {/* In the corner, behind nothing. */}
       <Glyph size={104} className="pointer-events-none absolute right-2 top-2 text-white/15" />
 
-        {/* `justify-center` on the body, not on an inner group. Centring the
-            temperature and the humidity box together is what opened the band
-            between the header and the temperature: the slack was split between
-            those two blocks. Centring the header, the figure and the footnote as
-            one unit leaves the leftover as matching space at the top and bottom
-            edges, which reads as padding instead of a gap. */}
-        <div className="pad-card relative flex flex-1 flex-col justify-center pad-card-y">
+        {/* Top-aligned, deliberately. `justify-center` here was tried and is wrong: it
+            pushed the header away from the top edge, and because the card clips
+            its overflow, a card whose content outgrows it would lose the header
+            off the top. Whatever height this card inherits from its taller
+            neighbours goes to the humidity box instead, so the surface grows
+            rather than the card opening a band above its own first line. */}
+        <div className="pad-card relative flex flex-1 flex-col pad-card-y">
           <div className="flex items-baseline justify-between gap-3">
             <h2 className="type-label font-semibold uppercase tracking-[0.07em] text-white/60">
               {field.station} · now
@@ -1165,15 +1165,14 @@ function SkyCard({ field }: { field: Advisory }) {
               figure left each pair about forty pixels wide. The temperature is the
               card's headline and is sized from the card's own width, so it does
               most of the filling on its own. */}
-          <div className="flex flex-col pt-3">
+          <div className="flex flex-1 flex-col pt-3">
             <span className="tnum block shrink-0 text-[clamp(2.25rem,18cqw,5rem)] font-semibold leading-none tracking-tight">
               {num(temp, 0)}°
             </span>
 
-            {/* Natural height, not a fill surface: one row in a stretched box reads
-                as an empty frame. Recessed with a translucent white so the group
-                sits into the blue rather than floating on it. */}
-            <dl className="mt-3 rounded-card border border-white/15 bg-white/10 px-[clamp(0.6rem,1.8cqw,0.95rem)] py-[clamp(0.5rem,1.5cqw,0.8rem)] text-[11px] shadow-[inset_0_1px_2px_rgba(15,23,42,0.18)]">
+            {/* The fill surface: a bordered box reads as deliberate when it grows,
+                where bare blue space reads as a gap. Its one row is centred in it. */}
+            <dl className="mt-3 flex flex-1 flex-col justify-center rounded-card border border-white/15 bg-white/10 px-[clamp(0.6rem,1.8cqw,0.95rem)] py-[clamp(0.5rem,1.5cqw,0.8rem)] text-[11px] shadow-[inset_0_1px_2px_rgba(15,23,42,0.18)]">
               {/* Humidity only. Air temperature is the headline above it and rain
                   today is one of the three decision inputs further up the page, so
                   listing either here just printed the same figure twice. */}
