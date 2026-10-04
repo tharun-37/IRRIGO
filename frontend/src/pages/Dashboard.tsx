@@ -514,10 +514,13 @@ function DecisionHero({
         </div>
       </div>
 
-      {/* The three inputs the number came from. Recessed into a panel so the row
-          reads as evidence sitting under the answer rather than competing with
-          it, then the sentence that ties them together. */}
-      <div className="pad-card border-t border-ink-100/80 py-[clamp(0.6rem,1.6cqw,1rem)]">
+{/* The three inputs the number came from. Recessed into a panel so the row
+            reads as evidence sitting under the answer rather than competing with
+            it, then the sentence that ties them together. No divider above
+            either: a `border-t` with margin above and padding below is what put
+            a band of empty space through the middle of this card. The panel and
+            the sentence are separated by their own spacing. */}
+        <div className="pad-card py-[clamp(0.6rem,1.6cqw,1rem)]">
         {/* Three across, but only once the hero is actually in a wide column.
             `sm:` is a viewport breakpoint, and the hero now shares a row with the
             farm total - so on a desktop at `sm` the three inputs were being laid
@@ -546,7 +549,7 @@ function DecisionHero({
         </div>
       </div>
 
-      <p className="pad-card border-t border-ink-100/80 py-[clamp(0.6rem,1.6cqw,0.95rem)] text-[12px] leading-relaxed text-ink-600">
+      <p className="pad-card py-[clamp(0.6rem,1.6cqw,0.95rem)] text-[12px] leading-relaxed text-ink-600">
         {reason(field, band)}
         {agreementNote(field) && (
           <span className="text-ink-400"> {agreementNote(field)}</span>
@@ -744,7 +747,9 @@ function WetnessCard({
         </div>
       </div>
 
-      <p className="mt-3 border-t border-ink-100 pt-2.5 text-[11px] leading-snug text-ink-400">
+      {/* No rule above: the border and the padding under it were the empty band this
+            footnote used to sit below. */}
+        <p className="mt-2 text-[11px] leading-snug text-ink-400">
         {band === 'rest'
           ? 'No crop in the ground, so soil wetness does not drive a decision here.'
           : `Pump on at the refill point, ${Math.round(refill * 100)}% of available water.`}
@@ -1066,12 +1071,14 @@ function BudgetCard({
         <Line label="Area covered" value={`${num(totalArea / 10_000, 2)} ha`} />
       </dl>
 
-      {/* Fields ranked by depth: the comparison the operator is actually after.
-          This block takes whatever height the hero beside it imposes, so the two
-          cards end on one line and the bars spread into the difference rather
-          than the card ending with a void under the last one. */}
-      <div className="mt-3 flex flex-1 flex-col border-t border-ink-100 pt-2.5">
-        <div className="micro mb-1.5 shrink-0">By depth</div>
+{/* Fields ranked by depth: the comparison the operator is actually after.
+            This block takes whatever height the hero beside it imposes, so the two
+            cards end on one line and the bars spread into the difference rather
+            than the card ending with a void under the last one. No rule above it:
+            the border, and the padding under it, were the blank band above
+            "by depth". */}
+        <div className="mt-2 flex flex-1 flex-col">
+          <div className="micro mb-1.5 shrink-0">By depth</div>
         <div className="flex flex-1 flex-col justify-between gap-1.5">
           {[...fields]
             .sort((a, b) => depthOf(b) - depthOf(a))
@@ -1271,9 +1278,10 @@ function FieldDetails({ field }: { field: Advisory }) {
         ))}
       </dl>
 
-      {/* The five numbers that decide the recommendation, kept behind their own
-          divider so the field's own facts above stay a single block. */}
-      <dl className="mt-3 flex flex-wrap gap-x-4 gap-y-2.5 border-t border-ink-100 pt-3">
+{/* The five numbers that decide the recommendation. No rule above them: the
+            border and the padding under it were a blank band across the middle of
+            this card. */}
+      <dl className="mt-2.5 flex flex-wrap gap-x-4 gap-y-2.5">
         {outcomes.map((fact) => (
           <div key={fact.label} className="min-w-[9rem] flex-1">
             <dt className="text-[9px] uppercase tracking-[0.06em] text-ink-400">{fact.label}</dt>
