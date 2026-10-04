@@ -412,12 +412,21 @@ describe('Field view', () => {
 
     // The sky card has the least content in its row, so it used to be padded out
     // by stretching the humidity box into a tall frame around a single line. It
-    // fills honestly instead: the temperature is sized from the card's own width,
+    // fills honestly instead: the temperature is sized from the card's own width
     // and the box is left at its natural height.
     const sky = screen.getByText(/· now/).closest('section')
     const box = sky?.querySelector('dl')
     expect(box?.className).not.toContain('flex-1')
-    expect(sky?.querySelector('.text-\\[clamp\\(2rem\\,13cqw\\,4rem\\)\\]')).toBeTruthy()
+    expect(sky?.querySelector('.text-\\[clamp\\(2\\.25rem\\,18cqw\\,5rem\\)\\]')).toBeTruthy()
+
+    // And the slack is not opened up as a band under the header: the body
+    // centres all three blocks together, so what is left over sits at the top
+    // and bottom edges as matching padding.
+    const body = sky?.querySelector(':scope > div')
+    expect(body?.className).toContain('justify-center')
+    const group = body?.querySelector(':scope > div.flex-col')
+    expect(group?.className).not.toContain('justify-center')
+    expect(group?.className).not.toContain('flex-1')
   })
 
   it('fills every row of the field details, with no dead cells', async () => {

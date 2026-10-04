@@ -1145,40 +1145,43 @@ function SkyCard({ field }: { field: Advisory }) {
       {/* In the corner, behind nothing. */}
       <Glyph size={104} className="pointer-events-none absolute right-2 top-2 text-white/15" />
 
-      <div className="pad-card relative flex flex-1 flex-col pad-card-y">
-        <div className="flex items-baseline justify-between gap-3">
-          <h2 className="type-label font-semibold uppercase tracking-[0.07em] text-white/60">
-            {field.station} · now
-          </h2>
-          <span className="shrink-0 text-[10px] font-medium uppercase tracking-[0.07em] text-white/70">
-            {condition}
-          </span>
-        </div>
+        {/* `justify-center` on the body, not on an inner group. Centring the
+            temperature and the humidity box together is what opened the band
+            between the header and the temperature: the slack was split between
+            those two blocks. Centring the header, the figure and the footnote as
+            one unit leaves the leftover as matching space at the top and bottom
+            edges, which reads as padding instead of a gap. */}
+        <div className="pad-card relative flex flex-1 flex-col justify-center pad-card-y">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="type-label font-semibold uppercase tracking-[0.07em] text-white/60">
+              {field.station} · now
+            </h2>
+            <span className="shrink-0 text-[10px] font-medium uppercase tracking-[0.07em] text-white/70">
+              {condition}
+            </span>
+          </div>
 
-        {/* Stacked, not side by side: a row of label/value pairs beside a large
-            figure left each pair about forty pixels wide. The temperature is the
-            card's headline and is sized from the card's own width, so it does
-            most of the filling: this card has the least content in its row, and
-            the alternative was growing the humidity box until it was a tall
-            empty frame around one line. `justify-center` so the few pixels left
-            over split above and below rather than pooling under the box. */}
-        <div className="flex flex-1 flex-col justify-center pt-3">
-          <span className="tnum block shrink-0 text-[clamp(2rem,13cqw,4rem)] font-semibold leading-none tracking-tight">
-            {num(temp, 0)}°
-          </span>
+          {/* Stacked, not side by side: a row of label/value pairs beside a large
+              figure left each pair about forty pixels wide. The temperature is the
+              card's headline and is sized from the card's own width, so it does
+              most of the filling on its own. */}
+          <div className="flex flex-col pt-3">
+            <span className="tnum block shrink-0 text-[clamp(2.25rem,18cqw,5rem)] font-semibold leading-none tracking-tight">
+              {num(temp, 0)}°
+            </span>
 
-          {/* Natural height, not a fill surface: one row in a stretched box reads
-              as an empty frame. Recessed with a translucent white so the group
-              sits into the blue rather than floating on it. */}
-          <dl className="mt-3 rounded-card border border-white/15 bg-white/10 px-[clamp(0.6rem,1.8cqw,0.95rem)] py-[clamp(0.5rem,1.5cqw,0.8rem)] text-[11px] shadow-[inset_0_1px_2px_rgba(15,23,42,0.18)]">
-            {/* Humidity only. Air temperature is the headline above it and rain
-                today is one of the three decision inputs further up the page, so
-                listing either here just printed the same figure twice. */}
-            <div className="flex items-baseline justify-between gap-3">
-              <dt className="text-white/65">Humidity</dt>
-              <dd className="tnum font-semibold">{num(humid, 0)}%</dd>
-            </div>
-          </dl>
+            {/* Natural height, not a fill surface: one row in a stretched box reads
+                as an empty frame. Recessed with a translucent white so the group
+                sits into the blue rather than floating on it. */}
+            <dl className="mt-3 rounded-card border border-white/15 bg-white/10 px-[clamp(0.6rem,1.8cqw,0.95rem)] py-[clamp(0.5rem,1.5cqw,0.8rem)] text-[11px] shadow-[inset_0_1px_2px_rgba(15,23,42,0.18)]">
+              {/* Humidity only. Air temperature is the headline above it and rain
+                  today is one of the three decision inputs further up the page, so
+                  listing either here just printed the same figure twice. */}
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-white/65">Humidity</dt>
+                <dd className="tnum font-semibold">{num(humid, 0)}%</dd>
+              </div>
+            </dl>
 
           <p className="mt-2.5 shrink-0 text-[10px] leading-snug text-white/50">
             Observed at {field.station}. No forecast is stored.
