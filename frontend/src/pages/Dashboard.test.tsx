@@ -422,25 +422,20 @@ describe('Field view', () => {
       expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
     )
 
-    // The sky card has the least content in its row, so it has height to absorb.
-// That height goes to the humidity box, a bordered surface that reads as
-// deliberate when it grows, rather than to bare blue space above the header.
+// The sky card carries two readings, not one. Its neighbours either side hold a
+    // four-figure panel and a season track, so a lone humidity row left this
+    // card short and the spare height had to go somewhere visible.
     const sky = screen.getByText(/· now/).closest('section')
-    const body = sky?.querySelector(':scope > div')
-    const group = body?.querySelector(':scope > div.flex-col')
+    expect(within(sky as HTMLElement).getByText('Humidity')).toBeTruthy()
+    expect(within(sky as HTMLElement).getByText('Rain today')).toBeTruthy()
 
     // Top-aligned: `justify-center` on the body pushed the header off the top
     // edge, and would clip it outright on a card whose content outgrew it.
+    const body = sky?.querySelector(':scope > div')
     expect(body?.className).not.toContain('justify-center')
 
-    // The group grows and passes the slack to the box.
-    expect(group?.className).toContain('flex-1')
-    const box = group?.querySelector('dl')
-    expect(box?.className).toContain('flex-1')
-
-    // And the temperature is sized from the card's own width so it absorbs more
-    // of that slack before any of it reaches the box.
-    expect(sky?.querySelector('.text-\\[clamp\\(2\\.25rem\\,18cqw\\,5rem\\)\\]')).toBeTruthy()
+    // And the temperature is sized from the card's own width.
+    expect(sky?.querySelector('.text-\\[clamp\\(2\\.25rem\\,15cqw\\,4\\.25rem\\)\\]')).toBeTruthy()
   })
 
   it('groups the field details into captioned lists, not one flat grid', async () => {
@@ -546,10 +541,12 @@ it('states the decision, the amount, and the three inputs behind it', async () =
 
     // The reasoning, split so it can be argued with.
     // The three inputs that produced the decision. "Soil" is also a label on the
-    // field-details grid, so it is matched loosely.
+    // field-details grid and "Rain today" now also reads on the weather card, so
+    // these are matched loosely or scoped.
     expect(screen.getAllByText('Soil').length).toBeGreaterThan(0)
     expect(screen.getByText('Crop need')).toBeTruthy()
-    expect(screen.getByText('Rain today')).toBeTruthy()
+    const hero = screen.getByRole('heading', { level: 1 }).closest('section')
+    expect(within(hero as HTMLElement).getByText('Rain today')).toBeTruthy()
   })
 
 it('puts soil dryness and crop age first, as the two deciding facts', async () => {

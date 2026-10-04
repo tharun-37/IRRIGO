@@ -1163,30 +1163,34 @@ function SkyCard({ field }: { field: Advisory }) {
 
           {/* Stacked, not side by side: a row of label/value pairs beside a large
               figure left each pair about forty pixels wide. The temperature is the
-              card's headline and is sized from the card's own width, so it does
-              most of the filling on its own. */}
+              card's headline and is sized from the card's own width. */}
           <div className="flex flex-1 flex-col pt-3">
-            <span className="tnum block shrink-0 text-[clamp(2.25rem,18cqw,5rem)] font-semibold leading-none tracking-tight">
+            <span className="tnum block shrink-0 text-[clamp(2.25rem,15cqw,4.25rem)] font-semibold leading-none tracking-tight">
               {num(temp, 0)}°
             </span>
 
-            {/* The fill surface: a bordered box reads as deliberate when it grows,
-                where bare blue space reads as a gap. Its one row is centred in it. */}
-            <dl className="mt-3 flex flex-1 flex-col justify-center rounded-card border border-white/15 bg-white/10 px-[clamp(0.6rem,1.8cqw,0.95rem)] py-[clamp(0.5rem,1.5cqw,0.8rem)] text-[11px] shadow-[inset_0_1px_2px_rgba(15,23,42,0.18)]">
-              {/* Humidity only. Air temperature is the headline above it and rain
-                  today is one of the three decision inputs further up the page, so
-                  listing either here just printed the same figure twice. */}
+            {/* Two readings, because one could not fill this card. The neighbours
+                either side carry a four-figure panel and a season track, so a
+                lone humidity row left this one short and the spare height had to
+                go somewhere visible. Rain today is a condition of the weather in
+                its own right rather than a decision input, which is why it reads
+                here as well as in the inputs above. */}
+            <dl className="mt-3 flex flex-1 flex-col justify-center gap-1.5 rounded-card border border-white/15 bg-white/10 px-[clamp(0.6rem,1.8cqw,0.95rem)] py-[clamp(0.5rem,1.5cqw,0.8rem)] text-[11px] shadow-[inset_0_1px_2px_rgba(15,23,42,0.18)]">
               <div className="flex items-baseline justify-between gap-3">
                 <dt className="text-white/65">Humidity</dt>
                 <dd className="tnum font-semibold">{num(humid, 0)}%</dd>
               </div>
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-white/65">Rain today</dt>
+                <dd className="tnum font-semibold">{num(rain, 1)} mm</dd>
+              </div>
             </dl>
+          </div>
 
           <p className="mt-2.5 shrink-0 text-[10px] leading-snug text-white/50">
             Observed at {field.station}. No forecast is stored.
           </p>
         </div>
-      </div>
     </section>
   )
 }
