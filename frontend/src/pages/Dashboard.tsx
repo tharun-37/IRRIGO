@@ -477,16 +477,16 @@ function Card({
   return (
     <section className={`card flex flex-col ${className}`}>
       <div className="pad-card flex items-baseline justify-between gap-2 pt-[clamp(0.75rem,2cqw,1.1rem)]">
-        {/* Titles and hints are one step darker than they were on white cards. A
-            card title is 10-11px uppercase, and it sits at the top-left - exactly
-            where each section's colour wash is strongest. `ink-500` on a 200-level
-            tint measures about 3.6:1, below the 4.5:1 needed for text this size, so
-            a legible title needed either a darker ink or a weaker wash; darkening
-            the ink keeps the colour. */}
+        {/* Title and hint are both `ink-700`. They were `ink-500` and `ink-400`
+            when the section fills were a white-to-tint gradient fading out well
+            before this corner; against a solid 100-level fill `ink-500` measures
+            about 4.1:1, which is under the 4.5:1 small text needs, and `ink-400`
+            is far worse. The hierarchy between a title and its hint is already
+            carried by size, weight and case, so the colour does not have to do it. */}
         <h2 className="type-label font-semibold uppercase tracking-[0.07em] text-ink-700">
           {title}
         </h2>
-        {hint && <span className="type-label shrink-0 text-ink-500">{hint}</span>}
+        {hint && <span className="type-label shrink-0 text-ink-700/80">{hint}</span>}
       </div>
       {/* The body is a column so that when the card is stretched by a taller
           neighbour, the child marked `flex-1` (a chart, a reading row) grows into

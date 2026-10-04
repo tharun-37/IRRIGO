@@ -201,87 +201,73 @@
     background-image: linear-gradient(145deg, #4f7fe0 0%, #3b5fc0 48%, #2f3f8f 100%);
   }
 
-  /* Section tints.
-     One hue per section, so a glance down the page tells you which card you are
-     looking at before you read its title. The hue is a wash that fades to white
-     rather than a fill: the titles are 10-11px uppercase ink-500, and a saturated
-     fill drops that below a readable contrast. Keeping the colour in the 100/200
-     range keeps ink-900 body text and ink-500 titles both legible while still
-     reading as colour rather than as grey.
+  /* Section tints: one solid colour per section.
+     A solid fill rather than a gradient, so a card reads as a distinct plate at a
+     glance and a row of them reads as a row of different things. One hue per
+     section, assigned by what the card is about - the season is violet, the week
+     ahead is sky, the measurements are mint, the money is amber - so the colour
+     carries meaning instead of decorating.
 
-     The corner glow on top of the wash is what makes it read as lit rather than
-     flat - a single linear ramp from a pale tint to white looks like a printing
-     error at this size, while the same hue falling off radially looks deliberate.
+     Hues sit at Tailwind's 100 level, not 200 or 300. That is a legibility
+     constraint rather than a taste one: the card title is 10-11px uppercase and
+     the hint beside it is the same size, and on a 200-level fill `ink-500`
+     measures about 3.6:1 - under the 4.5:1 that small text needs. At 100 both
+     inks clear 8:1, so the colour can be as strong as it looks right.
 
-     Gradients set `background-image`, so they layer over the `.card` fill rather
-     than replacing it, and no card needs its background overridden per use. */
+     `backdrop-blur-none` is not decoration either. `.card` blurs what is behind
+     it, which is what makes a translucent plate read as glass; over an opaque
+     fill there is nothing behind it to sample, so the blur costs a composited
+     layer per card and changes nothing visible.
+
+     These set `background-color`, and come after `.card` in the same layer, so
+     they win over its `bg-white/65` without any card overriding it per use. */
   .tint-dry {
-    background-image: linear-gradient(150deg, #fff7ed 0%, rgba(255, 255, 255, 0.86) 55%);
+    @apply bg-orange-100 backdrop-blur-none;
   }
 
   .tint-good {
-    background-image: linear-gradient(150deg, #f0fdf4 0%, rgba(255, 255, 255, 0.86) 55%);
+    @apply bg-green-100 backdrop-blur-none;
   }
 
   .tint-wet {
-    background-image: linear-gradient(150deg, #eff6ff 0%, rgba(255, 255, 255, 0.86) 55%);
+    @apply bg-blue-100 backdrop-blur-none;
   }
 
   .tint-rest {
-    background-image: linear-gradient(150deg, #f8fafc 0%, rgba(255, 255, 255, 0.86) 55%);
+    @apply bg-slate-100 backdrop-blur-none;
   }
 
-  /* The rest of the page's sections. Hues are assigned by what the card is
-     about, so the colour carries meaning rather than decorating it: the season
-     is violet, the week ahead is sky, the measurements are mint, the money is
-     amber. */
   .tint-mint {
-    background-image:
-      radial-gradient(130% 105% at 6% 0%, #a7f3d0 0%, rgba(167, 243, 208, 0) 58%),
-      linear-gradient(155deg, #ecfdf5 0%, rgba(255, 255, 255, 0.9) 70%);
+    @apply bg-emerald-100 backdrop-blur-none;
   }
 
   .tint-sky {
-    background-image:
-      radial-gradient(130% 105% at 6% 0%, #bae6fd 0%, rgba(186, 230, 253, 0) 58%),
-      linear-gradient(155deg, #f0f9ff 0%, rgba(255, 255, 255, 0.9) 70%);
+    @apply bg-sky-100 backdrop-blur-none;
   }
 
   .tint-cyan {
-    background-image:
-      radial-gradient(130% 105% at 6% 0%, #a5f3fc 0%, rgba(165, 243, 252, 0) 58%),
-      linear-gradient(155deg, #ecfeff 0%, rgba(255, 255, 255, 0.9) 70%);
+    @apply bg-cyan-100 backdrop-blur-none;
   }
 
   .tint-violet {
-    background-image:
-      radial-gradient(130% 105% at 6% 0%, #ddd6fe 0%, rgba(221, 214, 254, 0) 58%),
-      linear-gradient(155deg, #f5f3ff 0%, rgba(255, 255, 255, 0.9) 70%);
+    @apply bg-violet-100 backdrop-blur-none;
   }
 
   .tint-rose {
-    background-image:
-      radial-gradient(130% 105% at 6% 0%, #fbcfe8 0%, rgba(251, 207, 232, 0) 58%),
-      linear-gradient(155deg, #fdf2f8 0%, rgba(255, 255, 255, 0.9) 70%);
+    @apply bg-pink-100 backdrop-blur-none;
   }
 
   .tint-amber {
-    background-image:
-      radial-gradient(130% 105% at 6% 0%, #fde68a 0%, rgba(253, 230, 138, 0) 58%),
-      linear-gradient(155deg, #fffbeb 0%, rgba(255, 255, 255, 0.9) 70%);
+    @apply bg-amber-100 backdrop-blur-none;
   }
 
   .tint-lime {
-    background-image:
-      radial-gradient(130% 105% at 6% 0%, #d9f99d 0%, rgba(217, 249, 157, 0) 58%),
-      linear-gradient(155deg, #f7fee7 0%, rgba(255, 255, 255, 0.9) 70%);
+    @apply bg-lime-100 backdrop-blur-none;
   }
 
   /* Metadata: present, factual, not a reading worth a colour of its own. */
   .tint-slate {
-    background-image:
-      radial-gradient(130% 105% at 6% 0%, #cbd5e1 0%, rgba(203, 213, 225, 0) 58%),
-      linear-gradient(155deg, #f8fafc 0%, rgba(255, 255, 255, 0.9) 70%);
+    @apply bg-slate-100 backdrop-blur-none;
   }
 
   /* The stage track's active segment, with a gradient so the position of the

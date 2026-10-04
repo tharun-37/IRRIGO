@@ -54,26 +54,82 @@ def _print_season(plan) -> None:
           f" = {plan.season_gross_volume_m3:.0f} m3 over the whole field")
 
 
+#: The four fields the demo fleet is grown from.
+#:
+#: The registry lives in `data/`, which is git-ignored because the weather and
+#: training corpora beside it run to tens of megabytes. That leaves the demo with
+#: nowhere to live in the repository, so it lives here and this command is how any
+#: clone gets the same four fields back.
+#:
+#: They are chosen to sit at four different points in their seasons and on four
+#: different soils and methods, which is what makes the advisor worth reading: a
+#: month-old paddy transpiring like a mature crop, a barley at peak demand, a
+#: potato on a shallow profile that cannot hold much, and a cotton past peak. The
+#: notes say what each one is for, because a field with a note is a field with a
+#: reason, and the demo is the first thing anyone reads.
+DEMO_FIELDS: tuple[dict[str, object], ...] = (
+    {
+        "field_id": "Barley-West",
+        "station": "LKO",
+        "crop": "Barley",
+        "sowing_date": "2024-10-15",
+        "soil_type": "Silt_Loam",
+        "method_name": "Basin",
+        "field_area_m2": 6_000,
+        "notes": "Day 77, mid-season, peak demand.",
+    },
+    {
+        "field_id": "Cotton-South",
+        "station": "HYD",
+        "crop": "Cotton",
+        "sowing_date": "2024-06-15",
+        "soil_type": "Sandy_Loam",
+        "method_name": "Drip",
+        "field_area_m2": 1_800,
+        "notes": (
+            "Day 199, late season. The crop coefficient is falling, so demand is "
+            "easing off compared with mid-season."
+        ),
+    },
+    {
+        "field_id": "Potato-East",
+        "station": "PNQ",
+        "crop": "Potato",
+        "sowing_date": "2024-10-10",
+        "soil_type": "Silt_Loam",
+        "method_name": "Furrow",
+        "field_area_m2": 3_500,
+        "notes": (
+            "Day 82. Shallow silt-loam profile, so it stores little and needs the "
+            "largest single application of the four."
+        ),
+    },
+    {
+        "field_id": "Paddy-North",
+        "station": "PNQ",
+        "crop": "Rice",
+        "sowing_date": "2024-11-20",
+        "soil_type": "Clay",
+        "method_name": "Paddy",
+        "field_area_m2": 5_000,
+        "notes": (
+            "Flooded paddy, day 41. Rice keeps a high crop coefficient from the "
+            "start, so a young crop here already transpires like a mature one."
+        ),
+    },
+)
+
+
 def cmd_demo(args) -> int:
     registry = SowingRegistry(args.registry)
-    for event in (
-        SowingEvent(field_id="PNQ-wheat-01", station="PNQ", crop="Wheat",
-                    sowing_date="2023-11-15", soil_type="Clay",
-                    method_name="Furrow", field_area_m2=4_000),
-        SowingEvent(field_id="PNQ-maize-01", station="PNQ", crop="Maize",
-                    sowing_date="2024-06-20", soil_type="Loam",
-                    method_name="Sprinkler", field_area_m2=2_500, mulched=True),
-        SowingEvent(field_id="LKO-wheat-02", station="LKO", crop="Wheat",
-                    sowing_date="2023-11-28", soil_type="Silt_Loam",
-                    method_name="Basin", field_area_m2=6_000),
-        SowingEvent(field_id="HYD-cotton-01", station="HYD", crop="Cotton",
-                    sowing_date="2024-05-25", soil_type="Sandy Loam",
-                    method_name="Drip", field_area_m2=1_800),
-    ):
-        registry.register(event, replace=True)
+    for spec in DEMO_FIELDS:
+        registry.register(SowingEvent(**spec), replace=True)
 
     weather = _weather()
-    as_of = date(2024, 7, 5)
+    # Planned at the last day the corpus covers, which is what the API does too. A
+    # fixed calendar date here printed plans for a day the rest of the system never
+    # reports, so the CLI and the dashboard disagreed about the same field.
+    as_of = weather["date"].max().date()
     plans = plan_registry(registry, weather, as_of=as_of, with_season=True)
     for plan in plans:
         print()
