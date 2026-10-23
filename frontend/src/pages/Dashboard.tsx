@@ -312,7 +312,7 @@ export default function Dashboard() {
           column as the page below, so the logo and the cards share an edge.
           `1728` is the page column plus its two gutters (1680 + 2×24 at 1920). */}
       <header className="shrink-0 border-b border-white/70 bg-white/70 backdrop-blur">
-        <div className="pad-gutter mx-auto flex w-full max-w-[1728px] flex-wrap items-center gap-2 py-2.5">
+        <div className="pad-gutter flex w-full flex-wrap items-center gap-2 py-2.5">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-card bg-gradient-to-br from-ink-900 to-ink-700 text-white shadow-lift">
             <LeafGlyph size={16} />
           </span>
@@ -425,7 +425,7 @@ export default function Dashboard() {
             <AddField onRegistered={setFieldId} />
           </div>
         ) : (
-          <div className="scroll-smooth pad-page mx-auto flex w-full max-w-[1728px] flex-col gap-[clamp(0.7rem,1.5vw,1.1rem)] lg:h-full lg:overflow-y-auto">
+          <div className="scroll-smooth pad-page flex w-full flex-col gap-[clamp(0.7rem,1.5vw,1.1rem)] lg:h-full lg:overflow-y-auto">
             <FarmerView
               field={field}
               fields={farmRows}

@@ -779,7 +779,7 @@ export function FarmerView({
     : `${num(field.sensors.temperature, 0)}° · ${num(field.water.rainfallMmDay, 1)} mm rain today`
 
   return (
-    <div className="flex w-full flex-col gap-2.5 px-3 pb-3 xl:h-full xl:min-h-0 xl:px-4 xl:pb-4">
+    <div className="flex w-full flex-col gap-2.5 pb-3 xl:h-full xl:min-h-0 xl:pb-4">
       <div className="grid min-h-0 gap-2.5 xl:flex-1 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)]">
         {/* ---- Left rail: the season, the decision, the week, the photo check
             Four cards of one width. Rows share the height evenly, but each one
