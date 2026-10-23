@@ -1,0 +1,3253 @@
+{
+  "corpus": "D:\\Codings\\MP3-V2\\data\\crop_corpus.csv",
+  "n_rows": 72082,
+  "protocol": {
+    "horizon_days": 14,
+    "n_rows": 72082,
+    "grouped": {
+      "n": 6936,
+      "mae_mm": 2.968036,
+      "median_ae_mm": 1.455935,
+      "rmse_mm": 5.000288,
+      "bias_mm": 0.125745,
+      "r2": 0.957071,
+      "spearman": 0.939736,
+      "within_5mm_pct": 80.175894,
+      "within_10mm_pct": 93.872549,
+      "split": "grouped_by_series",
+      "held_out": "120 of 1200 series",
+      "rationale": "comparable with the previous generation's protocol",
+      "soil_median_mae_mm": 17.757121,
+      "physics_baseline": {
+        "n": 6936,
+        "mae_mm": 26.26407,
+        "median_ae_mm": 22.002494,
+        "rmse_mm": 32.7411,
+        "bias_mm": 25.15442,
+        "r2": -0.840543,
+        "spearman": 0.354571,
+        "within_5mm_pct": 14.013841,
+        "within_10mm_pct": 27.061707
+      },
+      "skill_vs_physics": {
+        "n": 3843,
+        "physics_mae_mm": 15.97188,
+        "model_mae_mm": 4.340703,
+        "skill_vs_physics_pct": 72.822841
+      },
+      "trigger": {
+        "threshold_mm": 1.0,
+        "needs_water_pct": 55.406574,
+        "precision": 0.81756,
+        "recall": 0.995837,
+        "missed_pct": 0.416341,
+        "false_alarm_pct": 27.610734,
+        "confusion": {
+          "true_positive": 3827,
+          "false_positive": 854,
+          "false_negative": 16,
+          "true_negative": 2239
+        }
+      },
+      "interval_90": {
+        "coverage": 0.9,
+        "quantile_mm": 9.459663,
+        "n_calibration": 3796,
+        "realised_coverage": 0.900158
+      },
+      "test_coverage_90": 0.931228,
+      "test_coverage_90_when_water_needed": 0.896175,
+      "per_crop": {
+        "Cotton": {
+          "n": 746,
+          "mae_mm": 3.002472,
+          "median_ae_mm": 1.518105,
+          "rmse_mm": 5.075192,
+          "bias_mm": 0.232778,
+          "r2": 0.946174,
+          "spearman": 0.950214,
+          "within_5mm_pct": 79.22252,
+          "within_10mm_pct": 94.235925
+        },
+        "Groundnut": {
+          "n": 517,
+          "mae_mm": 2.650086,
+          "median_ae_mm": 0.682797,
+          "rmse_mm": 5.062414,
+          "bias_mm": 0.330658,
+          "r2": 0.866476,
+          "spearman": 0.794066,
+          "within_5mm_pct": 83.172147,
+          "within_10mm_pct": 92.649903
+        },
+        "Maize": {
+          "n": 1108,
+          "mae_mm": 3.198855,
+          "median_ae_mm": 1.609926,
+          "rmse_mm": 5.342094,
+          "bias_mm": 0.242051,
+          "r2": 0.973479,
+          "spearman": 0.951482,
+          "within_5mm_pct": 78.610108,
+          "within_10mm_pct": 92.148014
+        },
+        "Onion": {
+          "n": 249,
+          "mae_mm": 1.966963,
+          "median_ae_mm": 0.538397,
+          "rmse_mm": 4.458716,
+          "bias_mm": 0.815895,
+          "r2": 0.889792,
+          "spearman": 0.704227,
+          "within_5mm_pct": 89.558233,
+          "within_10mm_pct": 94.779116
+        },
+        "Potato": {
+          "n": 60,
+          "mae_mm": 3.470837,
+          "median_ae_mm": 2.910201,
+          "rmse_mm": 4.281307,
+          "bias_mm": 0.632703,
+          "r2": 0.935086,
+          "spearman": 0.94743,
+          "within_5mm_pct": 76.666667,
+          "within_10mm_pct": 100.0
+        },
+        "Rice": {
+          "n": 1206,
+          "mae_mm": 3.909264,
+          "median_ae_mm": 2.151188,
+          "rmse_mm": 5.970528,
+          "bias_mm": -0.117605,
+          "r2": 0.94865,
+          "spearman": 0.951529,
+          "within_5mm_pct": 73.05141,
+          "within_10mm_pct": 90.298507
+        },
+        "Sorghum": {
+          "n": 405,
+          "mae_mm": 3.049276,
+          "median_ae_mm": 1.825608,
+          "rmse_mm": 4.755175,
+          "bias_mm": -0.637369,
+          "r2": 0.94173,
+          "spearman": 0.961615,
+          "within_5mm_pct": 77.777778,
+          "within_10mm_pct": 96.049383
+        },
+        "Soybean": {
+          "n": 1141,
+          "mae_mm": 2.094385,
+          "median_ae_mm": 1.086179,
+          "rmse_mm": 3.490325,
+          "bias_mm": 0.099414,
+          "r2": 0.96008,
+          "spearman": 0.941825,
+          "within_5mm_pct": 86.853637,
+          "within_10mm_pct": 97.80894
+        },
+        "Sugarcane": {
+          "n": 348,
+          "mae_mm": 2.057034,
+          "median_ae_mm": 0.417691,
+          "rmse_mm": 4.029218,
+          "bias_mm": 0.51936,
+          "r2": 0.977907,
+          "spearman": 0.846351,
+          "within_5mm_pct": 85.632184,
+          "within_10mm_pct": 95.977011
+        },
+        "Sunflower": {
+          "n": 310,
+          "mae_mm": 4.718849,
+          "median_ae_mm": 3.483948,
+          "rmse_mm": 6.534869,
+          "bias_mm": -0.214816,
+          "r2": 0.946767,
+          "spearman": 0.966891,
+          "within_5mm_pct": 64.193548,
+          "within_10mm_pct": 88.064516
+        },
+        "Wheat": {
+          "n": 846,
+          "mae_mm": 2.619489,
+          "median_ae_mm": 1.351956,
+          "rmse_mm": 4.657123,
+          "bias_mm": 0.225349,
+          "r2": 0.91501,
+          "spearman": 0.928781,
+          "within_5mm_pct": 84.63357,
+          "within_10mm_pct": 95.862884
+        }
+      },
+      "per_stage": {
+        "development": {
+          "n": 1201,
+          "mae_mm": 2.248509,
+          "median_ae_mm": 0.517973,
+          "rmse_mm": 4.566924,
+          "bias_mm": 0.570532,
+          "r2": 0.888973,
+          "spearman": 0.795873,
+          "within_5mm_pct": 86.594505,
+          "within_10mm_pct": 95.087427
+        },
+        "initial": {
+          "n": 505,
+          "mae_mm": 3.087745,
+          "median_ae_mm": 1.311112,
+          "rmse_mm": 5.278894,
+          "bias_mm": -0.196636,
+          "r2": 0.880174,
+          "spearman": 0.838151,
+          "within_5mm_pct": 79.60396,
+          "within_10mm_pct": 91.089109
+        },
+        "late_season": {
+          "n": 1148,
+          "mae_mm": 3.210796,
+          "median_ae_mm": 2.127254,
+          "rmse_mm": 4.85798,
+          "bias_mm": 0.056693,
+          "r2": 0.947089,
+          "spearman": 0.968971,
+          "within_5mm_pct": 80.226481,
+          "within_10mm_pct": 94.860627
+        },
+        "mid_season": {
+          "n": 4049,
+          "mae_mm": 3.089791,
+          "median_ae_mm": 1.586229,
+          "rmse_mm": 5.120379,
+          "bias_mm": 0.052252,
+          "r2": 0.963414,
+          "spearman": 0.950531,
+          "within_5mm_pct": 78.389726,
+          "within_10mm_pct": 93.628056
+        },
+        "post_harvest": {
+          "n": 33,
+          "mae_mm": 3.938358,
+          "median_ae_mm": 1.988501,
+          "rmse_mm": 5.634515,
+          "bias_mm": 0.291237,
+          "r2": 0.907959,
+          "spearman": 0.963483,
+          "within_5mm_pct": 72.727273,
+          "within_10mm_pct": 87.878788
+        }
+      }
+    },
+    "leave_one_station_out": [
+      {
+        "n": 4854,
+        "mae_mm": 4.299499,
+        "median_ae_mm": 2.092443,
+        "rmse_mm": 7.298581,
+        "bias_mm": -1.16933,
+        "r2": 0.882495,
+        "spearman": 0.908162,
+        "within_5mm_pct": 70.807581,
+        "within_10mm_pct": 87.536053,
+        "split": "holdout_station_AMD",
+        "held_out": "AMD",
+        "rationale": "unseen climate, which is what V1 failed on",
+        "soil_median_mae_mm": 18.357917,
+        "physics_baseline": {
+          "n": 4854,
+          "mae_mm": 27.487839,
+          "median_ae_mm": 23.217776,
+          "rmse_mm": 34.033452,
+          "bias_mm": 26.910512,
+          "r2": -1.555007,
+          "spearman": 0.38577,
+          "within_5mm_pct": 13.370416,
+          "within_10mm_pct": 25.278121
+        },
+        "skill_vs_physics": {
+          "n": 2751,
+          "physics_mae_mm": 16.970062,
+          "model_mae_mm": 6.439321,
+          "skill_vs_physics_pct": 62.054815
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 56.674907,
+          "precision": 0.809278,
+          "recall": 0.970193,
+          "missed_pct": 2.980734,
+          "false_alarm_pct": 29.909653,
+          "confusion": {
+            "true_positive": 2669,
+            "false_positive": 629,
+            "false_negative": 82,
+            "true_negative": 1474
+          }
+        },
+        "per_crop": {
+          "Cotton": {
+            "n": 2264,
+            "mae_mm": 3.992855,
+            "median_ae_mm": 2.182837,
+            "rmse_mm": 6.673823,
+            "bias_mm": -0.502522,
+            "r2": 0.917906,
+            "spearman": 0.942214,
+            "within_5mm_pct": 72.482332,
+            "within_10mm_pct": 89.620141
+          },
+          "Groundnut": {
+            "n": 1637,
+            "mae_mm": 5.670982,
+            "median_ae_mm": 3.36934,
+            "rmse_mm": 8.744059,
+            "bias_mm": -3.106225,
+            "r2": 0.75593,
+            "spearman": 0.865621,
+            "within_5mm_pct": 61.148442,
+            "within_10mm_pct": 81.97923
+          },
+          "Wheat": {
+            "n": 953,
+            "mae_mm": 2.672138,
+            "median_ae_mm": 0.438839,
+            "rmse_mm": 5.845876,
+            "bias_mm": 0.573635,
+            "r2": 0.757659,
+            "spearman": 0.754692,
+            "within_5mm_pct": 83.420776,
+            "within_10mm_pct": 92.130115
+          }
+        },
+        "per_stage": {
+          "development": {
+            "n": 705,
+            "mae_mm": 1.469905,
+            "median_ae_mm": 0.160879,
+            "rmse_mm": 4.479624,
+            "bias_mm": 1.426932,
+            "r2": -7.388769,
+            "spearman": 0.232281,
+            "within_5mm_pct": 93.191489,
+            "within_10mm_pct": 96.879433
+          },
+          "initial": {
+            "n": 330,
+            "mae_mm": 4.819533,
+            "median_ae_mm": 1.287262,
+            "rmse_mm": 8.523521,
+            "bias_mm": -2.976417,
+            "r2": -0.037542,
+            "spearman": 0.132649,
+            "within_5mm_pct": 73.939394,
+            "within_10mm_pct": 79.69697
+          },
+          "late_season": {
+            "n": 1037,
+            "mae_mm": 3.968796,
+            "median_ae_mm": 3.213835,
+            "rmse_mm": 5.326997,
+            "bias_mm": -2.105456,
+            "r2": 0.921959,
+            "spearman": 0.962722,
+            "within_5mm_pct": 68.756027,
+            "within_10mm_pct": 94.792671
+          },
+          "mid_season": {
+            "n": 2746,
+            "mae_mm": 5.111713,
+            "median_ae_mm": 2.59522,
+            "rmse_mm": 8.33008,
+            "bias_mm": -1.267338,
+            "r2": 0.856303,
+            "spearman": 0.91597,
+            "within_5mm_pct": 65.222141,
+            "within_10mm_pct": 83.211945
+          },
+          "post_harvest": {
+            "n": 36,
+            "mae_mm": 2.517624,
+            "median_ae_mm": 1.433659,
+            "rmse_mm": 3.63153,
+            "bias_mm": -1.006319,
+            "r2": 0.956014,
+            "spearman": 0.842214,
+            "within_5mm_pct": 88.888889,
+            "within_10mm_pct": 97.222222
+          }
+        }
+      },
+      {
+        "n": 4769,
+        "mae_mm": 4.429726,
+        "median_ae_mm": 1.681902,
+        "rmse_mm": 7.750539,
+        "bias_mm": 2.530069,
+        "r2": 0.453626,
+        "spearman": 0.646252,
+        "within_5mm_pct": 70.161459,
+        "within_10mm_pct": 84.839589,
+        "split": "holdout_station_BBN",
+        "held_out": "BBN",
+        "rationale": "unseen climate, which is what V1 failed on",
+        "soil_median_mae_mm": 9.566552,
+        "physics_baseline": {
+          "n": 4769,
+          "mae_mm": 40.113907,
+          "median_ae_mm": 41.262417,
+          "rmse_mm": 44.216555,
+          "bias_mm": 40.079688,
+          "r2": -16.782617,
+          "spearman": -0.086292,
+          "within_5mm_pct": 2.411407,
+          "within_10mm_pct": 6.101908
+        },
+        "skill_vs_physics": {
+          "n": 1081,
+          "physics_mae_mm": 23.587533,
+          "model_mae_mm": 7.287802,
+          "skill_vs_physics_pct": 69.10316
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 22.667226,
+          "precision": 0.378284,
+          "recall": 0.999075,
+          "missed_pct": 0.092507,
+          "false_alarm_pct": 48.129067,
+          "confusion": {
+            "true_positive": 1080,
+            "false_positive": 1775,
+            "false_negative": 1,
+            "true_negative": 1913
+          }
+        },
+        "per_crop": {
+          "Groundnut": {
+            "n": 1550,
+            "mae_mm": 3.717116,
+            "median_ae_mm": 0.728157,
+            "rmse_mm": 7.53496,
+            "bias_mm": -0.257242,
+            "r2": 0.683602,
+            "spearman": 0.728754,
+            "within_5mm_pct": 78.516129,
+            "within_10mm_pct": 86.774194
+          },
+          "Maize": {
+            "n": 1715,
+            "mae_mm": 1.533305,
+            "median_ae_mm": 0.330652,
+            "rmse_mm": 3.371963,
+            "bias_mm": 1.377218,
+            "r2": 0.68427,
+            "spearman": 0.599857,
+            "within_5mm_pct": 92.361516,
+            "within_10mm_pct": 97.784257
+          },
+          "Rice": {
+            "n": 1504,
+            "mae_mm": 8.466898,
+            "median_ae_mm": 7.238604,
+            "rmse_mm": 10.908709,
+            "bias_mm": 6.717217,
+            "r2": -0.065557,
+            "spearman": 0.538234,
+            "within_5mm_pct": 36.236702,
+            "within_10mm_pct": 68.085106
+          }
+        },
+        "per_stage": {
+          "development": {
+            "n": 699,
+            "mae_mm": 7.112343,
+            "median_ae_mm": 1.516907,
+            "rmse_mm": 11.870087,
+            "bias_mm": 1.558329,
+            "r2": 0.484116,
+            "spearman": 0.603147,
+            "within_5mm_pct": 61.373391,
+            "within_10mm_pct": 68.669528
+          },
+          "initial": {
+            "n": 364,
+            "mae_mm": 7.890142,
+            "median_ae_mm": 3.989427,
+            "rmse_mm": 12.117942,
+            "bias_mm": 3.670878,
+            "r2": 0.303261,
+            "spearman": 0.537013,
+            "within_5mm_pct": 54.395604,
+            "within_10mm_pct": 68.956044
+          },
+          "late_season": {
+            "n": 973,
+            "mae_mm": 3.079528,
+            "median_ae_mm": 2.018887,
+            "rmse_mm": 4.601954,
+            "bias_mm": 0.640124,
+            "r2": 0.780033,
+            "spearman": 0.886429,
+            "within_5mm_pct": 78.520041,
+            "within_10mm_pct": 94.450154
+          },
+          "mid_season": {
+            "n": 2703,
+            "mae_mm": 3.775623,
+            "median_ae_mm": 1.232338,
+            "rmse_mm": 6.481231,
+            "bias_mm": 3.33827,
+            "r2": -0.078462,
+            "spearman": 0.462696,
+            "within_5mm_pct": 71.36515,
+            "within_10mm_pct": 87.532371
+          },
+          "post_harvest": {
+            "n": 30,
+            "mae_mm": 2.664467,
+            "median_ae_mm": 1.802931,
+            "rmse_mm": 3.599755,
+            "bias_mm": -0.191896,
+            "r2": 0.489543,
+            "spearman": 0.596885,
+            "within_5mm_pct": 86.666667,
+            "within_10mm_pct": 100.0
+          }
+        }
+      },
+      {
+        "n": 5941,
+        "mae_mm": 12.120329,
+        "median_ae_mm": 7.584489,
+        "rmse_mm": 17.923342,
+        "bias_mm": -1.360667,
+        "r2": 0.292061,
+        "spearman": 0.576285,
+        "within_5mm_pct": 41.625989,
+        "within_10mm_pct": 57.162094,
+        "split": "holdout_station_CHN",
+        "held_out": "CHN",
+        "rationale": "unseen climate, which is what V1 failed on",
+        "soil_median_mae_mm": 16.943404,
+        "physics_baseline": {
+          "n": 5941,
+          "mae_mm": 38.021023,
+          "median_ae_mm": 40.22025,
+          "rmse_mm": 43.137328,
+          "bias_mm": 37.434565,
+          "r2": -3.100762,
+          "spearman": 0.367583,
+          "within_5mm_pct": 7.389328,
+          "within_10mm_pct": 12.624137
+        },
+        "skill_vs_physics": {
+          "n": 3437,
+          "physics_mae_mm": 30.010759,
+          "model_mae_mm": 15.68079,
+          "skill_vs_physics_pct": 47.749438
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 57.852213,
+          "precision": 0.691547,
+          "recall": 0.894967,
+          "missed_pct": 10.503346,
+          "false_alarm_pct": 54.792332,
+          "confusion": {
+            "true_positive": 3076,
+            "false_positive": 1372,
+            "false_negative": 361,
+            "true_negative": 1132
+          }
+        },
+        "per_crop": {
+          "Groundnut": {
+            "n": 1488,
+            "mae_mm": 11.028549,
+            "median_ae_mm": 7.479891,
+            "rmse_mm": 16.079413,
+            "bias_mm": -2.169681,
+            "r2": 0.012064,
+            "spearman": 0.442526,
+            "within_5mm_pct": 42.473118,
+            "within_10mm_pct": 57.459677
+          },
+          "Rice": {
+            "n": 1408,
+            "mae_mm": 18.878656,
+            "median_ae_mm": 15.747787,
+            "rmse_mm": 22.714134,
+            "bias_mm": -15.974109,
+            "r2": -0.402455,
+            "spearman": 0.287008,
+            "within_5mm_pct": 11.576705,
+            "within_10mm_pct": 29.403409
+          },
+          "Sugarcane": {
+            "n": 3045,
+            "mae_mm": 9.528815,
+            "median_ae_mm": 3.974604,
+            "rmse_mm": 16.182182,
+            "bias_mm": 5.791891,
+            "r2": 0.513742,
+            "spearman": 0.763268,
+            "within_5mm_pct": 55.106732,
+            "within_10mm_pct": 69.852217
+          }
+        },
+        "per_stage": {
+          "development": {
+            "n": 935,
+            "mae_mm": 9.791498,
+            "median_ae_mm": 0.751194,
+            "rmse_mm": 18.063968,
+            "bias_mm": -9.076861,
+            "r2": 0.410503,
+            "spearman": 0.742594,
+            "within_5mm_pct": 65.347594,
+            "within_10mm_pct": 68.55615
+          },
+          "initial": {
+            "n": 441,
+            "mae_mm": 10.932245,
+            "median_ae_mm": 7.9705,
+            "rmse_mm": 14.846134,
+            "bias_mm": -10.394538,
+            "r2": 0.467598,
+            "spearman": 0.784717,
+            "within_5mm_pct": 34.920635,
+            "within_10mm_pct": 58.503401
+          },
+          "late_season": {
+            "n": 857,
+            "mae_mm": 9.696596,
+            "median_ae_mm": 8.281291,
+            "rmse_mm": 12.270189,
+            "bias_mm": 0.886184,
+            "r2": 0.7557,
+            "spearman": 0.728885,
+            "within_5mm_pct": 32.788798,
+            "within_10mm_pct": 58.809802
+          },
+          "mid_season": {
+            "n": 3684,
+            "mae_mm": 13.457865,
+            "median_ae_mm": 8.728849,
+            "rmse_mm": 19.322636,
+            "bias_mm": 1.143225,
+            "r2": 0.031051,
+            "spearman": 0.479051,
+            "within_5mm_pct": 38.355049,
+            "within_10mm_pct": 53.528773
+          },
+          "post_harvest": {
+            "n": 24,
+            "mae_mm": 5.914286,
+            "median_ae_mm": 3.732588,
+            "rmse_mm": 8.478423,
+            "bias_mm": 0.668087,
+            "r2": 0.714045,
+            "spearman": 0.737063,
+            "within_5mm_pct": 58.333333,
+            "within_10mm_pct": 87.5
+          }
+        }
+      },
+      {
+        "n": 5894,
+        "mae_mm": 3.000198,
+        "median_ae_mm": 1.647638,
+        "rmse_mm": 5.017667,
+        "bias_mm": 0.701033,
+        "r2": 0.909647,
+        "spearman": 0.917057,
+        "within_5mm_pct": 80.166271,
+        "within_10mm_pct": 94.80828,
+        "split": "holdout_station_HYD",
+        "held_out": "HYD",
+        "rationale": "unseen climate, which is what V1 failed on",
+        "soil_median_mae_mm": 14.953276,
+        "physics_baseline": {
+          "n": 5894,
+          "mae_mm": 23.86768,
+          "median_ae_mm": 19.214897,
+          "rmse_mm": 30.218699,
+          "bias_mm": 23.204692,
+          "r2": -2.277101,
+          "spearman": 0.153082,
+          "within_5mm_pct": 19.35867,
+          "within_10mm_pct": 32.728198
+        },
+        "skill_vs_physics": {
+          "n": 3052,
+          "physics_mae_mm": 11.886121,
+          "model_mae_mm": 4.078691,
+          "skill_vs_physics_pct": 65.685263
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 51.781473,
+          "precision": 0.744868,
+          "recall": 0.998689,
+          "missed_pct": 0.131062,
+          "false_alarm_pct": 36.734694,
+          "confusion": {
+            "true_positive": 3048,
+            "false_positive": 1044,
+            "false_negative": 4,
+            "true_negative": 1798
+          }
+        },
+        "per_crop": {
+          "Maize": {
+            "n": 2042,
+            "mae_mm": 3.109128,
+            "median_ae_mm": 1.551265,
+            "rmse_mm": 5.548477,
+            "bias_mm": 1.125772,
+            "r2": 0.895492,
+            "spearman": 0.898436,
+            "within_5mm_pct": 80.754163,
+            "within_10mm_pct": 93.339863
+          },
+          "Sorghum": {
+            "n": 1882,
+            "mae_mm": 2.467839,
+            "median_ae_mm": 1.220875,
+            "rmse_mm": 4.067778,
+            "bias_mm": 0.296676,
+            "r2": 0.92583,
+            "spearman": 0.898571,
+            "within_5mm_pct": 82.943677,
+            "within_10mm_pct": 97.343252
+          },
+          "Soybean": {
+            "n": 1970,
+            "mae_mm": 3.395864,
+            "median_ae_mm": 2.141372,
+            "rmse_mm": 5.254335,
+            "bias_mm": 0.647065,
+            "r2": 0.905152,
+            "spearman": 0.937409,
+            "within_5mm_pct": 76.903553,
+            "within_10mm_pct": 93.908629
+          }
+        },
+        "per_stage": {
+          "development": {
+            "n": 835,
+            "mae_mm": 0.869129,
+            "median_ae_mm": 0.061158,
+            "rmse_mm": 2.168329,
+            "bias_mm": 0.869129,
+            "r2": -251.339798,
+            "spearman": 0.088605,
+            "within_5mm_pct": 96.526946,
+            "within_10mm_pct": 98.682635
+          },
+          "initial": {
+            "n": 436,
+            "mae_mm": 1.541668,
+            "median_ae_mm": 0.387649,
+            "rmse_mm": 2.734669,
+            "bias_mm": 1.490323,
+            "r2": -16.523201,
+            "spearman": 0.142113,
+            "within_5mm_pct": 90.59633,
+            "within_10mm_pct": 99.541284
+          },
+          "late_season": {
+            "n": 1077,
+            "mae_mm": 3.621779,
+            "median_ae_mm": 2.684618,
+            "rmse_mm": 5.113957,
+            "bias_mm": -1.289948,
+            "r2": 0.765111,
+            "spearman": 0.884514,
+            "within_5mm_pct": 75.116063,
+            "within_10mm_pct": 95.914578
+          },
+          "mid_season": {
+            "n": 3516,
+            "mae_mm": 3.50221,
+            "median_ae_mm": 2.057144,
+            "rmse_mm": 5.663067,
+            "bias_mm": 1.191733,
+            "r2": 0.901941,
+            "spearman": 0.926144,
+            "within_5mm_pct": 76.450512,
+            "within_10mm_pct": 92.918089
+          },
+          "post_harvest": {
+            "n": 30,
+            "mae_mm": 2.361593,
+            "median_ae_mm": 1.87935,
+            "rmse_mm": 3.061039,
+            "bias_mm": -1.482382,
+            "r2": 0.690975,
+            "spearman": 0.873637,
+            "within_5mm_pct": 90.0,
+            "within_10mm_pct": 100.0
+          }
+        }
+      },
+      {
+        "n": 6360,
+        "mae_mm": 2.837575,
+        "median_ae_mm": 1.394209,
+        "rmse_mm": 4.862238,
+        "bias_mm": 0.082803,
+        "r2": 0.929556,
+        "spearman": 0.927233,
+        "within_5mm_pct": 81.352201,
+        "within_10mm_pct": 94.371069,
+        "split": "holdout_station_IDR",
+        "held_out": "IDR",
+        "rationale": "unseen climate, which is what V1 failed on",
+        "soil_median_mae_mm": 16.989501,
+        "physics_baseline": {
+          "n": 6360,
+          "mae_mm": 22.231456,
+          "median_ae_mm": 16.504906,
+          "rmse_mm": 28.758385,
+          "bias_mm": 21.607296,
+          "r2": -1.464348,
+          "spearman": 0.301542,
+          "within_5mm_pct": 19.622642,
+          "within_10mm_pct": 34.622642
+        },
+        "skill_vs_physics": {
+          "n": 3443,
+          "physics_mae_mm": 9.638255,
+          "model_mae_mm": 4.09022,
+          "skill_vs_physics_pct": 57.562649
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 54.13522,
+          "precision": 0.828957,
+          "recall": 0.999419,
+          "missed_pct": 0.058089,
+          "false_alarm_pct": 24.340075,
+          "confusion": {
+            "true_positive": 3441,
+            "false_positive": 710,
+            "false_negative": 2,
+            "true_negative": 2207
+          }
+        },
+        "per_crop": {
+          "Onion": {
+            "n": 1218,
+            "mae_mm": 3.445053,
+            "median_ae_mm": 1.548358,
+            "rmse_mm": 5.609817,
+            "bias_mm": -0.57737,
+            "r2": 0.866195,
+            "spearman": 0.876435,
+            "within_5mm_pct": 75.779967,
+            "within_10mm_pct": 89.244663
+          },
+          "Soybean": {
+            "n": 4100,
+            "mae_mm": 3.050344,
+            "median_ae_mm": 1.789245,
+            "rmse_mm": 5.049406,
+            "bias_mm": 0.075742,
+            "r2": 0.926538,
+            "spearman": 0.943043,
+            "within_5mm_pct": 80.146341,
+            "within_10mm_pct": 94.707317
+          },
+          "Wheat": {
+            "n": 1042,
+            "mae_mm": 1.290299,
+            "median_ae_mm": 0.20699,
+            "rmse_mm": 2.681574,
+            "bias_mm": 0.882267,
+            "r2": 0.938519,
+            "spearman": 0.710723,
+            "within_5mm_pct": 92.610365,
+            "within_10mm_pct": 99.040307
+          }
+        },
+        "per_stage": {
+          "development": {
+            "n": 898,
+            "mae_mm": 0.609501,
+            "median_ae_mm": 0.040321,
+            "rmse_mm": 1.819092,
+            "bias_mm": 0.557559,
+            "r2": -0.873483,
+            "spearman": 0.119877,
+            "within_5mm_pct": 96.88196,
+            "within_10mm_pct": 99.22049
+          },
+          "initial": {
+            "n": 421,
+            "mae_mm": 1.573767,
+            "median_ae_mm": 0.608993,
+            "rmse_mm": 3.251014,
+            "bias_mm": 1.573767,
+            "r2": 0.0,
+            "spearman": null,
+            "within_5mm_pct": 94.536817,
+            "within_10mm_pct": 96.912114
+          },
+          "late_season": {
+            "n": 1236,
+            "mae_mm": 3.311742,
+            "median_ae_mm": 2.525189,
+            "rmse_mm": 4.648031,
+            "bias_mm": -0.670342,
+            "r2": 0.853311,
+            "spearman": 0.896508,
+            "within_5mm_pct": 79.935275,
+            "within_10mm_pct": 94.579288
+          },
+          "mid_season": {
+            "n": 3776,
+            "mae_mm": 3.345622,
+            "median_ae_mm": 1.843996,
+            "rmse_mm": 5.534642,
+            "bias_mm": 0.065192,
+            "r2": 0.919077,
+            "spearman": 0.928276,
+            "within_5mm_pct": 76.774364,
+            "within_10mm_pct": 92.823093
+          },
+          "post_harvest": {
+            "n": 29,
+            "mae_mm": 3.817513,
+            "median_ae_mm": 3.89589,
+            "rmse_mm": 4.424289,
+            "bias_mm": -1.870193,
+            "r2": 0.746683,
+            "spearman": 0.859606,
+            "within_5mm_pct": 65.517241,
+            "within_10mm_pct": 100.0
+          }
+        }
+      },
+      {
+        "n": 7737,
+        "mae_mm": 7.807496,
+        "median_ae_mm": 4.804984,
+        "rmse_mm": 12.385,
+        "bias_mm": -2.700186,
+        "r2": 0.745564,
+        "spearman": 0.86096,
+        "within_5mm_pct": 51.376503,
+        "within_10mm_pct": 74.434535,
+        "split": "holdout_station_JAI",
+        "held_out": "JAI",
+        "rationale": "unseen climate, which is what V1 failed on",
+        "soil_median_mae_mm": 21.935388,
+        "physics_baseline": {
+          "n": 7737,
+          "mae_mm": 20.069346,
+          "median_ae_mm": 16.702654,
+          "rmse_mm": 25.052095,
+          "bias_mm": 18.933834,
+          "r2": -0.041057,
+          "spearman": 0.693663,
+          "within_5mm_pct": 14.954117,
+          "within_10mm_pct": 30.412305
+        },
+        "skill_vs_physics": {
+          "n": 5961,
+          "physics_mae_mm": 16.891288,
+          "model_mae_mm": 9.619699,
+          "skill_vs_physics_pct": 43.049347
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 77.045366,
+          "precision": 0.911384,
+          "recall": 0.945479,
+          "missed_pct": 5.452105,
+          "false_alarm_pct": 30.855856,
+          "confusion": {
+            "true_positive": 5636,
+            "false_positive": 548,
+            "false_negative": 325,
+            "true_negative": 1228
+          }
+        },
+        "per_crop": {
+          "Cotton": {
+            "n": 2510,
+            "mae_mm": 8.681767,
+            "median_ae_mm": 6.311819,
+            "rmse_mm": 12.605936,
+            "bias_mm": -2.788607,
+            "r2": 0.81834,
+            "spearman": 0.907154,
+            "within_5mm_pct": 43.386454,
+            "within_10mm_pct": 68.087649
+          },
+          "Maize": {
+            "n": 2175,
+            "mae_mm": 8.126321,
+            "median_ae_mm": 5.07775,
+            "rmse_mm": 13.025531,
+            "bias_mm": -2.658164,
+            "r2": 0.601352,
+            "spearman": 0.816287,
+            "within_5mm_pct": 49.37931,
+            "within_10mm_pct": 74.574713
+          },
+          "Sorghum": {
+            "n": 2035,
+            "mae_mm": 5.829779,
+            "median_ae_mm": 3.651405,
+            "rmse_mm": 9.311397,
+            "bias_mm": -0.595289,
+            "r2": 0.756887,
+            "spearman": 0.862774,
+            "within_5mm_pct": 60.19656,
+            "within_10mm_pct": 82.702703
+          },
+          "Wheat": {
+            "n": 1017,
+            "mae_mm": 8.925284,
+            "median_ae_mm": 3.618798,
+            "rmse_mm": 15.439879,
+            "bias_mm": -6.783694,
+            "r2": 0.474973,
+            "spearman": 0.782786,
+            "within_5mm_pct": 57.718781,
+            "within_10mm_pct": 73.254671
+          }
+        },
+        "per_stage": {
+          "development": {
+            "n": 995,
+            "mae_mm": 4.898507,
+            "median_ae_mm": 0.122435,
+            "rmse_mm": 10.802243,
+            "bias_mm": -4.025205,
+            "r2": 0.36562,
+            "spearman": 0.562131,
+            "within_5mm_pct": 76.080402,
+            "within_10mm_pct": 83.21608
+          },
+          "initial": {
+            "n": 482,
+            "mae_mm": 2.409501,
+            "median_ae_mm": 0.213404,
+            "rmse_mm": 4.940401,
+            "bias_mm": -1.104909,
+            "r2": 0.009709,
+            "spearman": 0.172846,
+            "within_5mm_pct": 81.327801,
+            "within_10mm_pct": 90.871369
+          },
+          "late_season": {
+            "n": 1253,
+            "mae_mm": 7.841394,
+            "median_ae_mm": 4.566878,
+            "rmse_mm": 12.24899,
+            "bias_mm": -5.167536,
+            "r2": 0.779715,
+            "spearman": 0.934738,
+            "within_5mm_pct": 53.551476,
+            "within_10mm_pct": 76.296887
+          },
+          "mid_season": {
+            "n": 4976,
+            "mae_mm": 8.919403,
+            "median_ae_mm": 6.16755,
+            "rmse_mm": 13.216566,
+            "bias_mm": -1.969792,
+            "r2": 0.673322,
+            "spearman": 0.791523,
+            "within_5mm_pct": 42.885852,
+            "within_10mm_pct": 70.518489
+          },
+          "post_harvest": {
+            "n": 31,
+            "mae_mm": 5.257711,
+            "median_ae_mm": 3.835413,
+            "rmse_mm": 7.409659,
+            "bias_mm": -2.486643,
+            "r2": 0.864487,
+            "spearman": 0.902016,
+            "within_5mm_pct": 67.741935,
+            "within_10mm_pct": 90.322581
+          }
+        }
+      },
+      {
+        "n": 4444,
+        "mae_mm": 4.95492,
+        "median_ae_mm": 1.237828,
+        "rmse_mm": 8.964016,
+        "bias_mm": 4.703239,
+        "r2": -0.24425,
+        "spearman": 0.518353,
+        "within_5mm_pct": 68.609361,
+        "within_10mm_pct": 81.075608,
+        "split": "holdout_station_KOL",
+        "held_out": "KOL",
+        "rationale": "unseen climate, which is what V1 failed on",
+        "soil_median_mae_mm": 12.447812,
+        "physics_baseline": {
+          "n": 4444,
+          "mae_mm": 45.571186,
+          "median_ae_mm": 45.873611,
+          "rmse_mm": 48.90549,
+          "bias_mm": 45.562226,
+          "r2": -36.035436,
+          "spearman": 0.048846,
+          "within_5mm_pct": 0.742574,
+          "within_10mm_pct": 1.912691
+        },
+        "skill_vs_physics": {
+          "n": 569,
+          "physics_mae_mm": 35.398739,
+          "model_mae_mm": 11.123791,
+          "skill_vs_physics_pct": 68.575741
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 12.80378,
+          "precision": 0.239579,
+          "recall": 1.0,
+          "missed_pct": 0.0,
+          "false_alarm_pct": 46.606452,
+          "confusion": {
+            "true_positive": 569,
+            "false_positive": 1806,
+            "false_negative": 0,
+            "true_negative": 2069
+          }
+        },
+        "per_crop": {
+          "Groundnut": {
+            "n": 1450,
+            "mae_mm": 3.63885,
+            "median_ae_mm": 0.202961,
+            "rmse_mm": 7.852427,
+            "bias_mm": 3.450791,
+            "r2": -1.43818,
+            "spearman": 0.444146,
+            "within_5mm_pct": 78.62069,
+            "within_10mm_pct": 84.275862
+          },
+          "Maize": {
+            "n": 1563,
+            "mae_mm": 1.769487,
+            "median_ae_mm": 0.222659,
+            "rmse_mm": 4.246978,
+            "bias_mm": 1.686599,
+            "r2": -1.73304,
+            "spearman": 0.302866,
+            "within_5mm_pct": 88.739603,
+            "within_10mm_pct": 94.881638
+          },
+          "Rice": {
+            "n": 1431,
+            "mae_mm": 9.767733,
+            "median_ae_mm": 7.161365,
+            "rmse_mm": 12.936763,
+            "bias_mm": 9.267219,
+            "r2": -0.111148,
+            "spearman": 0.59984,
+            "within_5mm_pct": 36.477987,
+            "within_10mm_pct": 62.753319
+          }
+        },
+        "per_stage": {
+          "development": {
+            "n": 693,
+            "mae_mm": 8.642322,
+            "median_ae_mm": 4.884964,
+            "rmse_mm": 13.180707,
+            "bias_mm": 8.603017,
+            "r2": -0.222199,
+            "spearman": 0.627034,
+            "within_5mm_pct": 50.649351,
+            "within_10mm_pct": 65.512266
+          },
+          "initial": {
+            "n": 355,
+            "mae_mm": 11.147749,
+            "median_ae_mm": 9.791042,
+            "rmse_mm": 14.100004,
+            "bias_mm": 9.541002,
+            "r2": 0.330178,
+            "spearman": 0.601607,
+            "within_5mm_pct": 29.295775,
+            "within_10mm_pct": 51.549296
+          },
+          "late_season": {
+            "n": 803,
+            "mae_mm": 1.990222,
+            "median_ae_mm": 0.110911,
+            "rmse_mm": 3.635373,
+            "bias_mm": 1.578669,
+            "r2": 0.588129,
+            "spearman": 0.801573,
+            "within_5mm_pct": 84.308842,
+            "within_10mm_pct": 97.758406
+          },
+          "mid_season": {
+            "n": 2557,
+            "mae_mm": 4.058174,
+            "median_ae_mm": 0.642018,
+            "rmse_mm": 7.773584,
+            "bias_mm": 4.005584,
+            "r2": -3.967265,
+            "spearman": 0.351138,
+            "within_5mm_pct": 73.758311,
+            "within_10mm_pct": 83.965585
+          },
+          "post_harvest": {
+            "n": 36,
+            "mae_mm": 2.727426,
+            "median_ae_mm": 1.165539,
+            "rmse_mm": 5.243581,
+            "bias_mm": 1.174868,
+            "r2": 0.655862,
+            "spearman": 0.814237,
+            "within_5mm_pct": 86.111111,
+            "within_10mm_pct": 94.444444
+          }
+        }
+      },
+      {
+        "n": 4716,
+        "mae_mm": 6.342779,
+        "median_ae_mm": 4.635494,
+        "rmse_mm": 8.719995,
+        "bias_mm": -3.49582,
+        "r2": 0.878238,
+        "spearman": 0.929042,
+        "within_5mm_pct": 52.268872,
+        "within_10mm_pct": 78.350297,
+        "split": "holdout_station_LKO",
+        "held_out": "LKO",
+        "rationale": "unseen climate, which is what V1 failed on",
+        "soil_median_mae_mm": 26.902744,
+        "physics_baseline": {
+          "n": 4716,
+          "mae_mm": 10.98269,
+          "median_ae_mm": 8.094507,
+          "rmse_mm": 14.719957,
+          "bias_mm": 8.338622,
+          "r2": 0.65303,
+          "spearman": 0.836845,
+          "within_5mm_pct": 32.527566,
+          "within_10mm_pct": 58.418151
+        },
+        "skill_vs_physics": {
+          "n": 4312,
+          "physics_mae_mm": 9.477256,
+          "model_mae_mm": 6.693442,
+          "skill_vs_physics_pct": 29.373629
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 91.433418,
+          "precision": 0.959493,
+          "recall": 0.999768,
+          "missed_pct": 0.023191,
+          "false_alarm_pct": 45.049505,
+          "confusion": {
+            "true_positive": 4311,
+            "false_positive": 182,
+            "false_negative": 1,
+            "true_negative": 222
+          }
+        },
+        "per_crop": {
+          "Potato": {
+            "n": 1589,
+            "mae_mm": 9.169883,
+            "median_ae_mm": 8.38307,
+            "rmse_mm": 11.090778,
+            "bias_mm": -7.319449,
+            "r2": 0.703572,
+            "spearman": 0.898729,
+            "within_5mm_pct": 28.382631,
+            "within_10mm_pct": 59.786029
+          },
+          "Rice": {
+            "n": 1842,
+            "mae_mm": 5.942085,
+            "median_ae_mm": 4.039384,
+            "rmse_mm": 8.469582,
+            "bias_mm": -3.092176,
+            "r2": 0.8951,
+            "spearman": 0.948242,
+            "within_5mm_pct": 56.948969,
+            "within_10mm_pct": 82.57329
+          },
+          "Wheat": {
+            "n": 1285,
+            "mae_mm": 3.421228,
+            "median_ae_mm": 2.671427,
+            "rmse_mm": 4.912261,
+            "bias_mm": 0.653777,
+            "r2": 0.8697,
+            "spearman": 0.932699,
+            "within_5mm_pct": 75.097276,
+            "within_10mm_pct": 95.252918
+          }
+        },
+        "per_stage": {
+          "development": {
+            "n": 1192,
+            "mae_mm": 5.305982,
+            "median_ae_mm": 3.914926,
+            "rmse_mm": 7.228353,
+            "bias_mm": -3.692578,
+            "r2": 0.657156,
+            "spearman": 0.830977,
+            "within_5mm_pct": 57.550336,
+            "within_10mm_pct": 83.64094
+          },
+          "initial": {
+            "n": 419,
+            "mae_mm": 2.989424,
+            "median_ae_mm": 2.290878,
+            "rmse_mm": 4.093898,
+            "bias_mm": 0.116311,
+            "r2": 0.724925,
+            "spearman": 0.852841,
+            "within_5mm_pct": 81.861575,
+            "within_10mm_pct": 97.136038
+          },
+          "late_season": {
+            "n": 579,
+            "mae_mm": 7.033112,
+            "median_ae_mm": 5.027548,
+            "rmse_mm": 9.644946,
+            "bias_mm": -4.224897,
+            "r2": 0.856984,
+            "spearman": 0.898657,
+            "within_5mm_pct": 49.740933,
+            "within_10mm_pct": 74.093264
+          },
+          "mid_season": {
+            "n": 2506,
+            "mae_mm": 7.239106,
+            "median_ae_mm": 5.60555,
+            "rmse_mm": 9.658192,
+            "bias_mm": -3.825013,
+            "r2": 0.872863,
+            "spearman": 0.94141,
+            "within_5mm_pct": 45.331205,
+            "within_10mm_pct": 73.663208
+          },
+          "post_harvest": {
+            "n": 20,
+            "mae_mm": 6.093674,
+            "median_ae_mm": 3.54117,
+            "rmse_mm": 9.139139,
+            "bias_mm": -5.088495,
+            "r2": 0.895595,
+            "spearman": 0.816541,
+            "within_5mm_pct": 60.0,
+            "within_10mm_pct": 80.0
+          }
+        }
+      },
+      {
+        "n": 7998,
+        "mae_mm": 5.840713,
+        "median_ae_mm": 3.698763,
+        "rmse_mm": 9.379963,
+        "bias_mm": 2.728444,
+        "r2": 0.92636,
+        "spearman": 0.954939,
+        "within_5mm_pct": 60.215054,
+        "within_10mm_pct": 82.683171,
+        "split": "holdout_station_LUD",
+        "held_out": "LUD",
+        "rationale": "unseen climate, which is what V1 failed on",
+        "soil_median_mae_mm": 30.468206,
+        "physics_baseline": {
+          "n": 7998,
+          "mae_mm": 14.402438,
+          "median_ae_mm": 11.136974,
+          "rmse_mm": 19.308383,
+          "bias_mm": 11.485262,
+          "r2": 0.687967,
+          "spearman": 0.848726,
+          "within_5mm_pct": 21.492873,
+          "within_10mm_pct": 44.461115
+        },
+        "skill_vs_physics": {
+          "n": 5911,
+          "physics_mae_mm": 11.671924,
+          "model_mae_mm": 6.275055,
+          "skill_vs_physics_pct": 46.238039
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 73.905976,
+          "precision": 0.840563,
+          "recall": 0.999831,
+          "missed_pct": 0.016918,
+          "false_alarm_pct": 53.713464,
+          "confusion": {
+            "true_positive": 5910,
+            "false_positive": 1121,
+            "false_negative": 1,
+            "true_negative": 966
+          }
+        },
+        "per_crop": {
+          "Cotton": {
+            "n": 2462,
+            "mae_mm": 8.096572,
+            "median_ae_mm": 5.102186,
+            "rmse_mm": 13.197037,
+            "bias_mm": 4.646709,
+            "r2": 0.903289,
+            "spearman": 0.908011,
+            "within_5mm_pct": 49.0658,
+            "within_10mm_pct": 73.842405
+          },
+          "Maize": {
+            "n": 2136,
+            "mae_mm": 5.287471,
+            "median_ae_mm": 3.52313,
+            "rmse_mm": 7.790212,
+            "bias_mm": 1.572984,
+            "r2": 0.957007,
+            "spearman": 0.973528,
+            "within_5mm_pct": 62.265918,
+            "within_10mm_pct": 83.192884
+          },
+          "Rice": {
+            "n": 2056,
+            "mae_mm": 5.636875,
+            "median_ae_mm": 4.083654,
+            "rmse_mm": 7.659377,
+            "bias_mm": 2.923226,
+            "r2": 0.8878,
+            "spearman": 0.942897,
+            "within_5mm_pct": 58.414397,
+            "within_10mm_pct": 83.803502
+          },
+          "Wheat": {
+            "n": 1344,
+            "mae_mm": 2.899408,
+            "median_ae_mm": 1.982848,
+            "rmse_mm": 4.283623,
+            "bias_mm": 0.752864,
+            "r2": 0.912064,
+            "spearman": 0.946997,
+            "within_5mm_pct": 80.133929,
+            "within_10mm_pct": 96.354167
+          }
+        },
+        "per_stage": {
+          "development": {
+            "n": 2413,
+            "mae_mm": 3.172726,
+            "median_ae_mm": 1.944098,
+            "rmse_mm": 4.838604,
+            "bias_mm": 2.40657,
+            "r2": 0.903872,
+            "spearman": 0.896558,
+            "within_5mm_pct": 76.419395,
+            "within_10mm_pct": 93.74223
+          },
+          "initial": {
+            "n": 656,
+            "mae_mm": 3.715229,
+            "median_ae_mm": 2.889463,
+            "rmse_mm": 5.330662,
+            "bias_mm": 1.226093,
+            "r2": 0.768997,
+            "spearman": 0.811947,
+            "within_5mm_pct": 76.829268,
+            "within_10mm_pct": 95.579268
+          },
+          "late_season": {
+            "n": 897,
+            "mae_mm": 10.555991,
+            "median_ae_mm": 6.287827,
+            "rmse_mm": 16.845642,
+            "bias_mm": 6.953025,
+            "r2": 0.672288,
+            "spearman": 0.837714,
+            "within_5mm_pct": 41.471572,
+            "within_10mm_pct": 67.112598
+          },
+          "mid_season": {
+            "n": 4006,
+            "mae_mm": 6.732556,
+            "median_ae_mm": 4.658073,
+            "rmse_mm": 9.631501,
+            "bias_mm": 2.222897,
+            "r2": 0.926957,
+            "spearman": 0.967515,
+            "within_5mm_pct": 51.997004,
+            "within_10mm_pct": 77.433849
+          },
+          "post_harvest": {
+            "n": 26,
+            "mae_mm": 6.988362,
+            "median_ae_mm": 5.112804,
+            "rmse_mm": 9.593406,
+            "bias_mm": 2.651295,
+            "r2": 0.803883,
+            "spearman": 0.906138,
+            "within_5mm_pct": 50.0,
+            "within_10mm_pct": 76.923077
+          }
+        }
+      },
+      {
+        "n": 5282,
+        "mae_mm": 2.952142,
+        "median_ae_mm": 0.967154,
+        "rmse_mm": 5.75182,
+        "bias_mm": 1.813209,
+        "r2": 0.874484,
+        "spearman": 0.854025,
+        "within_5mm_pct": 81.294964,
+        "within_10mm_pct": 92.881484,
+        "split": "holdout_station_NAG",
+        "held_out": "NAG",
+        "rationale": "unseen climate, which is what V1 failed on",
+        "soil_median_mae_mm": 14.772438,
+        "physics_baseline": {
+          "n": 5282,
+          "mae_mm": 29.920791,
+          "median_ae_mm": 28.826963,
+          "rmse_mm": 36.044044,
+          "bias_mm": 29.354507,
+          "r2": -3.928957,
+          "spearman": 0.04865,
+          "within_5mm_pct": 13.650133,
+          "within_10mm_pct": 23.097312
+        },
+        "skill_vs_physics": {
+          "n": 2029,
+          "physics_mae_mm": 13.053242,
+          "model_mae_mm": 4.548286,
+          "skill_vs_physics_pct": 65.155889
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 38.41348,
+          "precision": 0.686062,
+          "recall": 0.999507,
+          "missed_pct": 0.049285,
+          "false_alarm_pct": 28.527513,
+          "confusion": {
+            "true_positive": 2028,
+            "false_positive": 928,
+            "false_negative": 1,
+            "true_negative": 2325
+          }
+        },
+        "per_crop": {
+          "Cotton": {
+            "n": 2480,
+            "mae_mm": 3.179212,
+            "median_ae_mm": 1.579301,
+            "rmse_mm": 5.523151,
+            "bias_mm": 2.530911,
+            "r2": 0.910627,
+            "spearman": 0.91845,
+            "within_5mm_pct": 79.072581,
+            "within_10mm_pct": 93.387097
+          },
+          "Soybean": {
+            "n": 1839,
+            "mae_mm": 2.90301,
+            "median_ae_mm": 1.132367,
+            "rmse_mm": 5.410764,
+            "bias_mm": 0.523803,
+            "r2": 0.848001,
+            "spearman": 0.850697,
+            "within_5mm_pct": 81.620446,
+            "within_10mm_pct": 92.822186
+          },
+          "Wheat": {
+            "n": 963,
+            "mae_mm": 2.461198,
+            "median_ae_mm": 0.0,
+            "rmse_mm": 6.855166,
+            "bias_mm": 2.427247,
+            "r2": -4.358302,
+            "spearman": 0.261109,
+            "within_5mm_pct": 86.396677,
+            "within_10mm_pct": 91.692627
+          }
+        },
+        "per_stage": {
+          "development": {
+            "n": 742,
+            "mae_mm": 1.708609,
+            "median_ae_mm": 0.146732,
+            "rmse_mm": 5.923425,
+            "bias_mm": 1.687022,
+            "r2": -3.191327,
+            "spearman": 0.280482,
+            "within_5mm_pct": 93.261456,
+            "within_10mm_pct": 94.878706
+          },
+          "initial": {
+            "n": 331,
+            "mae_mm": 5.441087,
+            "median_ae_mm": 2.060489,
+            "rmse_mm": 9.512896,
+            "bias_mm": 5.086563,
+            "r2": -0.96967,
+            "spearman": 0.456655,
+            "within_5mm_pct": 72.205438,
+            "within_10mm_pct": 81.268882
+          },
+          "late_season": {
+            "n": 1219,
+            "mae_mm": 3.374052,
+            "median_ae_mm": 2.287707,
+            "rmse_mm": 5.217828,
+            "bias_mm": 1.61405,
+            "r2": 0.88523,
+            "spearman": 0.951693,
+            "within_5mm_pct": 78.753076,
+            "within_10mm_pct": 93.437244
+          },
+          "mid_season": {
+            "n": 2958,
+            "mae_mm": 2.815864,
+            "median_ae_mm": 0.77895,
+            "rmse_mm": 5.360869,
+            "bias_mm": 1.55694,
+            "r2": 0.897913,
+            "spearman": 0.823911,
+            "within_5mm_pct": 80.290737,
+            "within_10mm_pct": 93.407708
+          },
+          "post_harvest": {
+            "n": 32,
+            "mae_mm": 2.566562,
+            "median_ae_mm": 1.468128,
+            "rmse_mm": 4.184553,
+            "bias_mm": 2.156032,
+            "r2": 0.911355,
+            "spearman": 0.965048,
+            "within_5mm_pct": 87.5,
+            "within_10mm_pct": 96.875
+          }
+        }
+      },
+      {
+        "n": 7202,
+        "mae_mm": 6.029099,
+        "median_ae_mm": 3.862054,
+        "rmse_mm": 8.877831,
+        "bias_mm": -2.449789,
+        "r2": 0.922921,
+        "spearman": 0.96655,
+        "within_5mm_pct": 58.414329,
+        "within_10mm_pct": 79.741738,
+        "split": "holdout_station_PNJ",
+        "held_out": "PNJ",
+        "rationale": "unseen climate, which is what V1 failed on",
+        "soil_median_mae_mm": 29.334903,
+        "physics_baseline": {
+          "n": 7202,
+          "mae_mm": 13.591419,
+          "median_ae_mm": 10.908175,
+          "rmse_mm": 17.681793,
+          "bias_mm": 10.247358,
+          "r2": 0.694244,
+          "spearman": 0.865778,
+          "within_5mm_pct": 24.048875,
+          "within_10mm_pct": 46.153846
+        },
+        "skill_vs_physics": {
+          "n": 5849,
+          "physics_mae_mm": 12.088911,
+          "model_mae_mm": 7.001953,
+          "skill_vs_physics_pct": 42.079541
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 81.213552,
+          "precision": 0.900602,
+          "recall": 0.997606,
+          "missed_pct": 0.239357,
+          "false_alarm_pct": 47.597931,
+          "confusion": {
+            "true_positive": 5835,
+            "false_positive": 644,
+            "false_negative": 14,
+            "true_negative": 709
+          }
+        },
+        "per_crop": {
+          "Maize": {
+            "n": 2105,
+            "mae_mm": 6.257275,
+            "median_ae_mm": 3.572524,
+            "rmse_mm": 9.636998,
+            "bias_mm": -2.687781,
+            "r2": 0.940511,
+            "spearman": 0.971252,
+            "within_5mm_pct": 58.812352,
+            "within_10mm_pct": 78.337292
+          },
+          "Rice": {
+            "n": 1924,
+            "mae_mm": 6.133919,
+            "median_ae_mm": 4.413135,
+            "rmse_mm": 8.595136,
+            "bias_mm": -2.774808,
+            "r2": 0.897202,
+            "spearman": 0.946587,
+            "within_5mm_pct": 55.717256,
+            "within_10mm_pct": 81.185031
+          },
+          "Sunflower": {
+            "n": 1842,
+            "mae_mm": 7.583968,
+            "median_ae_mm": 5.192157,
+            "rmse_mm": 10.316052,
+            "bias_mm": -2.549744,
+            "r2": 0.864325,
+            "spearman": 0.938061,
+            "within_5mm_pct": 49.022801,
+            "within_10mm_pct": 70.19544
+          },
+          "Wheat": {
+            "n": 1331,
+            "mae_mm": 3.364894,
+            "median_ae_mm": 2.126747,
+            "rmse_mm": 5.052057,
+            "bias_mm": -1.465245,
+            "r2": 0.893584,
+            "spearman": 0.950499,
+            "within_5mm_pct": 74.680691,
+            "within_10mm_pct": 93.087904
+          }
+        },
+        "per_stage": {
+          "development": {
+            "n": 2112,
+            "mae_mm": 3.339201,
+            "median_ae_mm": 2.205945,
+            "rmse_mm": 5.097688,
+            "bias_mm": -0.820931,
+            "r2": 0.881215,
+            "spearman": 0.925701,
+            "within_5mm_pct": 77.367424,
+            "within_10mm_pct": 93.465909
+          },
+          "initial": {
+            "n": 697,
+            "mae_mm": 2.537974,
+            "median_ae_mm": 1.96506,
+            "rmse_mm": 3.297399,
+            "bias_mm": -0.988067,
+            "r2": 0.858304,
+            "spearman": 0.906603,
+            "within_5mm_pct": 88.235294,
+            "within_10mm_pct": 99.139168
+          },
+          "late_season": {
+            "n": 732,
+            "mae_mm": 9.167322,
+            "median_ae_mm": 6.395921,
+            "rmse_mm": 12.838226,
+            "bias_mm": 0.547086,
+            "r2": 0.756383,
+            "spearman": 0.886238,
+            "within_5mm_pct": 42.349727,
+            "within_10mm_pct": 67.759563
+          },
+          "mid_season": {
+            "n": 3638,
+            "mae_mm": 7.627763,
+            "median_ae_mm": 5.727145,
+            "rmse_mm": 10.258923,
+            "bias_mm": -4.306392,
+            "r2": 0.907312,
+            "spearman": 0.96623,
+            "within_5mm_pct": 44.969764,
+            "within_10mm_pct": 70.450797
+          },
+          "post_harvest": {
+            "n": 23,
+            "mae_mm": 6.083829,
+            "median_ae_mm": 4.557087,
+            "rmse_mm": 8.44114,
+            "bias_mm": 1.969356,
+            "r2": 0.818758,
+            "spearman": 0.93083,
+            "within_5mm_pct": 52.173913,
+            "within_10mm_pct": 82.608696
+          }
+        }
+      },
+      {
+        "n": 6885,
+        "mae_mm": 4.416768,
+        "median_ae_mm": 1.894139,
+        "rmse_mm": 7.498394,
+        "bias_mm": 0.386723,
+        "r2": 0.92942,
+        "spearman": 0.88173,
+        "within_5mm_pct": 70.312273,
+        "within_10mm_pct": 85.098039,
+        "split": "holdout_station_PNQ",
+        "held_out": "PNQ",
+        "rationale": "unseen climate, which is what V1 failed on",
+        "soil_median_mae_mm": 21.079801,
+        "physics_baseline": {
+          "n": 6885,
+          "mae_mm": 26.1408,
+          "median_ae_mm": 24.921313,
+          "rmse_mm": 31.188672,
+          "bias_mm": 24.860336,
+          "r2": -0.221058,
+          "spearman": 0.522649,
+          "within_5mm_pct": 12.403776,
+          "within_10mm_pct": 21.902687
+        },
+        "skill_vs_physics": {
+          "n": 2865,
+          "physics_mae_mm": 13.224557,
+          "model_mae_mm": 7.325903,
+          "skill_vs_physics_pct": 44.60379
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 41.6122,
+          "precision": 0.63273,
+          "recall": 1.0,
+          "missed_pct": 0.0,
+          "false_alarm_pct": 41.368159,
+          "confusion": {
+            "true_positive": 2865,
+            "false_positive": 1663,
+            "false_negative": 0,
+            "true_negative": 2357
+          }
+        },
+        "per_crop": {
+          "Onion": {
+            "n": 1215,
+            "mae_mm": 4.454906,
+            "median_ae_mm": 2.025451,
+            "rmse_mm": 7.920469,
+            "bias_mm": 0.562686,
+            "r2": 0.795157,
+            "spearman": 0.764377,
+            "within_5mm_pct": 74.73251,
+            "within_10mm_pct": 87.901235
+          },
+          "Soybean": {
+            "n": 2133,
+            "mae_mm": 3.517105,
+            "median_ae_mm": 1.84966,
+            "rmse_mm": 5.403496,
+            "bias_mm": 2.985889,
+            "r2": 0.843486,
+            "spearman": 0.862354,
+            "within_5mm_pct": 76.277543,
+            "within_10mm_pct": 89.404594
+          },
+          "Sugarcane": {
+            "n": 3537,
+            "mae_mm": 4.946212,
+            "median_ae_mm": 1.836818,
+            "rmse_mm": 8.3839,
+            "bias_mm": -1.241158,
+            "r2": 0.940378,
+            "spearman": 0.924699,
+            "within_5mm_pct": 65.196494,
+            "within_10mm_pct": 81.538027
+          }
+        },
+        "per_stage": {
+          "development": {
+            "n": 1124,
+            "mae_mm": 2.31575,
+            "median_ae_mm": 0.292411,
+            "rmse_mm": 5.529909,
+            "bias_mm": 0.785385,
+            "r2": 0.823205,
+            "spearman": 0.436465,
+            "within_5mm_pct": 88.6121,
+            "within_10mm_pct": 94.039146
+          },
+          "initial": {
+            "n": 464,
+            "mae_mm": 4.737809,
+            "median_ae_mm": 1.411164,
+            "rmse_mm": 8.332655,
+            "bias_mm": -0.736677,
+            "r2": 0.782001,
+            "spearman": 0.798581,
+            "within_5mm_pct": 70.689655,
+            "within_10mm_pct": 83.62069
+          },
+          "late_season": {
+            "n": 1028,
+            "mae_mm": 5.252819,
+            "median_ae_mm": 3.589151,
+            "rmse_mm": 8.245951,
+            "bias_mm": 3.483526,
+            "r2": 0.846124,
+            "spearman": 0.880905,
+            "within_5mm_pct": 65.953307,
+            "within_10mm_pct": 88.326848
+          },
+          "mid_season": {
+            "n": 4241,
+            "mae_mm": 4.737251,
+            "median_ae_mm": 2.043313,
+            "rmse_mm": 7.674284,
+            "bias_mm": -0.359283,
+            "r2": 0.942097,
+            "spearman": 0.903749,
+            "within_5mm_pct": 66.399434,
+            "within_10mm_pct": 82.056119
+          },
+          "post_harvest": {
+            "n": 28,
+            "mae_mm": 4.200781,
+            "median_ae_mm": 3.218528,
+            "rmse_mm": 5.525464,
+            "bias_mm": 2.296113,
+            "r2": 0.772645,
+            "spearman": 0.834284,
+            "within_5mm_pct": 82.142857,
+            "within_10mm_pct": 92.857143
+          }
+        }
+      }
+    ],
+    "leave_one_station_out_summary": {
+      "folds": 12,
+      "mean_r2": 0.708344,
+      "median_r2": 0.880367,
+      "min_r2": -0.24425,
+      "max_r2": 0.929556,
+      "std_r2": 0.349487,
+      "mean_mae_mm": 5.41927,
+      "worst_fold": "KOL",
+      "worst_fold_r2": -0.24425,
+      "negative_r2_folds": 1
+    },
+    "leave_one_crop_out": [
+      {
+        "n": 9716,
+        "mae_mm": 5.489049,
+        "median_ae_mm": 3.329781,
+        "rmse_mm": 8.941782,
+        "bias_mm": 1.404334,
+        "r2": 0.916894,
+        "spearman": 0.938277,
+        "within_5mm_pct": 61.918485,
+        "within_10mm_pct": 82.811857,
+        "split": "holdout_crop_Cotton",
+        "held_out": "Cotton",
+        "rationale": "transfer to a crop never trained on",
+        "soil_median_mae_mm": 25.55294,
+        "physics_baseline": {
+          "n": 9716,
+          "mae_mm": 21.479261,
+          "median_ae_mm": 15.230204,
+          "rmse_mm": 28.336688,
+          "bias_mm": 19.428936,
+          "r2": 0.165389,
+          "spearman": 0.633786,
+          "within_5mm_pct": 18.330589,
+          "within_10mm_pct": 34.654179
+        },
+        "skill_vs_physics": {
+          "n": 6233,
+          "physics_mae_mm": 14.232592,
+          "model_mae_mm": 6.670841,
+          "skill_vs_physics_pct": 53.12982
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 64.151914,
+          "precision": 0.809125,
+          "recall": 0.992941,
+          "missed_pct": 0.70592,
+          "false_alarm_pct": 41.917887,
+          "confusion": {
+            "true_positive": 6189,
+            "false_positive": 1460,
+            "false_negative": 44,
+            "true_negative": 2023
+          }
+        },
+        "per_crop": {
+          "Cotton": {
+            "n": 9716,
+            "mae_mm": 5.489049,
+            "median_ae_mm": 3.329781,
+            "rmse_mm": 8.941782,
+            "bias_mm": 1.404334,
+            "r2": 0.916894,
+            "spearman": 0.938277,
+            "within_5mm_pct": 61.918485,
+            "within_10mm_pct": 82.811857
+          }
+        },
+        "per_stage": {
+          "development": {
+            "n": 2066,
+            "mae_mm": 3.482482,
+            "median_ae_mm": 0.812602,
+            "rmse_mm": 6.375096,
+            "bias_mm": 2.656093,
+            "r2": 0.829341,
+            "spearman": 0.712229,
+            "within_5mm_pct": 74.685382,
+            "within_10mm_pct": 87.560503
+          },
+          "initial": {
+            "n": 699,
+            "mae_mm": 3.5255,
+            "median_ae_mm": 1.918694,
+            "rmse_mm": 6.019807,
+            "bias_mm": -0.222438,
+            "r2": 0.080863,
+            "spearman": 0.471629,
+            "within_5mm_pct": 78.683834,
+            "within_10mm_pct": 90.987124
+          },
+          "late_season": {
+            "n": 1730,
+            "mae_mm": 8.023648,
+            "median_ae_mm": 4.734956,
+            "rmse_mm": 12.952918,
+            "bias_mm": -0.011373,
+            "r2": 0.691584,
+            "spearman": 0.856286,
+            "within_5mm_pct": 52.716763,
+            "within_10mm_pct": 76.358382
+          },
+          "mid_season": {
+            "n": 5187,
+            "mae_mm": 5.710881,
+            "median_ae_mm": 3.920587,
+            "rmse_mm": 8.509626,
+            "bias_mm": 1.616246,
+            "r2": 0.935061,
+            "spearman": 0.965017,
+            "within_5mm_pct": 57.682668,
+            "within_10mm_pct": 81.916329
+          },
+          "post_harvest": {
+            "n": 34,
+            "mae_mm": 4.976998,
+            "median_ae_mm": 3.585146,
+            "rmse_mm": 7.039031,
+            "bias_mm": -1.508491,
+            "r2": 0.780053,
+            "spearman": 0.890824,
+            "within_5mm_pct": 55.882353,
+            "within_10mm_pct": 91.176471
+          }
+        }
+      },
+      {
+        "n": 6125,
+        "mae_mm": 5.4197,
+        "median_ae_mm": 1.670579,
+        "rmse_mm": 9.76357,
+        "bias_mm": -0.533647,
+        "r2": 0.589106,
+        "spearman": 0.704417,
+        "within_5mm_pct": 66.644898,
+        "within_10mm_pct": 80.37551,
+        "split": "holdout_crop_Groundnut",
+        "held_out": "Groundnut",
+        "rationale": "transfer to a crop never trained on",
+        "soil_median_mae_mm": 11.665209,
+        "physics_baseline": {
+          "n": 6125,
+          "mae_mm": 37.243583,
+          "median_ae_mm": 38.025023,
+          "rmse_mm": 41.639407,
+          "bias_mm": 37.082139,
+          "r2": -6.473453,
+          "spearman": 0.224443,
+          "within_5mm_pct": 3.804082,
+          "within_10mm_pct": 8.995918
+        },
+        "skill_vs_physics": {
+          "n": 2235,
+          "physics_mae_mm": 26.566425,
+          "model_mae_mm": 10.406327,
+          "skill_vs_physics_pct": 60.829026
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 36.489796,
+          "precision": 0.612875,
+          "recall": 0.924385,
+          "missed_pct": 7.561521,
+          "false_alarm_pct": 33.547558,
+          "confusion": {
+            "true_positive": 2066,
+            "false_positive": 1305,
+            "false_negative": 169,
+            "true_negative": 2585
+          }
+        },
+        "per_crop": {
+          "Groundnut": {
+            "n": 6125,
+            "mae_mm": 5.4197,
+            "median_ae_mm": 1.670579,
+            "rmse_mm": 9.76357,
+            "bias_mm": -0.533647,
+            "r2": 0.589106,
+            "spearman": 0.704417,
+            "within_5mm_pct": 66.644898,
+            "within_10mm_pct": 80.37551
+          }
+        },
+        "per_stage": {
+          "development": {
+            "n": 947,
+            "mae_mm": 6.017935,
+            "median_ae_mm": 1.630539,
+            "rmse_mm": 11.065774,
+            "bias_mm": -1.307441,
+            "r2": 0.629142,
+            "spearman": 0.644244,
+            "within_5mm_pct": 64.097149,
+            "within_10mm_pct": 78.669483
+          },
+          "initial": {
+            "n": 480,
+            "mae_mm": 8.359098,
+            "median_ae_mm": 8.088948,
+            "rmse_mm": 10.824647,
+            "bias_mm": -1.064977,
+            "r2": 0.039045,
+            "spearman": 0.394157,
+            "within_5mm_pct": 34.791667,
+            "within_10mm_pct": 60.208333
+          },
+          "late_season": {
+            "n": 1158,
+            "mae_mm": 4.53385,
+            "median_ae_mm": 2.523276,
+            "rmse_mm": 7.80718,
+            "bias_mm": 3.131694,
+            "r2": 0.536826,
+            "spearman": 0.774616,
+            "within_5mm_pct": 72.020725,
+            "within_10mm_pct": 87.478411
+          },
+          "mid_season": {
+            "n": 3505,
+            "mae_mm": 5.164161,
+            "median_ae_mm": 0.800236,
+            "rmse_mm": 9.848588,
+            "bias_mm": -1.488788,
+            "r2": 0.619561,
+            "spearman": 0.740683,
+            "within_5mm_pct": 69.871612,
+            "within_10mm_pct": 81.112696
+          },
+          "post_harvest": {
+            "n": 35,
+            "mae_mm": 3.820759,
+            "median_ae_mm": 1.856939,
+            "rmse_mm": 5.673099,
+            "bias_mm": 2.069961,
+            "r2": 0.546958,
+            "spearman": 0.77688,
+            "within_5mm_pct": 71.428571,
+            "within_10mm_pct": 94.285714
+          }
+        }
+      },
+      {
+        "n": 11736,
+        "mae_mm": 4.089843,
+        "median_ae_mm": 1.891016,
+        "rmse_mm": 7.103788,
+        "bias_mm": -1.212022,
+        "r2": 0.945155,
+        "spearman": 0.933339,
+        "within_5mm_pct": 72.384117,
+        "within_10mm_pct": 87.755624,
+        "split": "holdout_crop_Maize",
+        "held_out": "Maize",
+        "rationale": "transfer to a crop never trained on",
+        "soil_median_mae_mm": 20.666588,
+        "physics_baseline": {
+          "n": 11736,
+          "mae_mm": 24.974079,
+          "median_ae_mm": 19.228452,
+          "rmse_mm": 31.698735,
+          "bias_mm": 23.188628,
+          "r2": -0.092049,
+          "spearman": 0.478957,
+          "within_5mm_pct": 13.053851,
+          "within_10mm_pct": 27.053511
+        },
+        "skill_vs_physics": {
+          "n": 6172,
+          "physics_mae_mm": 14.141609,
+          "model_mae_mm": 6.595542,
+          "skill_vs_physics_pct": 53.360734
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 52.59032,
+          "precision": 0.787335,
+          "recall": 0.995139,
+          "missed_pct": 0.486066,
+          "false_alarm_pct": 29.816679,
+          "confusion": {
+            "true_positive": 6142,
+            "false_positive": 1659,
+            "false_negative": 30,
+            "true_negative": 3905
+          }
+        },
+        "per_crop": {
+          "Maize": {
+            "n": 11736,
+            "mae_mm": 4.089843,
+            "median_ae_mm": 1.891016,
+            "rmse_mm": 7.103788,
+            "bias_mm": -1.212022,
+            "r2": 0.945155,
+            "spearman": 0.933339,
+            "within_5mm_pct": 72.384117,
+            "within_10mm_pct": 87.755624
+          }
+        },
+        "per_stage": {
+          "development": {
+            "n": 2186,
+            "mae_mm": 2.09609,
+            "median_ae_mm": 0.087222,
+            "rmse_mm": 5.012067,
+            "bias_mm": -0.411976,
+            "r2": 0.797818,
+            "spearman": 0.697367,
+            "within_5mm_pct": 87.968893,
+            "within_10mm_pct": 94.098811
+          },
+          "initial": {
+            "n": 960,
+            "mae_mm": 2.634062,
+            "median_ae_mm": 1.732632,
+            "rmse_mm": 4.149596,
+            "bias_mm": 2.375162,
+            "r2": -0.033926,
+            "spearman": 0.720259,
+            "within_5mm_pct": 83.229167,
+            "within_10mm_pct": 97.5
+          },
+          "late_season": {
+            "n": 1806,
+            "mae_mm": 4.578787,
+            "median_ae_mm": 2.848471,
+            "rmse_mm": 7.311614,
+            "bias_mm": -0.423905,
+            "r2": 0.899874,
+            "spearman": 0.956109,
+            "within_5mm_pct": 69.379845,
+            "within_10mm_pct": 88.150609
+          },
+          "mid_season": {
+            "n": 6731,
+            "mae_mm": 4.820572,
+            "median_ae_mm": 2.419978,
+            "rmse_mm": 7.927674,
+            "bias_mm": -2.211611,
+            "r2": 0.947161,
+            "spearman": 0.957713,
+            "within_5mm_pct": 66.513148,
+            "within_10mm_pct": 84.147972
+          },
+          "post_harvest": {
+            "n": 53,
+            "mae_mm": 3.228013,
+            "median_ae_mm": 1.913963,
+            "rmse_mm": 4.798867,
+            "bias_mm": 0.90683,
+            "r2": 0.862062,
+            "spearman": 0.885338,
+            "within_5mm_pct": 81.132075,
+            "within_10mm_pct": 94.339623
+          }
+        }
+      },
+      {
+        "n": 2433,
+        "mae_mm": 4.835178,
+        "median_ae_mm": 3.062368,
+        "rmse_mm": 6.919634,
+        "bias_mm": 1.697865,
+        "r2": 0.825779,
+        "spearman": 0.831707,
+        "within_5mm_pct": 72.955199,
+        "within_10mm_pct": 88.244965,
+        "split": "holdout_crop_Onion",
+        "held_out": "Onion",
+        "rationale": "transfer to a crop never trained on",
+        "soil_median_mae_mm": 14.003797,
+        "physics_baseline": {
+          "n": 2433,
+          "mae_mm": 28.116862,
+          "median_ae_mm": 27.847147,
+          "rmse_mm": 32.733189,
+          "bias_mm": 27.676896,
+          "r2": -2.898624,
+          "spearman": 0.234607,
+          "within_5mm_pct": 7.151665,
+          "within_10mm_pct": 16.810522
+        },
+        "skill_vs_physics": {
+          "n": 888,
+          "physics_mae_mm": 12.026124,
+          "model_mae_mm": 6.398397,
+          "skill_vs_physics_pct": 46.79585
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 36.49815,
+          "precision": 0.370927,
+          "recall": 1.0,
+          "missed_pct": 0.0,
+          "false_alarm_pct": 97.475728,
+          "confusion": {
+            "true_positive": 888,
+            "false_positive": 1506,
+            "false_negative": 0,
+            "true_negative": 39
+          }
+        },
+        "per_crop": {
+          "Onion": {
+            "n": 2433,
+            "mae_mm": 4.835178,
+            "median_ae_mm": 3.062368,
+            "rmse_mm": 6.919634,
+            "bias_mm": 1.697865,
+            "r2": 0.825779,
+            "spearman": 0.831707,
+            "within_5mm_pct": 72.955199,
+            "within_10mm_pct": 88.244965
+          }
+        },
+        "per_stage": {
+          "development": {
+            "n": 352,
+            "mae_mm": 6.015028,
+            "median_ae_mm": 2.66604,
+            "rmse_mm": 9.207116,
+            "bias_mm": 1.977776,
+            "r2": 0.824205,
+            "spearman": 0.656487,
+            "within_5mm_pct": 68.465909,
+            "within_10mm_pct": 82.102273
+          },
+          "initial": {
+            "n": 180,
+            "mae_mm": 8.06647,
+            "median_ae_mm": 4.897503,
+            "rmse_mm": 10.631473,
+            "bias_mm": 0.416902,
+            "r2": 0.79415,
+            "spearman": 0.798844,
+            "within_5mm_pct": 51.666667,
+            "within_10mm_pct": 73.333333
+          },
+          "late_season": {
+            "n": 533,
+            "mae_mm": 4.143073,
+            "median_ae_mm": 3.758431,
+            "rmse_mm": 5.16737,
+            "bias_mm": 0.662229,
+            "r2": 0.782341,
+            "spearman": 0.815207,
+            "within_5mm_pct": 71.669794,
+            "within_10mm_pct": 93.245779
+          },
+          "mid_season": {
+            "n": 1344,
+            "mae_mm": 4.373426,
+            "median_ae_mm": 2.720196,
+            "rmse_mm": 6.186133,
+            "bias_mm": 2.280403,
+            "r2": 0.831088,
+            "spearman": 0.760649,
+            "within_5mm_pct": 77.752976,
+            "within_10mm_pct": 89.732143
+          },
+          "post_harvest": {
+            "n": 24,
+            "mae_mm": 4.524581,
+            "median_ae_mm": 4.535751,
+            "rmse_mm": 5.189218,
+            "bias_mm": -2.422673,
+            "r2": 0.723139,
+            "spearman": 0.725407,
+            "within_5mm_pct": 58.333333,
+            "within_10mm_pct": 95.833333
+          }
+        }
+      },
+      {
+        "n": 1589,
+        "mae_mm": 9.284037,
+        "median_ae_mm": 8.600544,
+        "rmse_mm": 11.1563,
+        "bias_mm": -7.703216,
+        "r2": 0.70006,
+        "spearman": 0.911348,
+        "within_5mm_pct": 28.634361,
+        "within_10mm_pct": 57.772184,
+        "split": "holdout_crop_Potato",
+        "held_out": "Potato",
+        "rationale": "transfer to a crop never trained on",
+        "soil_median_mae_mm": 21.614116,
+        "physics_baseline": {
+          "n": 1589,
+          "mae_mm": 8.631915,
+          "median_ae_mm": 6.466769,
+          "rmse_mm": 11.501221,
+          "bias_mm": 6.739759,
+          "r2": 0.681226,
+          "spearman": 0.896582,
+          "within_5mm_pct": 39.96224,
+          "within_10mm_pct": 68.7854
+        },
+        "skill_vs_physics": {
+          "n": 1574,
+          "physics_mae_mm": 8.480436,
+          "model_mae_mm": 9.332919,
+          "skill_vs_physics_pct": -10.052351
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 99.05601,
+          "precision": 0.992434,
+          "recall": 1.0,
+          "missed_pct": 0.0,
+          "false_alarm_pct": 80.0,
+          "confusion": {
+            "true_positive": 1574,
+            "false_positive": 12,
+            "false_negative": 0,
+            "true_negative": 3
+          }
+        },
+        "per_crop": {
+          "Potato": {
+            "n": 1589,
+            "mae_mm": 9.284037,
+            "median_ae_mm": 8.600544,
+            "rmse_mm": 11.1563,
+            "bias_mm": -7.703216,
+            "r2": 0.70006,
+            "spearman": 0.911348,
+            "within_5mm_pct": 28.634361,
+            "within_10mm_pct": 57.772184
+          }
+        },
+        "per_stage": {
+          "development": {
+            "n": 428,
+            "mae_mm": 9.951684,
+            "median_ae_mm": 9.810065,
+            "rmse_mm": 11.006929,
+            "bias_mm": -9.847957,
+            "r2": -0.309211,
+            "spearman": 0.898532,
+            "within_5mm_pct": 14.953271,
+            "within_10mm_pct": 51.869159
+          },
+          "initial": {
+            "n": 152,
+            "mae_mm": 2.029242,
+            "median_ae_mm": 1.355267,
+            "rmse_mm": 2.843153,
+            "bias_mm": 0.805405,
+            "r2": 0.658129,
+            "spearman": 0.857665,
+            "within_5mm_pct": 90.131579,
+            "within_10mm_pct": 99.342105
+          },
+          "late_season": {
+            "n": 197,
+            "mae_mm": 7.565675,
+            "median_ae_mm": 6.803551,
+            "rmse_mm": 9.219539,
+            "bias_mm": -4.149463,
+            "r2": -0.116806,
+            "spearman": 0.643326,
+            "within_5mm_pct": 37.055838,
+            "within_10mm_pct": 73.096447
+          },
+          "mid_season": {
+            "n": 807,
+            "mae_mm": 10.725389,
+            "median_ae_mm": 10.248612,
+            "rmse_mm": 12.57011,
+            "bias_mm": -9.039707,
+            "r2": 0.626162,
+            "spearman": 0.937816,
+            "within_5mm_pct": 22.180917,
+            "within_10mm_pct": 49.318463
+          }
+        }
+      },
+      {
+        "n": 10165,
+        "mae_mm": 9.488108,
+        "median_ae_mm": 6.213321,
+        "rmse_mm": 14.045963,
+        "bias_mm": -7.618606,
+        "r2": 0.739981,
+        "spearman": 0.885901,
+        "within_5mm_pct": 44.161338,
+        "within_10mm_pct": 64.308903,
+        "split": "holdout_crop_Rice",
+        "held_out": "Rice",
+        "rationale": "transfer to a crop never trained on",
+        "soil_median_mae_mm": 25.660863,
+        "physics_baseline": {
+          "n": 10165,
+          "mae_mm": 23.476126,
+          "median_ae_mm": 14.911602,
+          "rmse_mm": 31.637837,
+          "bias_mm": 21.189919,
+          "r2": -0.319214,
+          "spearman": 0.425794,
+          "within_5mm_pct": 22.302017,
+          "within_10mm_pct": 39.655681
+        },
+        "skill_vs_physics": {
+          "n": 7991,
+          "physics_mae_mm": 16.252443,
+          "model_mae_mm": 11.811404,
+          "skill_vs_physics_pct": 27.325361
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 78.612887,
+          "precision": 0.955046,
+          "recall": 0.922538,
+          "missed_pct": 7.746214,
+          "false_alarm_pct": 15.961362,
+          "confusion": {
+            "true_positive": 7372,
+            "false_positive": 347,
+            "false_negative": 619,
+            "true_negative": 1827
+          }
+        },
+        "per_crop": {
+          "Rice": {
+            "n": 10165,
+            "mae_mm": 9.488108,
+            "median_ae_mm": 6.213321,
+            "rmse_mm": 14.045963,
+            "bias_mm": -7.618606,
+            "r2": 0.739981,
+            "spearman": 0.885901,
+            "within_5mm_pct": 44.161338,
+            "within_10mm_pct": 64.308903
+          }
+        },
+        "per_stage": {
+          "development": {
+            "n": 2567,
+            "mae_mm": 7.266286,
+            "median_ae_mm": 4.500121,
+            "rmse_mm": 11.674337,
+            "bias_mm": -5.87767,
+            "r2": 0.368915,
+            "spearman": 0.735765,
+            "within_5mm_pct": 54.538372,
+            "within_10mm_pct": 77.795092
+          },
+          "initial": {
+            "n": 886,
+            "mae_mm": 7.386407,
+            "median_ae_mm": 3.82236,
+            "rmse_mm": 11.77909,
+            "bias_mm": -4.459272,
+            "r2": 0.548553,
+            "spearman": 0.7698,
+            "within_5mm_pct": 58.916479,
+            "within_10mm_pct": 77.426637
+          },
+          "late_season": {
+            "n": 1359,
+            "mae_mm": 12.206915,
+            "median_ae_mm": 9.552815,
+            "rmse_mm": 16.238103,
+            "bias_mm": -6.307788,
+            "r2": 0.723486,
+            "spearman": 0.865948,
+            "within_5mm_pct": 24.944812,
+            "within_10mm_pct": 52.759382
+          },
+          "mid_season": {
+            "n": 5298,
+            "mae_mm": 10.248512,
+            "median_ae_mm": 7.331145,
+            "rmse_mm": 14.856095,
+            "bias_mm": -9.378634,
+            "r2": 0.780492,
+            "spearman": 0.924784,
+            "within_5mm_pct": 41.562854,
+            "within_10mm_pct": 58.342771
+          },
+          "post_harvest": {
+            "n": 55,
+            "mae_mm": 6.616156,
+            "median_ae_mm": 5.20173,
+            "rmse_mm": 9.566653,
+            "bias_mm": -2.617349,
+            "r2": 0.859478,
+            "spearman": 0.895393,
+            "within_5mm_pct": 47.272727,
+            "within_10mm_pct": 83.636364
+          }
+        }
+      },
+      {
+        "n": 3917,
+        "mae_mm": 3.750415,
+        "median_ae_mm": 2.791581,
+        "rmse_mm": 5.352771,
+        "bias_mm": 1.251131,
+        "r2": 0.907947,
+        "spearman": 0.932478,
+        "within_5mm_pct": 70.564207,
+        "within_10mm_pct": 93.08144,
+        "split": "holdout_crop_Sorghum",
+        "held_out": "Sorghum",
+        "rationale": "transfer to a crop never trained on",
+        "soil_median_mae_mm": 15.000794,
+        "physics_baseline": {
+          "n": 3917,
+          "mae_mm": 22.045184,
+          "median_ae_mm": 18.436056,
+          "rmse_mm": 27.33468,
+          "bias_mm": 21.422709,
+          "r2": -1.400536,
+          "spearman": 0.31451,
+          "within_5mm_pct": 16.696451,
+          "within_10mm_pct": 29.614501
+        },
+        "skill_vs_physics": {
+          "n": 2353,
+          "physics_mae_mm": 14.13369,
+          "model_mae_mm": 4.827329,
+          "skill_vs_physics_pct": 65.845229
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 60.071483,
+          "precision": 0.77667,
+          "recall": 0.9932,
+          "missed_pct": 0.679983,
+          "false_alarm_pct": 42.966752,
+          "confusion": {
+            "true_positive": 2337,
+            "false_positive": 672,
+            "false_negative": 16,
+            "true_negative": 892
+          }
+        },
+        "per_crop": {
+          "Sorghum": {
+            "n": 3917,
+            "mae_mm": 3.750415,
+            "median_ae_mm": 2.791581,
+            "rmse_mm": 5.352771,
+            "bias_mm": 1.251131,
+            "r2": 0.907947,
+            "spearman": 0.932478,
+            "within_5mm_pct": 70.564207,
+            "within_10mm_pct": 93.08144
+          }
+        },
+        "per_stage": {
+          "development": {
+            "n": 502,
+            "mae_mm": 1.83931,
+            "median_ae_mm": 0.341275,
+            "rmse_mm": 3.931309,
+            "bias_mm": 1.05229,
+            "r2": 0.682422,
+            "spearman": 0.440357,
+            "within_5mm_pct": 89.043825,
+            "within_10mm_pct": 96.414343
+          },
+          "initial": {
+            "n": 266,
+            "mae_mm": 1.7609,
+            "median_ae_mm": 0.340109,
+            "rmse_mm": 3.327871,
+            "bias_mm": 0.351596,
+            "r2": 0.067912,
+            "spearman": 0.207147,
+            "within_5mm_pct": 89.473684,
+            "within_10mm_pct": 97.368421
+          },
+          "late_season": {
+            "n": 696,
+            "mae_mm": 4.38409,
+            "median_ae_mm": 3.740286,
+            "rmse_mm": 5.55869,
+            "bias_mm": -2.693413,
+            "r2": 0.844186,
+            "spearman": 0.924768,
+            "within_5mm_pct": 64.655172,
+            "within_10mm_pct": 94.252874
+          },
+          "mid_season": {
+            "n": 2435,
+            "mae_mm": 4.187124,
+            "median_ae_mm": 3.2374,
+            "rmse_mm": 5.723881,
+            "bias_mm": 2.541182,
+            "r2": 0.901982,
+            "spearman": 0.948013,
+            "within_5mm_pct": 66.283368,
+            "within_10mm_pct": 91.540041
+          }
+        }
+      },
+      {
+        "n": 10042,
+        "mae_mm": 3.529077,
+        "median_ae_mm": 1.942412,
+        "rmse_mm": 5.710937,
+        "bias_mm": 0.682812,
+        "r2": 0.89431,
+        "spearman": 0.916945,
+        "within_5mm_pct": 74.955188,
+        "within_10mm_pct": 91.784505,
+        "split": "holdout_crop_Soybean",
+        "held_out": "Soybean",
+        "rationale": "transfer to a crop never trained on",
+        "soil_median_mae_mm": 15.912321,
+        "physics_baseline": {
+          "n": 10042,
+          "mae_mm": 21.937157,
+          "median_ae_mm": 17.589895,
+          "rmse_mm": 28.188113,
+          "bias_mm": 21.350724,
+          "r2": -1.574845,
+          "spearman": 0.306829,
+          "within_5mm_pct": 20.483967,
+          "within_10mm_pct": 34.684326
+        },
+        "skill_vs_physics": {
+          "n": 5509,
+          "physics_mae_mm": 10.870157,
+          "model_mae_mm": 4.554588,
+          "skill_vs_physics_pct": 58.100072
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 54.85959,
+          "precision": 0.766843,
+          "recall": 1.0,
+          "missed_pct": 0.0,
+          "false_alarm_pct": 36.951246,
+          "confusion": {
+            "true_positive": 5509,
+            "false_positive": 1675,
+            "false_negative": 0,
+            "true_negative": 2858
+          }
+        },
+        "per_crop": {
+          "Soybean": {
+            "n": 10042,
+            "mae_mm": 3.529077,
+            "median_ae_mm": 1.942412,
+            "rmse_mm": 5.710937,
+            "bias_mm": 0.682812,
+            "r2": 0.89431,
+            "spearman": 0.916945,
+            "within_5mm_pct": 74.955188,
+            "within_10mm_pct": 91.784505
+          }
+        },
+        "per_stage": {
+          "development": {
+            "n": 1420,
+            "mae_mm": 0.936776,
+            "median_ae_mm": 0.227097,
+            "rmse_mm": 2.608019,
+            "bias_mm": 0.883924,
+            "r2": -1.430737,
+            "spearman": 0.208477,
+            "within_5mm_pct": 95.352113,
+            "within_10mm_pct": 97.816901
+          },
+          "initial": {
+            "n": 674,
+            "mae_mm": 1.694799,
+            "median_ae_mm": 0.819565,
+            "rmse_mm": 2.896238,
+            "bias_mm": 1.472542,
+            "r2": 0.372586,
+            "spearman": 0.298339,
+            "within_5mm_pct": 93.175074,
+            "within_10mm_pct": 98.071217
+          },
+          "late_season": {
+            "n": 1975,
+            "mae_mm": 3.609981,
+            "median_ae_mm": 2.857395,
+            "rmse_mm": 4.886784,
+            "bias_mm": 0.582109,
+            "r2": 0.809586,
+            "spearman": 0.892653,
+            "within_5mm_pct": 76.506329,
+            "within_10mm_pct": 95.493671
+          },
+          "mid_season": {
+            "n": 5932,
+            "mae_mm": 4.334865,
+            "median_ae_mm": 2.685135,
+            "rmse_mm": 6.675533,
+            "bias_mm": 0.572928,
+            "r2": 0.875901,
+            "spearman": 0.912895,
+            "within_5mm_pct": 67.430883,
+            "within_10mm_pct": 88.351315
+          },
+          "post_harvest": {
+            "n": 41,
+            "mae_mm": 2.983969,
+            "median_ae_mm": 1.889505,
+            "rmse_mm": 4.117732,
+            "bias_mm": 1.484228,
+            "r2": 0.707021,
+            "spearman": 0.92108,
+            "within_5mm_pct": 82.926829,
+            "within_10mm_pct": 97.560976
+          }
+        }
+      },
+      {
+        "n": 6582,
+        "mae_mm": 8.511228,
+        "median_ae_mm": 3.612714,
+        "rmse_mm": 14.403015,
+        "bias_mm": 4.700637,
+        "r2": 0.772299,
+        "spearman": 0.866101,
+        "within_5mm_pct": 55.773321,
+        "within_10mm_pct": 70.343361,
+        "split": "holdout_crop_Sugarcane",
+        "held_out": "Sugarcane",
+        "rationale": "transfer to a crop never trained on",
+        "soil_median_mae_mm": 22.376188,
+        "physics_baseline": {
+          "n": 6582,
+          "mae_mm": 31.943907,
+          "median_ae_mm": 31.075898,
+          "rmse_mm": 38.550937,
+          "bias_mm": 30.502679,
+          "r2": -0.631277,
+          "spearman": 0.510989,
+          "within_5mm_pct": 12.7165,
+          "within_10mm_pct": 21.665147
+        },
+        "skill_vs_physics": {
+          "n": 3034,
+          "physics_mae_mm": 17.116002,
+          "model_mae_mm": 11.020206,
+          "skill_vs_physics_pct": 35.6146
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 46.095412,
+          "precision": 0.680431,
+          "recall": 0.999341,
+          "missed_pct": 0.06592,
+          "false_alarm_pct": 40.135287,
+          "confusion": {
+            "true_positive": 3032,
+            "false_positive": 1424,
+            "false_negative": 2,
+            "true_negative": 2124
+          }
+        },
+        "per_crop": {
+          "Sugarcane": {
+            "n": 6582,
+            "mae_mm": 8.511228,
+            "median_ae_mm": 3.612714,
+            "rmse_mm": 14.403015,
+            "bias_mm": 4.700637,
+            "r2": 0.772299,
+            "spearman": 0.866101,
+            "within_5mm_pct": 55.773321,
+            "within_10mm_pct": 70.343361
+          }
+        },
+        "per_stage": {
+          "development": {
+            "n": 1103,
+            "mae_mm": 1.534209,
+            "median_ae_mm": 0.028501,
+            "rmse_mm": 3.574073,
+            "bias_mm": 1.387102,
+            "r2": -0.758253,
+            "spearman": 0.27371,
+            "within_5mm_pct": 90.027199,
+            "within_10mm_pct": 95.920218
+          },
+          "initial": {
+            "n": 438,
+            "mae_mm": 4.254249,
+            "median_ae_mm": 2.237239,
+            "rmse_mm": 6.300879,
+            "bias_mm": -1.459852,
+            "r2": 0.703423,
+            "spearman": 0.837917,
+            "within_5mm_pct": 66.666667,
+            "within_10mm_pct": 87.214612
+          },
+          "late_season": {
+            "n": 677,
+            "mae_mm": 7.72897,
+            "median_ae_mm": 5.673796,
+            "rmse_mm": 10.675002,
+            "bias_mm": 1.844339,
+            "r2": 0.783106,
+            "spearman": 0.858848,
+            "within_5mm_pct": 45.34712,
+            "within_10mm_pct": 72.525849
+          },
+          "mid_season": {
+            "n": 4354,
+            "mae_mm": 10.836733,
+            "median_ae_mm": 5.761532,
+            "rmse_mm": 16.986566,
+            "bias_mm": 6.610027,
+            "r2": 0.728103,
+            "spearman": 0.877909,
+            "within_5mm_pct": 47.634359,
+            "within_10mm_pct": 61.828204
+          }
+        }
+      },
+      {
+        "n": 1842,
+        "mae_mm": 6.650576,
+        "median_ae_mm": 4.469771,
+        "rmse_mm": 9.254032,
+        "bias_mm": -0.795606,
+        "r2": 0.890822,
+        "spearman": 0.947195,
+        "within_5mm_pct": 53.420195,
+        "within_10mm_pct": 76.981542,
+        "split": "holdout_crop_Sunflower",
+        "held_out": "Sunflower",
+        "rationale": "transfer to a crop never trained on",
+        "soil_median_mae_mm": 23.724099,
+        "physics_baseline": {
+          "n": 1842,
+          "mae_mm": 13.669401,
+          "median_ae_mm": 11.673806,
+          "rmse_mm": 17.308639,
+          "bias_mm": 11.118262,
+          "r2": 0.618058,
+          "spearman": 0.85676,
+          "within_5mm_pct": 21.281216,
+          "within_10mm_pct": 42.942454
+        },
+        "skill_vs_physics": {
+          "n": 1467,
+          "physics_mae_mm": 12.705494,
+          "model_mae_mm": 7.554071,
+          "skill_vs_physics_pct": 40.544846
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 79.641694,
+          "precision": 0.82221,
+          "recall": 0.999318,
+          "missed_pct": 0.068166,
+          "false_alarm_pct": 84.533333,
+          "confusion": {
+            "true_positive": 1466,
+            "false_positive": 317,
+            "false_negative": 1,
+            "true_negative": 58
+          }
+        },
+        "per_crop": {
+          "Sunflower": {
+            "n": 1842,
+            "mae_mm": 6.650576,
+            "median_ae_mm": 4.469771,
+            "rmse_mm": 9.254032,
+            "bias_mm": -0.795606,
+            "r2": 0.890822,
+            "spearman": 0.947195,
+            "within_5mm_pct": 53.420195,
+            "within_10mm_pct": 76.981542
+          }
+        },
+        "per_stage": {
+          "development": {
+            "n": 562,
+            "mae_mm": 3.343739,
+            "median_ae_mm": 2.622235,
+            "rmse_mm": 4.354067,
+            "bias_mm": 0.073586,
+            "r2": 0.714177,
+            "spearman": 0.856852,
+            "within_5mm_pct": 79.537367,
+            "within_10mm_pct": 95.907473
+          },
+          "initial": {
+            "n": 175,
+            "mae_mm": 2.567547,
+            "median_ae_mm": 2.138491,
+            "rmse_mm": 3.203887,
+            "bias_mm": -2.362457,
+            "r2": 0.252927,
+            "spearman": 0.8373,
+            "within_5mm_pct": 89.142857,
+            "within_10mm_pct": 100.0
+          },
+          "late_season": {
+            "n": 167,
+            "mae_mm": 15.675464,
+            "median_ae_mm": 14.586303,
+            "rmse_mm": 18.594889,
+            "bias_mm": 15.492297,
+            "r2": -0.511336,
+            "spearman": 0.723734,
+            "within_5mm_pct": 16.167665,
+            "within_10mm_pct": 34.131737
+          },
+          "mid_season": {
+            "n": 935,
+            "mae_mm": 7.779301,
+            "median_ae_mm": 6.881274,
+            "rmse_mm": 9.656364,
+            "bias_mm": -3.969043,
+            "r2": 0.876272,
+            "spearman": 0.954703,
+            "within_5mm_pct": 37.860963,
+            "within_10mm_pct": 68.983957
+          }
+        }
+      },
+      {
+        "n": 7935,
+        "mae_mm": 3.646776,
+        "median_ae_mm": 1.857043,
+        "rmse_mm": 6.081949,
+        "bias_mm": 0.99979,
+        "r2": 0.842862,
+        "spearman": 0.883178,
+        "within_5mm_pct": 72.060491,
+        "within_10mm_pct": 90.611216,
+        "split": "holdout_crop_Wheat",
+        "held_out": "Wheat",
+        "rationale": "transfer to a crop never trained on",
+        "soil_median_mae_mm": 15.223651,
+        "physics_baseline": {
+          "n": 7935,
+          "mae_mm": 25.283475,
+          "median_ae_mm": 21.779159,
+          "rmse_mm": 30.739368,
+          "bias_mm": 24.88631,
+          "r2": -3.014064,
+          "spearman": 0.2099,
+          "within_5mm_pct": 9.829868,
+          "within_10mm_pct": 21.600504
+        },
+        "skill_vs_physics": {
+          "n": 3804,
+          "physics_mae_mm": 15.137242,
+          "model_mae_mm": 5.66859,
+          "skill_vs_physics_pct": 62.552027
+        },
+        "trigger": {
+          "threshold_mm": 1.0,
+          "needs_water_pct": 47.939509,
+          "precision": 0.756151,
+          "recall": 0.993691,
+          "missed_pct": 0.630915,
+          "false_alarm_pct": 29.508594,
+          "confusion": {
+            "true_positive": 3780,
+            "false_positive": 1219,
+            "false_negative": 24,
+            "true_negative": 2912
+          }
+        },
+        "per_crop": {
+          "Wheat": {
+            "n": 7935,
+            "mae_mm": 3.646776,
+            "median_ae_mm": 1.857043,
+            "rmse_mm": 6.081949,
+            "bias_mm": 0.99979,
+            "r2": 0.842862,
+            "spearman": 0.883178,
+            "within_5mm_pct": 72.060491,
+            "within_10mm_pct": 90.611216
+          }
+        },
+        "per_stage": {
+          "development": {
+            "n": 1210,
+            "mae_mm": 1.426455,
+            "median_ae_mm": 0.129725,
+            "rmse_mm": 4.236346,
+            "bias_mm": 0.979719,
+            "r2": -0.548519,
+            "spearman": 0.365531,
+            "within_5mm_pct": 93.966942,
+            "within_10mm_pct": 96.115702
+          },
+          "initial": {
+            "n": 486,
+            "mae_mm": 3.332899,
+            "median_ae_mm": 1.819251,
+            "rmse_mm": 5.256553,
+            "bias_mm": -1.596847,
+            "r2": 0.276192,
+            "spearman": 0.730291,
+            "within_5mm_pct": 76.337449,
+            "within_10mm_pct": 91.152263
+          },
+          "late_season": {
+            "n": 1393,
+            "mae_mm": 4.723353,
+            "median_ae_mm": 4.29014,
+            "rmse_mm": 6.137648,
+            "bias_mm": 4.436506,
+            "r2": 0.675035,
+            "spearman": 0.927233,
+            "within_5mm_pct": 56.640345,
+            "within_10mm_pct": 90.236899
+          },
+          "mid_season": {
+            "n": 4779,
+            "mae_mm": 3.851911,
+            "median_ae_mm": 2.135502,
+            "rmse_mm": 6.450338,
+            "bias_mm": 0.16256,
+            "r2": 0.86385,
+            "spearman": 0.914396,
+            "within_5mm_pct": 71.31199,
+            "within_10mm_pct": 89.704959
+          },
+          "post_harvest": {
+            "n": 67,
+            "mae_mm": 9.006834,
+            "median_ae_mm": 7.809347,
+            "rmse_mm": 10.263497,
+            "bias_mm": 8.462895,
+            "r2": -6.846175,
+            "spearman": 0.739221,
+            "within_5mm_pct": 19.402985,
+            "within_10mm_pct": 59.701493
+          }
+        }
+      }
+    ],
+    "leave_one_crop_out_summary": {
+      "folds": 11,
+      "mean_r2": 0.820474,
+      "median_r2": 0.842862,
+      "min_r2": 0.589106,
+      "max_r2": 0.945155,
+      "std_r2": 0.104557,
+      "mean_mae_mm": 5.881272,
+      "worst_fold": "Groundnut",
+      "worst_fold_r2": 0.589106,
+      "negative_r2_folds": 0
+    }
+  },
+  "final_model": {
+    "train_mae_mm": 2.453614,
+    "calibration_mae_mm": 2.844126,
+    "conformal": {
+      "0.8": {
+        "coverage": 0.8,
+        "quantile_mm": 6.527313,
+        "n_calibration": 4156,
+        "realised_coverage": 0.800048
+      },
+      "0.9": {
+        "coverage": 0.9,
+        "quantile_mm": 9.10832,
+        "n_calibration": 4156,
+        "realised_coverage": 0.900144
+      },
+      "marginal_0.90": {
+        "coverage": 0.9,
+        "quantile_mm": 7.475177,
+        "n_calibration": 7208,
+        "realised_coverage": 0.900111
+      }
+    }
+  },
+  "importance": {
+    "depletion_fraction": 0.408185,
+    "days_since_sowing": 0.308246,
+    "etc_mm": 0.271237,
+    "is_monsoon": 0.102667,
+    "vpd_kpa": 0.100585,
+    "p_depletion_fraction": 0.097546,
+    "gdd_accumulated": 0.080232,
+    "humidity_pct": 0.025129,
+    "raw_mm": 0.022267,
+    "solar_radiation_mj_m2_day": 0.01276,
+    "tmin_c": 0.011969,
+    "nitrogen_regime": 0.009848,
+    "season_progress": 0.009593,
+    "wind_speed_m_s": 0.00892,
+    "soil_moisture_fraction": 0.007912,
+    "kc": 0.006317,
+    "depletion_mm": 0.006188,
+    "tmax_c": 0.004344,
+    "rainfall_mm": 0.004016,
+    "field_area_m2": 0.003957,
+    "air_temperature_c": 0.003829,
+    "soil_ph": 0.003324,
+    "et0_mm_day": 0.003109,
+    "root_depth_cm": 0.002838,
+    "taw_mm": 0.002515,
+    "gdd_to_next_stage": 0.002241,
+    "stage_ordinal": 0.001896,
+    "mulched": 0.000954,
+    "irrigation_method__Drip": 0.000708,
+    "irrigation_method__Sprinkler": 0.000564,
+    "irrigation_method__Basin": 0.000391,
+    "soil_temperature_c": 0.000294,
+    "ec_ds_m": 0.000279,
+    "irrigation_method__Furrow": 0.000213,
+    "irrigation_method__Flood": 0.0,
+    "irrigation_method__Paddy": 0.0
+  }
+}

@@ -1,0 +1,233 @@
+{
+  "n_corpus_rows": 72082,
+  "n_paired_rows": 72082,
+  "paired_fraction": 1.0,
+  "simulated_vs_observed": {
+    "pooled_r": 0.3591628582129741,
+    "pooled_r_surface_layer": 0.3798217268001795,
+    "within_series": {
+      "series_scored": 555,
+      "mean_within_series_r": 0.35232052061462343,
+      "median_within_series_r": 0.36274149609432893,
+      "min_within_series_r": -0.7128637644150679,
+      "max_within_series_r": 0.88844557486908,
+      "share_positive": 0.9045045045045045
+    },
+    "simulated_mean": 0.2910770508587442,
+    "observed_root_zone_mean": 0.2837316776379678,
+    "observed_surface_mean": 0.28570157837445564
+  },
+  "depth_ordering": {
+    "layer_means": {
+      "soil_moisture_0_to_7cm": 0.28570157837445564,
+      "soil_moisture_7_to_28cm": 0.29341669327527814,
+      "soil_moisture_28_to_100cm": 0.2989147302854378
+    },
+    "monotonic_with_depth": true,
+    "note": "surface should be drier than subsoil in most of these climates; an inversion means the reanalysis profile is not behaving as a root-zone proxy here and the depth test should not be over-read"
+  },
+  "per_station": {
+    "AMD": {
+      "n": 4854,
+      "r": 0.2465897737096938,
+      "simulated_mean": 0.2769838627935723,
+      "observed_mean": 0.26963994626424936,
+      "needs_water_pct": 56.674907292954266,
+      "within_series": {
+        "series_scored": 45,
+        "mean_within_series_r": 0.4562316404376402,
+        "median_within_series_r": 0.4511483259549209,
+        "min_within_series_r": 0.005256651043361569,
+        "max_within_series_r": 0.779667990430353,
+        "share_positive": 1.0
+      }
+    },
+    "BBN": {
+      "n": 4769,
+      "r": 0.24525044724006556,
+      "simulated_mean": 0.3369364499895156,
+      "observed_mean": 0.3434310991123226,
+      "needs_water_pct": 22.667225833508073,
+      "within_series": {
+        "series_scored": 45,
+        "mean_within_series_r": 0.3393976023312034,
+        "median_within_series_r": 0.3318271848376143,
+        "min_within_series_r": 0.012014321293027508,
+        "max_within_series_r": 0.7748615789277514,
+        "share_positive": 1.0
+      }
+    },
+    "CHN": {
+      "n": 5941,
+      "r": 0.00048549557024644236,
+      "simulated_mean": 0.330699129776132,
+      "observed_mean": 0.25296418812770016,
+      "needs_water_pct": 57.852213432082145,
+      "within_series": {
+        "series_scored": 45,
+        "mean_within_series_r": 0.157101564256457,
+        "median_within_series_r": 0.17862097393470283,
+        "min_within_series_r": -0.5487810302248133,
+        "max_within_series_r": 0.5215015570560309,
+        "share_positive": 0.8222222222222222
+      }
+    },
+    "HYD": {
+      "n": 5894,
+      "r": 0.2352650176328294,
+      "simulated_mean": 0.30533233627417716,
+      "observed_mean": 0.2845846765071824,
+      "needs_water_pct": 51.78147268408551,
+      "within_series": {
+        "series_scored": 45,
+        "mean_within_series_r": 0.47843196331569526,
+        "median_within_series_r": 0.4923925370119894,
+        "min_within_series_r": 0.21833456358345849,
+        "max_within_series_r": 0.776715836739358,
+        "share_positive": 1.0
+      }
+    },
+    "IDR": {
+      "n": 6360,
+      "r": 0.533238530536812,
+      "simulated_mean": 0.3284645157232704,
+      "observed_mean": 0.39790468972746323,
+      "needs_water_pct": 54.13522012578616,
+      "within_series": {
+        "series_scored": 45,
+        "mean_within_series_r": 0.5663102775029577,
+        "median_within_series_r": 0.6465539423043464,
+        "min_within_series_r": -0.0004079034976237438,
+        "max_within_series_r": 0.8605505991144299,
+        "share_positive": 0.9777777777777777
+      }
+    },
+    "JAI": {
+      "n": 7737,
+      "r": 0.024632239503666886,
+      "simulated_mean": 0.1730256326741631,
+      "observed_mean": 0.17243419160096504,
+      "needs_water_pct": 77.04536642109345,
+      "within_series": {
+        "series_scored": 48,
+        "mean_within_series_r": 0.3613642807971176,
+        "median_within_series_r": 0.34578936212280864,
+        "min_within_series_r": -0.027463527526493874,
+        "max_within_series_r": 0.8262919196538634,
+        "share_positive": 0.9583333333333334
+      }
+    },
+    "KOL": {
+      "n": 4444,
+      "r": 0.18184813520510035,
+      "simulated_mean": 0.3359009068406841,
+      "observed_mean": 0.34574056321257124,
+      "needs_water_pct": 12.803780378037805,
+      "within_series": {
+        "series_scored": 45,
+        "mean_within_series_r": 0.28702003153780614,
+        "median_within_series_r": 0.28231968773676036,
+        "min_within_series_r": -0.03943550879137502,
+        "max_within_series_r": 0.6486412270276304,
+        "share_positive": 0.9555555555555556
+      }
+    },
+    "LKO": {
+      "n": 4716,
+      "r": 0.11401055952860831,
+      "simulated_mean": 0.320603114927905,
+      "observed_mean": 0.23087000220879275,
+      "needs_water_pct": 91.4334181509754,
+      "within_series": {
+        "series_scored": 36,
+        "mean_within_series_r": 0.34710247854524057,
+        "median_within_series_r": 0.35864360343035556,
+        "min_within_series_r": -0.13360891282683787,
+        "max_within_series_r": 0.8259179652683748,
+        "share_positive": 0.8888888888888888
+      }
+    },
+    "LUD": {
+      "n": 7998,
+      "r": 0.20723349546763195,
+      "simulated_mean": 0.26887196924231055,
+      "observed_mean": 0.2383220354046845,
+      "needs_water_pct": 73.90597649412352,
+      "within_series": {
+        "series_scored": 60,
+        "mean_within_series_r": 0.21563524157867223,
+        "median_within_series_r": 0.17781711058274413,
+        "min_within_series_r": -0.48698935631947665,
+        "max_within_series_r": 0.8222907595568476,
+        "share_positive": 0.7
+      }
+    },
+    "NAG": {
+      "n": 5282,
+      "r": 0.285764981273801,
+      "simulated_mean": 0.3096026561908368,
+      "observed_mean": 0.40931500070995835,
+      "needs_water_pct": 38.41347974252177,
+      "within_series": {
+        "series_scored": 45,
+        "mean_within_series_r": 0.43622031677915224,
+        "median_within_series_r": 0.48423082921902116,
+        "min_within_series_r": -0.27584260655520987,
+        "max_within_series_r": 0.88844557486908,
+        "share_positive": 0.9333333333333333
+      }
+    },
+    "PNJ": {
+      "n": 7202,
+      "r": 0.11582478147007509,
+      "simulated_mean": 0.2733954637600667,
+      "observed_mean": 0.22910204370313797,
+      "needs_water_pct": 81.21355179116912,
+      "within_series": {
+        "series_scored": 60,
+        "mean_within_series_r": 0.21989333395685734,
+        "median_within_series_r": 0.3035155839642225,
+        "min_within_series_r": -0.7128637644150679,
+        "max_within_series_r": 0.7166838557833447,
+        "share_positive": 0.75
+      }
+    },
+    "PNQ": {
+      "n": 6885,
+      "r": 0.07547459258161567,
+      "simulated_mean": 0.3018996557734205,
+      "observed_mean": 0.3074718517913338,
+      "needs_water_pct": 41.61220043572985,
+      "within_series": {
+        "series_scored": 36,
+        "mean_within_series_r": 0.47591380210702483,
+        "median_within_series_r": 0.5018690423731669,
+        "min_within_series_r": 0.18080585935968344,
+        "max_within_series_r": 0.7414949098654962,
+        "share_positive": 1.0
+      }
+    }
+  },
+  "per_stage": {
+    "development": {
+      "n": 13343,
+      "r": 0.1862227259411344
+    },
+    "initial": {
+      "n": 5396,
+      "r": 0.14858699070289277
+    },
+    "late_season": {
+      "n": 11691,
+      "r": 0.45164737304950325
+    },
+    "mid_season": {
+      "n": 41307,
+      "r": 0.41999255840513056
+    },
+    "post_harvest": {
+      "n": 345,
+      "r": 0.5170731043181873
+    }
+  }
+}

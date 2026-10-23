@@ -1,0 +1,29 @@
+{
+  "Root_Rot": {
+    "Moisture": 50.0,
+    "PH": 5.8
+  },
+  "Powdery_Mildew": {
+    "Temperature": [
+      20.0,
+      26.0
+    ],
+    "Humidity": 80.0,
+    "Light_Intensity": 350.0
+  },
+  "Early_Blight": {
+    "Temperature": 24.0,
+    "Humidity": 65.0,
+    "Nitrogen": 35.0
+  },
+  "Rust": {
+    "Temperature": 24.0,
+    "Humidity": 80.0,
+    "Moisture": 48.0
+  },
+  "Bacterial_Leaf_Spot": {
+    "Temperature": 25.0,
+    "Humidity": 75.0,
+    "PH": 7.2
+  }
+}

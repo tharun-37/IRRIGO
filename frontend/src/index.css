@@ -1,0 +1,454 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply font-sans text-ink-900 antialiased;
+    /* The page itself, not the cards. Everything on screen is a white plate, so a
+       near-white page left nothing for those plates to sit on and the screen read
+       flat. Stepping the page down puts each card back above its background, which
+       is where separation has to come from - filling the cards instead was tried
+       and turned them into slabs. */
+    background-color: #dde3ee;
+  }
+
+  /* Film grain, as an actual displacement rather than a tiled overlay.
+
+     A flat noise layer sits *on* the artwork and dulls it. Routing the same
+     turbulence through a displacement map distorts the edge instead, so the
+     gradient keeps its colour and gains an organic boundary — the difference
+     between grain on a surface and a surface that is made of grain. */
+  .grain {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .grain > .grain-layer {
+    position: fixed;
+    inset: -6%;
+    z-index: 0;
+    pointer-events: none;
+    filter: url('#grain-warp');
+    opacity: 0.5;
+    /* Promoted to its own compositor layer, and this is not a micro-optimisation.
+
+       `feTurbulence` is procedural: the noise is generated, not stored, so
+       nothing about this layer can be cached from a previous frame. Left on the
+       main layer, scrolling makes the browser regenerate a viewport's worth of
+       turbulence every frame, which is what made the whole page look like it was
+       shivering. Handed to the compositor it is rasterised once and then merely
+       translated, so scrolling moves content across a static texture and the
+       texture costs nothing per frame.
+
+       `inset: -6%` is deliberate for the same reason: it overscans the layer past
+       every viewport edge, so translating it can never expose a seam. */
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    background-image:
+      radial-gradient(60% 55% at 18% 8%, #a3bdf5 0%, transparent 62%),
+      radial-gradient(52% 48% at 88% 12%, #bfaef2 0%, transparent 60%),
+      radial-gradient(70% 60% at 50% 104%, #a8dcc0 0%, transparent 64%),
+      linear-gradient(180deg, #dde3ee 0%, #ccd6ee 100%);
+  }
+
+  /* Content rides above the warped layer. */
+  .grain > *:not(.grain-layer) {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Numbers align in columns without visual noise. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  /* Smooth scrolling for the app's own scroll containers.
+
+     This page does not scroll the document: the field view scrolls an inner
+     column, so `scroll-behavior` on `html` alone would do nothing here and the
+     class has to sit on the element that actually scrolls. `overscroll-behavior:
+     contain` stops the chain at the boundary, which is what stops a flick that
+     reaches the end from appearing to drag the page underneath it - the other half
+     of the "shrugging" feel.
+
+     Disabled under `prefers-reduced-motion`, where animated scrolling is exactly
+     the thing the user has asked not to have. */
+  .scroll-smooth {
+    scroll-behavior: smooth;
+    overscroll-behavior: contain;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .scroll-smooth {
+      scroll-behavior: auto;
+    }
+  }
+
+  /* The card. Depth comes from translucency, not from a cast shadow.
+     The shadow is a hairline contact shadow plus the inner rim that keeps the
+     top edge lit (see the `card` entry in tailwind.config.js); what carries the
+     elevation is the backdrop blur and the fact that the page's warped gradient
+     shows through the plate. That is a real optical cue on a low-contrast
+     background, where a drop shadow has nothing to land against.
+
+     These are the values `.glass` uses, so a card and the registration form
+     read as the same material. An earlier fill of white/80 was opaque enough
+     that the gradient behind it barely registered and the dashboard read as flat
+     white boxes rather than glass. At white/55 the page's tint comes through and
+     each card is separated from the one beside it by colour rather than by a
+     line.
+
+     `saturate` matters more than it looks: a blur alone over a coloured
+     background greys the colour out, and dark text on a desaturated plate loses
+     contrast. Pushing saturation back up keeps the tint legible underneath.
+
+     The border is translucent white rather than ink for the same reason the fill
+     is translucent: over a pale page an ink hairline read as a drawn outline,
+     while a white one reads as the lit edge of a surface.
+
+     Cost: every element with a backdrop filter samples what is behind it and
+     forces its ancestors to be composited. Cards already paid for a blur at
+     `md`, so this raises the radius and adds a saturate filter on each. If the
+     page ever stutters on a low-powered machine, this is the first thing to
+     revisit. */
+  .card {
+    @apply relative rounded-card border border-white/70 bg-white/55 shadow-card backdrop-blur-xl backdrop-saturate-150;
+    /* Each card is its own sizing context, so `cqw` below measures this card
+       rather than the viewport. That is what lets one rule serve a card that is
+       260px wide on a laptop and 200px on a phone. */
+    container-type: inline-size;
+  }
+
+  /* A surface for grouped content inside a card: stat rows, input blocks,
+     reading tiles. The registration form's own inner cards are white/70 on a
+     glass plate, and these match them, so a reading tile inside a dashboard card
+     looks like the crop tiles inside the form rather than a grey box dropped
+     into a white one. The step from card to panel is now carried by the fill
+     difference and the hairline rather than by a grey cast.
+
+     Frosted like every other surface: `bg-white/70` alone is a milky wash with
+     nothing behind it to see, which is what made the sensor tiles and the
+     decision's inputs read as grey boxes inside a glass card. The fill stays at
+     70 rather than dropping to the card's 55 — the panel has to stay the
+     brighter of the two or the recessed step the inset shadow is drawing inverts
+     and the panel reads as a hole. */
+  .panel {
+    @apply rounded-card border border-ink-200/70 bg-white/70 shadow-panel backdrop-blur-md backdrop-saturate-150;
+  }
+
+  /* The glass treatment, for surfaces that carry text.
+
+     This is where the depth went. A card used to be separated from the page by
+     the weight of its shadow and its interior blocks by an inset; now the
+     interior is a pane of frosted glass with the card behind it showing through,
+     which is a stronger and cheaper cue than a second shadow and it keeps the
+     text legible against whatever the gradient is doing underneath.
+
+     `saturate` matters more than it looks: a blur alone over a coloured
+     background greys the colour out, and text on a desaturated grey plate loses
+     contrast. Pushing saturation back up keeps the tint legible underneath the
+     text.
+
+     Applied to text surfaces rather than to whole cards on purpose. Every
+     element with a backdrop filter samples what is behind it and forces its
+     ancestors to be composited, so a page of them costs real frames; the small
+     number of blocks that actually carry prose is where it is worth paying. */
+  .glass-text {
+    @apply rounded-card border border-white/60 bg-white/45 backdrop-blur-sm backdrop-saturate-150;
+    /* An inset rim rather than a cast: light catching the top edge of the pane,
+       which is what separates glass from a grey box. */
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  }
+
+  /* The elevated glass surface: the switcher, the registration form, and
+     anything that sits above another glass surface rather than inside a card.
+     Stronger blur and a lower fill than `.glass-text`, because it has more
+     distance between it and what it is sampling. */
+  .glass {
+    @apply rounded-card border border-white/70 bg-white/55 backdrop-blur-xl backdrop-saturate-150;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+
+  /* Fluid type.
+     A fixed px size is wrong at both ends of a responsive grid: too large when
+     the card narrows, wasted space when it widens. `clamp()` between a floor and
+     a ceiling, with the middle term in container-query units, keeps the figure
+     proportional to its own box and never shrinks past legibility. */
+  .type-figure-xl {
+    font-size: clamp(1.5rem, 11cqw, 2.25rem);
+  }
+
+  .type-figure-lg {
+    font-size: clamp(1.25rem, 7.5cqw, 1.75rem);
+  }
+
+  .type-figure {
+    font-size: clamp(1.125rem, 5.5cqw, 1.5rem);
+  }
+
+  .type-value {
+    font-size: clamp(0.8125rem, 4cqw, 1.0625rem);
+  }
+
+  .type-body {
+    font-size: clamp(0.6875rem, 3.1cqw, 0.8125rem);
+  }
+
+  .type-label {
+    font-size: clamp(0.5rem, 2.4cqw, 0.6875rem);
+  }
+
+  /* Display sizes for the few figures that carry a card.
+
+     These are the numbers an operator reads from across the yard, so they get
+     their own scale rather than reusing the body sizes. The middle term is in
+     `cqw`, so a figure grows with its own card: the decision's depth scales
+     across the full page width, the sky card's temperature scales with a third
+     of it, and neither needs a separate breakpoint to stay proportional. */
+  .type-display {
+    font-size: clamp(2rem, 3.4cqw, 3rem);
+  }
+
+  .type-display-sm {
+    font-size: clamp(1.5rem, 4.4cqw, 2.4rem);
+  }
+
+  .type-headline {
+    font-size: clamp(1.0625rem, 1.9cqw, 1.5rem);
+  }
+
+  /* Fluid padding, so gutters shrink on a phone and open out on a wide screen
+     instead of being pinned to one value that is wrong at one end. */
+  .pad-card {
+    padding-inline: clamp(0.875rem, 2.6cqw, 1.5rem);
+  }
+
+  .pad-card-y {
+    padding-block: clamp(0.75rem, 2.2cqw, 1.25rem);
+  }
+
+  /* The top bar and the page gutters track the viewport, because they scale with
+     the window rather than with any one card. */
+  .pad-page {
+    padding: clamp(0.75rem, 1.6vw, 1.5rem);
+  }
+
+  /* Horizontal half of `.pad-page`, for the bar that spans the window while its
+     contents line up with the page column. */
+  .pad-gutter {
+    padding-inline: clamp(0.75rem, 1.6vw, 1.5rem);
+  }
+
+  /* A wash of colour for a card that carries a headline figure, tinted by what
+     the figure means: dry soil, a healthy profile, or a resting field. */
+  /* The sky card's gradient. Named rather than inline so the same wash can be
+     referenced by the chip, the glow and the hover state. */
+  .sky-wash {
+    background-image: linear-gradient(145deg, #4f7fe0 0%, #3b5fc0 48%, #2f3f8f 100%);
+  }
+
+
+  /* The stage track's active segment, with a gradient so the position of the
+     crop reads as lit rather than merely coloured. */
+  .stage-live {
+    background-image: linear-gradient(90deg, #3b82f6 0%, #2563eb 55%, #1d4ed8 100%);
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.45);
+  }
+
+  /* --- The controller banner ------------------------------------------
+     A saturated gradient plate with an SVG wave along its base, so the
+     decision reads as a distinct instrument panel rather than another white
+     card. Text on top is white, which is the highest-contrast pairing
+     available and the one that survives being read outdoors. */
+  .hero-plate {
+    @apply relative overflow-hidden text-white;
+  }
+
+  .hero-plate::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(120% 90% at 15% 0%, rgba(255, 255, 255, 0.22) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .hero-irrigate {
+    background-image: linear-gradient(135deg, #4c1d95 0%, #312e81 52%, #1e3a8a 100%);
+  }
+
+  .hero-monitor {
+    background-image: linear-gradient(135deg, #1d4ed8 0%, #1e40af 58%, #312e81 100%);
+  }
+
+  .hero-hold {
+    background-image: linear-gradient(135deg, #b45309 0%, #92400e 55%, #7c2d12 100%);
+  }
+
+  /* The average marker on a bar chart, with its label riding the line. */
+  .avg-line {
+    @apply absolute inset-x-0 border-t border-dashed border-ink-300;
+  }
+
+  .avg-chip {
+    @apply absolute -top-2.5 right-0 rounded-[5px] bg-ink-900 px-1.5 py-0.5
+           text-[10px] font-semibold text-white;
+  }
+
+  /* Bars grow from the baseline on mount rather than appearing at full height. */
+  .bar-rise {
+    animation: barRise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .card-header {
+    @apply flex items-center justify-between border-b border-ink-200 px-5 py-3;
+  }
+
+  .card-title {
+    @apply text-[13px] font-semibold tracking-tight text-ink-900;
+  }
+
+  .card-body {
+    @apply p-5;
+  }
+
+  /* A statistic cell: large figure over a small uppercase caption. */
+  .stat-cell {
+    @apply flex flex-col items-center justify-center gap-0.5 border-r border-ink-200 px-4 py-4 text-center last:border-r-0;
+  }
+
+  .stat-value {
+    @apply tnum text-[26px] font-semibold leading-none tracking-tight text-ink-900;
+  }
+
+  .stat-label {
+    @apply text-[10px] font-medium uppercase tracking-[0.08em] text-ink-400;
+  }
+
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-pill px-4 py-2
+           text-[12px] font-semibold transition-all duration-150
+           focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
+           focus-visible:outline-brand-600 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply btn bg-ink-900 text-white hover:bg-ink-700;
+  }
+
+  .btn-secondary {
+    @apply btn border border-ink-200 bg-ink-50 text-ink-700 hover:border-ink-300 hover:bg-ink-100;
+  }
+
+  .btn-ghost {
+    @apply btn text-ink-500 hover:bg-ink-100 hover:text-ink-900;
+  }
+
+  .nav-link-active {
+    @apply text-brand-700;
+  }
+
+  .nav-link-active::after {
+    content: '';
+    @apply absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-brand-600;
+  }
+
+  .section-label {
+    @apply text-[11px] font-semibold tracking-tight text-ink-700;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-0.5
+           text-[10px] font-semibold uppercase tracking-[0.06em];
+  }
+
+  .cell-head {
+    @apply mb-3 flex items-center justify-between gap-3;
+  }
+
+  .cell-title {
+    @apply text-[13px] font-semibold tracking-tight text-ink-900;
+  }
+
+  /* Micro label above a figure, the unit of small print throughout the shell. */
+  .micro {
+    @apply text-[10px] font-semibold uppercase tracking-[0.08em] text-ink-400;
+  }
+
+  /* A hatched proportion bar, used for mix breakdowns. */
+  .hatch {
+    @apply h-1.5 w-full overflow-hidden rounded-pill bg-ink-100;
+  }
+
+  .nav-link {
+    @apply relative px-1 pb-3 pt-1 text-[11px] font-semibold uppercase tracking-[0.09em]
+           text-ink-500 transition-colors hover:text-ink-900;
+  }
+
+  /* ---- Satellite map -------------------------------------------------- */
+
+  /* Leaflet renders its own chrome; these rules make it read as part of the
+     glass shell rather than as a widget dropped into it. */
+  .field-map .leaflet-container {
+    @apply h-full w-full bg-ink-900 font-sans;
+  }
+
+  /* A gentle push towards the vegetation the imagery already contains. It is
+     not a vegetation index and does not pretend to be one; the field outlines
+     and their legend carry the only measurement on this map. */
+  .field-map .leaflet-tile-pane {
+    filter: saturate(1.28) contrast(1.03) brightness(1.02);
+  }
+
+  .field-map .leaflet-control-attribution {
+    @apply rounded-tl-[4px] bg-white/75 text-[10px] text-ink-500 backdrop-blur;
+  }
+
+  .field-map .leaflet-control-attribution a {
+    @apply text-ink-500;
+  }
+
+  .field-map .leaflet-bar {
+    @apply overflow-hidden rounded-card border border-white/70 shadow-lift;
+  }
+
+  .field-map .leaflet-bar a {
+    @apply border-b border-ink-200/70 bg-white/90 text-ink-700;
+    /* Leaflet ships 30px controls. A zoom button is pressed with a thumb, so
+       both directions get a 34px target without moving the control group. */
+    width: 34px;
+    height: 34px;
+    line-height: 34px;
+  }
+
+  /* The minutes printed in the middle of each plot. */
+  .field-map__tip {
+    @apply rounded-pill border-0 bg-ink-900/80 px-2.5 py-1 text-[11px] font-semibold text-white shadow-none;
+  }
+
+  .field-map__tip::before {
+    display: none;
+  }
+}
+
+@layer utilities {
+  /* Recharts injects its own focus outline on hover; it is visually noisy here. */
+  .recharts-wrapper:focus,
+  .recharts-surface:focus {
+    outline: none;
+  }
+}

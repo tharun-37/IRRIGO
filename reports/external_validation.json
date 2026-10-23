@@ -1,0 +1,1042 @@
+{
+  "per_station": {
+    "AMD": {
+      "et0": {
+        "n": 3653,
+        "pearson_r": 0.8992058267163648,
+        "mean_project": 5.285262523952915,
+        "mean_external": 5.16984943881741,
+        "bias_external_minus_project": -0.11541308513550508,
+        "ratio_external_over_project": 0.9781632256463231,
+        "mae": 0.7722491103202846,
+        "p90_abs_error": 1.673
+      },
+      "rain": {
+        "n": 3653,
+        "pearson_r": 0.6859589503050352,
+        "mean_project": 2.167254311524774,
+        "mean_external": 2.830522857924993,
+        "bias_external_minus_project": 0.663268546400219,
+        "ratio_external_over_project": 1.306040939853328,
+        "mae": 2.042146181220914,
+        "p90_abs_error": 4.5580000000000025
+      },
+      "inputs": {
+        "humidity_pct": {
+          "n": 3653,
+          "pearson_r": 0.8842463367472243,
+          "mean_project": 50.56832466465918,
+          "mean_external": 55.629893238434164,
+          "bias_external_minus_project": 5.06156857377498,
+          "ratio_external_over_project": 1.1000936575878373,
+          "mae": 9.346890227210512,
+          "p90_abs_error": 21.01
+        },
+        "wind_speed_m_s": {
+          "n": 3653,
+          "pearson_r": 0.8742039181601717,
+          "mean_project": 2.3826033397207773,
+          "mean_external": 2.8573927061471545,
+          "bias_external_minus_project": 0.47478936642637704,
+          "ratio_external_over_project": 1.1992733572185872,
+          "mae": 0.5932350883596436,
+          "p90_abs_error": 1.0899999999999999,
+          "scale_note": "external divided by 3.6 from km/h to m/s"
+        },
+        "solar_radiation_mj_m2_day": {
+          "n": 3653,
+          "pearson_r": 0.8963341282805194,
+          "mean_project": 19.232614289624966,
+          "mean_external": 18.88428415001369,
+          "bias_external_minus_project": -0.34833013961127846,
+          "ratio_external_over_project": 0.9818885704061989,
+          "mae": 1.6173254859019983,
+          "p90_abs_error": 3.7699999999999996
+        },
+        "tmax_c": {
+          "n": 3653,
+          "pearson_r": 0.9336943504514634,
+          "mean_project": 34.8605639200657,
+          "mean_external": 33.4019709827539,
+          "bias_external_minus_project": -1.4585929373117985,
+          "ratio_external_over_project": 0.9581592271239125,
+          "mae": 2.0058089241719137,
+          "p90_abs_error": 3.5900000000000034
+        }
+      },
+      "soil_moisture_0_to_7cm_stats": {
+        "mean": 0.20116480746418466,
+        "min": 0.086,
+        "max": 0.437375
+      },
+      "soil_moisture_7_to_28cm_stats": {
+        "mean": 0.21071200611369648,
+        "min": 0.1242083333333333,
+        "max": 0.4383333333333333
+      },
+      "soil_moisture_28_to_100cm_stats": {
+        "mean": 0.22841373528606623,
+        "min": 0.0817916666666666,
+        "max": 0.4383333333333333
+      },
+      "soil_depth_profile": {
+        "0_to_7cm": 0.20116480746418466,
+        "7_to_28cm": 0.21071200611369648,
+        "28_to_100cm": 0.22841373528606623
+      }
+    },
+    "BBN": {
+      "et0": {
+        "n": 3653,
+        "pearson_r": 0.8834024798076695,
+        "mean_project": 4.000187243361621,
+        "mean_external": 4.073613468382152,
+        "bias_external_minus_project": 0.07342622502053107,
+        "ratio_external_over_project": 1.0183556970095293,
+        "mae": 0.6760908842047633,
+        "p90_abs_error": 1.263
+      },
+      "rain": {
+        "n": 3653,
+        "pearson_r": 0.702867714675421,
+        "mean_project": 4.180818505338078,
+        "mean_external": 4.890473583356146,
+        "bias_external_minus_project": 0.7096550780180673,
+        "ratio_external_over_project": 1.1697407043888601,
+        "mae": 3.417725157404873,
+        "p90_abs_error": 10.138000000000002
+      },
+      "inputs": {
+        "humidity_pct": {
+          "n": 3653,
+          "pearson_r": 0.776249746457194,
+          "mean_project": 73.13291541199014,
+          "mean_external": 77.34875444839858,
+          "bias_external_minus_project": 4.215839036408431,
+          "ratio_external_over_project": 1.0576462597266736,
+          "mae": 7.69219819326581,
+          "p90_abs_error": 17.817999999999998
+        },
+        "wind_speed_m_s": {
+          "n": 3653,
+          "pearson_r": 0.853581912903836,
+          "mean_project": 1.9308048179578428,
+          "mean_external": 2.6949539191532077,
+          "bias_external_minus_project": 0.7641491011953645,
+          "ratio_external_over_project": 1.3957671402558358,
+          "mae": 0.8139297989475924,
+          "p90_abs_error": 1.5566666666666662,
+          "scale_note": "external divided by 3.6 from km/h to m/s"
+        },
+        "solar_radiation_mj_m2_day": {
+          "n": 3653,
+          "pearson_r": 0.8569974024281326,
+          "mean_project": 16.80646044347112,
+          "mean_external": 17.479093895428417,
+          "bias_external_minus_project": 0.6726334519572954,
+          "ratio_external_over_project": 1.0400223148841907,
+          "mae": 1.9786230495483164,
+          "p90_abs_error": 4.188000000000002
+        },
+        "tmax_c": {
+          "n": 3653,
+          "pearson_r": 0.9131835921433835,
+          "mean_project": 32.014831645223104,
+          "mean_external": 31.651847796331783,
+          "bias_external_minus_project": -0.3629838488913223,
+          "ratio_external_over_project": 0.988662009754923,
+          "mae": 1.916819052833288,
+          "p90_abs_error": 3.9879999999999987
+        }
+      },
+      "soil_moisture_0_to_7cm_stats": {
+        "mean": 0.26386117574596224,
+        "min": 0.0897083333333333,
+        "max": 0.4298333333333333
+      },
+      "soil_moisture_7_to_28cm_stats": {
+        "mean": 0.27298266265170174,
+        "min": 0.133,
+        "max": 0.4299583333333333
+      },
+      "soil_moisture_28_to_100cm_stats": {
+        "mean": 0.2949164157313623,
+        "min": 0.1605,
+        "max": 0.4294166666666666
+      },
+      "soil_depth_profile": {
+        "0_to_7cm": 0.26386117574596224,
+        "7_to_28cm": 0.27298266265170174,
+        "28_to_100cm": 0.2949164157313623
+      }
+    },
+    "CHN": {
+      "et0": {
+        "n": 3653,
+        "pearson_r": 0.8695804397766421,
+        "mean_project": 4.751903093347933,
+        "mean_external": 4.753191897070901,
+        "bias_external_minus_project": 0.0012888037229674314,
+        "ratio_external_over_project": 1.000271218435572,
+        "mae": 0.5460405146454969,
+        "p90_abs_error": 1.133
+      },
+      "rain": {
+        "n": 3653,
+        "pearson_r": 0.7746460882976082,
+        "mean_project": 3.837454147276212,
+        "mean_external": 3.5892417191349577,
+        "bias_external_minus_project": -0.24821242814125374,
+        "ratio_external_over_project": 0.9353184641131327,
+        "mae": 2.6693621680810296,
+        "p90_abs_error": 7.604000000000005
+      },
+      "inputs": {
+        "humidity_pct": {
+          "n": 3653,
+          "pearson_r": 0.6625385733019881,
+          "mean_project": 73.60965507801806,
+          "mean_external": 75.04462085956747,
+          "bias_external_minus_project": 1.4349657815494112,
+          "ratio_external_over_project": 1.0194942603660961,
+          "mae": 5.491927183137148,
+          "p90_abs_error": 11.619999999999997
+        },
+        "wind_speed_m_s": {
+          "n": 3653,
+          "pearson_r": 0.8516927824483517,
+          "mean_project": 2.9993347933205583,
+          "mean_external": 3.472351491924446,
+          "bias_external_minus_project": 0.4730166986038872,
+          "ratio_external_over_project": 1.1577072021627208,
+          "mae": 0.5758040575478298,
+          "p90_abs_error": 1.1575555555555557,
+          "scale_note": "external divided by 3.6 from km/h to m/s"
+        },
+        "solar_radiation_mj_m2_day": {
+          "n": 3653,
+          "pearson_r": 0.8534225236565367,
+          "mean_project": 18.451081303038595,
+          "mean_external": 19.530186148371204,
+          "bias_external_minus_project": 1.0791048453326033,
+          "ratio_external_over_project": 1.0584846398760868,
+          "mae": 2.0865398302764855,
+          "p90_abs_error": 4.3500000000000005
+        },
+        "tmax_c": {
+          "n": 3653,
+          "pearson_r": 0.8526199456216534,
+          "mean_project": 32.245102655351765,
+          "mean_external": 31.70309334793321,
+          "bias_external_minus_project": -0.5420093074185601,
+          "ratio_external_over_project": 0.983190957299415,
+          "mae": 1.399545578976184,
+          "p90_abs_error": 3.269999999999996
+        }
+      },
+      "soil_moisture_0_to_7cm_stats": {
+        "mean": 0.24738798019892322,
+        "min": 0.1119583333333333,
+        "max": 0.4372916666666666
+      },
+      "soil_moisture_7_to_28cm_stats": {
+        "mean": 0.2460221051190802,
+        "min": 0.1279583333333333,
+        "max": 0.4382916666666667
+      },
+      "soil_moisture_28_to_100cm_stats": {
+        "mean": 0.24909530979103933,
+        "min": 0.144,
+        "max": 0.4384583333333333
+      },
+      "soil_depth_profile": {
+        "0_to_7cm": 0.24738798019892322,
+        "7_to_28cm": 0.2460221051190802,
+        "28_to_100cm": 0.24909530979103933
+      }
+    },
+    "HYD": {
+      "et0": {
+        "n": 3653,
+        "pearson_r": 0.8567229418739458,
+        "mean_project": 4.769714754995894,
+        "mean_external": 4.686542567752533,
+        "bias_external_minus_project": -0.08317218724336162,
+        "ratio_external_over_project": 0.9825624399957578,
+        "mae": 0.7515291541199014,
+        "p90_abs_error": 1.5314000000000005
+      },
+      "rain": {
+        "n": 3653,
+        "pearson_r": 0.6544591736755281,
+        "mean_project": 2.289460717218724,
+        "mean_external": 2.431973720229948,
+        "bias_external_minus_project": 0.1425130030112237,
+        "ratio_external_over_project": 1.0622474113398859,
+        "mae": 1.9741199014508621,
+        "p90_abs_error": 6.04
+      },
+      "inputs": {
+        "humidity_pct": {
+          "n": 3653,
+          "pearson_r": 0.8935734658750536,
+          "mean_project": 61.50695592663564,
+          "mean_external": 62.9156857377498,
+          "bias_external_minus_project": 1.4087298111141526,
+          "ratio_external_over_project": 1.0229035852919541,
+          "mae": 7.3360169723514925,
+          "p90_abs_error": 15.728000000000005
+        },
+        "wind_speed_m_s": {
+          "n": 3653,
+          "pearson_r": 0.9124651056520785,
+          "mean_project": 2.496695866411169,
+          "mean_external": 2.9242479544970648,
+          "bias_external_minus_project": 0.4275520880858959,
+          "ratio_external_over_project": 1.171247164637827,
+          "mae": 0.5594704504668918,
+          "p90_abs_error": 1.0797777777777777,
+          "scale_note": "external divided by 3.6 from km/h to m/s"
+        },
+        "solar_radiation_mj_m2_day": {
+          "n": 3653,
+          "pearson_r": 0.8539608347341587,
+          "mean_project": 18.496118258965236,
+          "mean_external": 18.692406241445386,
+          "bias_external_minus_project": 0.19628798248015336,
+          "ratio_external_over_project": 1.010612387947131,
+          "mae": 1.8406624692033944,
+          "p90_abs_error": 3.9599999999999986
+        },
+        "tmax_c": {
+          "n": 3653,
+          "pearson_r": 0.9161473130404827,
+          "mean_project": 32.446350944429234,
+          "mean_external": 31.171229126745143,
+          "bias_external_minus_project": -1.2751218176840955,
+          "ratio_external_over_project": 0.9607006094501046,
+          "mae": 1.9414399124007664,
+          "p90_abs_error": 3.620000000000003
+        }
+      },
+      "soil_moisture_0_to_7cm_stats": {
+        "mean": 0.22094775983210144,
+        "min": 0.0780833333333333,
+        "max": 0.429875
+      },
+      "soil_moisture_7_to_28cm_stats": {
+        "mean": 0.22874443379870424,
+        "min": 0.1305416666666666,
+        "max": 0.429625
+      },
+      "soil_moisture_28_to_100cm_stats": {
+        "mean": 0.24506791221826807,
+        "min": 0.135,
+        "max": 0.4231666666666666
+      },
+      "soil_depth_profile": {
+        "0_to_7cm": 0.22094775983210144,
+        "7_to_28cm": 0.22874443379870424,
+        "28_to_100cm": 0.24506791221826807
+      }
+    },
+    "IDR": {
+      "et0": {
+        "n": 3653,
+        "pearson_r": 0.9355431248765429,
+        "mean_project": 4.919821242814125,
+        "mean_external": 4.876753353408158,
+        "bias_external_minus_project": -0.043067889405967695,
+        "ratio_external_over_project": 0.9912460458865509,
+        "mae": 0.7528718861209964,
+        "p90_abs_error": 1.6218000000000001
+      },
+      "rain": {
+        "n": 3653,
+        "pearson_r": 0.685239580973923,
+        "mean_project": 2.961272926361894,
+        "mean_external": 3.1287708732548594,
+        "bias_external_minus_project": 0.16749794689296474,
+        "ratio_external_over_project": 1.056562819793428,
+        "mae": 2.2591760197098276,
+        "p90_abs_error": 5.978000000000002
+      },
+      "inputs": {
+        "humidity_pct": {
+          "n": 3653,
+          "pearson_r": 0.9037153695386555,
+          "mean_project": 54.50854913769504,
+          "mean_external": 57.033670955379144,
+          "bias_external_minus_project": 2.5251218176840955,
+          "ratio_external_over_project": 1.0463252436109673,
+          "mae": 8.505800711743772,
+          "p90_abs_error": 20.68
+        },
+        "wind_speed_m_s": {
+          "n": 3653,
+          "pearson_r": 0.8926760832192162,
+          "mean_project": 2.5209937038050914,
+          "mean_external": 3.067957842868875,
+          "bias_external_minus_project": 0.5469641390637832,
+          "ratio_external_over_project": 1.2169637069058192,
+          "mae": 0.656093317516805,
+          "p90_abs_error": 1.2342222222222228,
+          "scale_note": "external divided by 3.6 from km/h to m/s"
+        },
+        "solar_radiation_mj_m2_day": {
+          "n": 3653,
+          "pearson_r": 0.9032124613178243,
+          "mean_project": 18.137295373665477,
+          "mean_external": 18.405217629345746,
+          "bias_external_minus_project": 0.2679222556802628,
+          "ratio_external_over_project": 1.0147718968104407,
+          "mae": 1.6956419381330414,
+          "p90_abs_error": 3.75
+        },
+        "tmax_c": {
+          "n": 3653,
+          "pearson_r": 0.9400603102618538,
+          "mean_project": 32.64017246099097,
+          "mean_external": 30.631590473583355,
+          "bias_external_minus_project": -2.0085819874076103,
+          "ratio_external_over_project": 0.9384628868058796,
+          "mae": 2.3909088420476325,
+          "p90_abs_error": 4.159999999999999
+        }
+      },
+      "soil_moisture_0_to_7cm_stats": {
+        "mean": 0.3241406756893755,
+        "min": 0.1535,
+        "max": 0.5145833333333333
+      },
+      "soil_moisture_7_to_28cm_stats": {
+        "mean": 0.342873872161395,
+        "min": 0.258,
+        "max": 0.5164583333333334
+      },
+      "soil_moisture_28_to_100cm_stats": {
+        "mean": 0.3550588503649635,
+        "min": 0.2224166666666666,
+        "max": 0.5185416666666667
+      },
+      "soil_depth_profile": {
+        "0_to_7cm": 0.3241406756893755,
+        "7_to_28cm": 0.342873872161395,
+        "28_to_100cm": 0.3550588503649635
+      }
+    },
+    "JAI": {
+      "et0": {
+        "n": 3653,
+        "pearson_r": 0.9380667908574215,
+        "mean_project": 4.955133588831098,
+        "mean_external": 4.9483657267998895,
+        "bias_external_minus_project": -0.006767862031207215,
+        "ratio_external_over_project": 0.9986341716303143,
+        "mae": 0.6583583356145635,
+        "p90_abs_error": 1.3488000000000002
+      },
+      "rain": {
+        "n": 3653,
+        "pearson_r": 0.6971131467130318,
+        "mean_project": 1.908250752805913,
+        "mean_external": 1.708130303859841,
+        "bias_external_minus_project": -0.2001204489460717,
+        "ratio_external_over_project": 0.895128851042342,
+        "mae": 1.3914371749247194,
+        "p90_abs_error": 3.856000000000003
+      },
+      "inputs": {
+        "humidity_pct": {
+          "n": 3653,
+          "pearson_r": 0.8723782414892999,
+          "mean_project": 45.85522310429784,
+          "mean_external": 52.757185874623595,
+          "bias_external_minus_project": 6.901962770325761,
+          "ratio_external_over_project": 1.1505163927482638,
+          "mae": 9.519592116068985,
+          "p90_abs_error": 21.97
+        },
+        "wind_speed_m_s": {
+          "n": 3653,
+          "pearson_r": 0.8556535852002841,
+          "mean_project": 2.0869778264440186,
+          "mean_external": 2.6454208109012383,
+          "bias_external_minus_project": 0.5584429844572193,
+          "ratio_external_over_project": 1.2675845317478744,
+          "mae": 0.6341804300879033,
+          "p90_abs_error": 1.1175555555555556,
+          "scale_note": "external divided by 3.6 from km/h to m/s"
+        },
+        "solar_radiation_mj_m2_day": {
+          "n": 3653,
+          "pearson_r": 0.8839463669643247,
+          "mean_project": 18.747254311524774,
+          "mean_external": 18.264872707363814,
+          "bias_external_minus_project": -0.4823816041609636,
+          "ratio_external_over_project": 0.9742692131794245,
+          "mae": 1.8022721051190802,
+          "p90_abs_error": 4.148000000000002
+        },
+        "tmax_c": {
+          "n": 3653,
+          "pearson_r": 0.9782603545056855,
+          "mean_project": 32.509537366548045,
+          "mean_external": 31.147495209416917,
+          "bias_external_minus_project": -1.3620421571311252,
+          "ratio_external_over_project": 0.9581033054462148,
+          "mae": 1.591721872433616,
+          "p90_abs_error": 2.8999999999999986
+        }
+      },
+      "soil_moisture_0_to_7cm_stats": {
+        "mean": 0.20201294239935097,
+        "min": 0.107,
+        "max": 0.4354166666666666
+      },
+      "soil_moisture_7_to_28cm_stats": {
+        "mean": 0.20281447114897067,
+        "min": 0.1227083333333333,
+        "max": 0.4302916666666667
+      },
+      "soil_moisture_28_to_100cm_stats": {
+        "mean": 0.1988959284048271,
+        "min": 0.1169166666666666,
+        "max": 0.4087499999999999
+      },
+      "soil_depth_profile": {
+        "0_to_7cm": 0.20201294239935097,
+        "7_to_28cm": 0.20281447114897067,
+        "28_to_100cm": 0.1988959284048271
+      }
+    },
+    "KOL": {
+      "et0": {
+        "n": 3653,
+        "pearson_r": 0.8795987759434769,
+        "mean_project": 3.7936430331234603,
+        "mean_external": 3.7990692581439913,
+        "bias_external_minus_project": 0.005426225020531064,
+        "ratio_external_over_project": 1.00143034675987,
+        "mae": 0.6034722146181221,
+        "p90_abs_error": 1.1768000000000003
+      },
+      "rain": {
+        "n": 3653,
+        "pearson_r": 0.6940183257186353,
+        "mean_project": 4.664812482890775,
+        "mean_external": 5.1519299206131945,
+        "bias_external_minus_project": 0.48711743772241994,
+        "ratio_external_over_project": 1.1044237982789298,
+        "mae": 3.397311798521763,
+        "p90_abs_error": 9.926000000000004
+      },
+      "inputs": {
+        "humidity_pct": {
+          "n": 3653,
+          "pearson_r": 0.8167279766611649,
+          "mean_project": 74.36250205310702,
+          "mean_external": 77.56227758007117,
+          "bias_external_minus_project": 3.199775526964139,
+          "ratio_external_over_project": 1.0430294226070955,
+          "mae": 6.521828633999452,
+          "p90_abs_error": 14.600000000000001
+        },
+        "wind_speed_m_s": {
+          "n": 3653,
+          "pearson_r": 0.8937122455525642,
+          "mean_project": 2.151294826170271,
+          "mean_external": 2.603218055175351,
+          "bias_external_minus_project": 0.4519232290050795,
+          "ratio_external_over_project": 1.2100703369466066,
+          "mae": 0.5485062505703074,
+          "p90_abs_error": 1.0460000000000003,
+          "scale_note": "external divided by 3.6 from km/h to m/s"
+        },
+        "solar_radiation_mj_m2_day": {
+          "n": 3653,
+          "pearson_r": 0.8372206371425595,
+          "mean_project": 15.856802627977006,
+          "mean_external": 16.659384067889405,
+          "bias_external_minus_project": 0.8025814399124007,
+          "ratio_external_over_project": 1.0506143299341042,
+          "mae": 2.052693676430331,
+          "p90_abs_error": 4.34
+        },
+        "tmax_c": {
+          "n": 3653,
+          "pearson_r": 0.9206827157136704,
+          "mean_project": 31.40570490008212,
+          "mean_external": 30.777333698330143,
+          "bias_external_minus_project": -0.6283712017519848,
+          "ratio_external_over_project": 0.9799918134698408,
+          "mae": 1.6315357240624144,
+          "p90_abs_error": 3.5700000000000003
+        }
+      },
+      "soil_moisture_0_to_7cm_stats": {
+        "mean": 0.28811213386257867,
+        "min": 0.093625,
+        "max": 0.4364583333333333
+      },
+      "soil_moisture_7_to_28cm_stats": {
+        "mean": 0.2905100944429236,
+        "min": 0.151,
+        "max": 0.437125
+      },
+      "soil_moisture_28_to_100cm_stats": {
+        "mean": 0.2949752942786751,
+        "min": 0.1352083333333333,
+        "max": 0.4376666666666666
+      },
+      "soil_depth_profile": {
+        "0_to_7cm": 0.28811213386257867,
+        "7_to_28cm": 0.2905100944429236,
+        "28_to_100cm": 0.2949752942786751
+      }
+    },
+    "LKO": {
+      "et0": {
+        "n": 3653,
+        "pearson_r": 0.9371815626661566,
+        "mean_project": 4.5024204763208315,
+        "mean_external": 4.41353955652888,
+        "bias_external_minus_project": -0.08888091979195183,
+        "ratio_external_over_project": 0.9802593026885439,
+        "mae": 0.6456402956474131,
+        "p90_abs_error": 1.3180000000000003
+      },
+      "rain": {
+        "n": 3653,
+        "pearson_r": 0.6779846599531215,
+        "mean_project": 3.054010402408979,
+        "mean_external": 2.9735286066246918,
+        "bias_external_minus_project": -0.0804817957842869,
+        "ratio_external_over_project": 0.9736471769314198,
+        "mae": 2.4666356419381326,
+        "p90_abs_error": 7.65
+      },
+      "inputs": {
+        "humidity_pct": {
+          "n": 3653,
+          "pearson_r": 0.8221176626912899,
+          "mean_project": 54.87572679989051,
+          "mean_external": 65.84724883657267,
+          "bias_external_minus_project": 10.97152203668218,
+          "ratio_external_over_project": 1.1999339722039737,
+          "mae": 13.518475225841774,
+          "p90_abs_error": 29.314000000000007
+        },
+        "wind_speed_m_s": {
+          "n": 3653,
+          "pearson_r": 0.8512951682866664,
+          "mean_project": 1.9493101560361346,
+          "mean_external": 2.562939136782553,
+          "bias_external_minus_project": 0.6136289807464184,
+          "ratio_external_over_project": 1.3147928916526117,
+          "mae": 0.679139824193205,
+          "p90_abs_error": 1.248888888888889,
+          "scale_note": "external divided by 3.6 from km/h to m/s"
+        },
+        "solar_radiation_mj_m2_day": {
+          "n": 3653,
+          "pearson_r": 0.8736475520502451,
+          "mean_project": 16.876983301396113,
+          "mean_external": 17.582277580071175,
+          "bias_external_minus_project": 0.7052942786750616,
+          "ratio_external_over_project": 1.0417903049425141,
+          "mae": 2.1108896797153025,
+          "p90_abs_error": 4.558000000000002
+        },
+        "tmax_c": {
+          "n": 3653,
+          "pearson_r": 0.9507929477484433,
+          "mean_project": 32.30219271831371,
+          "mean_external": 30.77935943060498,
+          "bias_external_minus_project": -1.5228332877087325,
+          "ratio_external_over_project": 0.9528566589584687,
+          "mae": 2.177374760470846,
+          "p90_abs_error": 4.127999999999999
+        }
+      },
+      "soil_moisture_0_to_7cm_stats": {
+        "mean": 0.23831679089341845,
+        "min": 0.0837916666666666,
+        "max": 0.4380416666666666
+      },
+      "soil_moisture_7_to_28cm_stats": {
+        "mean": 0.2465481442044417,
+        "min": 0.1389166666666667,
+        "max": 0.4369583333333333
+      },
+      "soil_moisture_28_to_100cm_stats": {
+        "mean": 0.2654923182233039,
+        "min": 0.1357916666666666,
+        "max": 0.4378333333333333
+      },
+      "soil_depth_profile": {
+        "0_to_7cm": 0.23831679089341845,
+        "7_to_28cm": 0.2465481442044417,
+        "28_to_100cm": 0.2654923182233039
+      }
+    },
+    "LUD": {
+      "et0": {
+        "n": 3653,
+        "pearson_r": 0.9413343079709018,
+        "mean_project": 4.379260060224473,
+        "mean_external": 4.020312072269368,
+        "bias_external_minus_project": -0.3589479879551054,
+        "ratio_external_over_project": 0.9180345576607054,
+        "mae": 0.5899575691212702,
+        "p90_abs_error": 1.4454000000000005
+      },
+      "rain": {
+        "n": 3653,
+        "pearson_r": 0.49557591377837285,
+        "mean_project": 2.4462168081029287,
+        "mean_external": 2.189570216260608,
+        "bias_external_minus_project": -0.2566465918423214,
+        "ratio_external_over_project": 0.8950842823938596,
+        "mae": 2.1270435258691487,
+        "p90_abs_error": 5.889999999999999
+      },
+      "inputs": {
+        "humidity_pct": {
+          "n": 3653,
+          "pearson_r": 0.7813317483970995,
+          "mean_project": 50.28852176293457,
+          "mean_external": 67.98549137695045,
+          "bias_external_minus_project": 17.696969614015877,
+          "ratio_external_over_project": 1.3519087257613431,
+          "mae": 17.989124007664934,
+          "p90_abs_error": 33.818000000000005
+        },
+        "wind_speed_m_s": {
+          "n": 3653,
+          "pearson_r": 0.6982113923244062,
+          "mean_project": 1.6059457979742675,
+          "mean_external": 2.069326580892417,
+          "bias_external_minus_project": 0.46338078291814944,
+          "ratio_external_over_project": 1.2885407362456789,
+          "mae": 0.5609426042522127,
+          "p90_abs_error": 1.0333333333333334,
+          "scale_note": "external divided by 3.6 from km/h to m/s"
+        },
+        "solar_radiation_mj_m2_day": {
+          "n": 3653,
+          "pearson_r": 0.9065994458328885,
+          "mean_project": 17.656383794141803,
+          "mean_external": 17.284634546947714,
+          "bias_external_minus_project": -0.37174924719408703,
+          "ratio_external_over_project": 0.9789453349265419,
+          "mae": 1.9484588009854913,
+          "p90_abs_error": 4.108000000000001
+        },
+        "tmax_c": {
+          "n": 3653,
+          "pearson_r": 0.97031803355508,
+          "mean_project": 31.8386860114974,
+          "mean_external": 29.26630166986039,
+          "bias_external_minus_project": -2.5723843416370107,
+          "ratio_external_over_project": 0.919205700238129,
+          "mae": 2.743202846975089,
+          "p90_abs_error": 4.789999999999999
+        }
+      },
+      "soil_moisture_0_to_7cm_stats": {
+        "mean": 0.24535452596039783,
+        "min": 0.1127916666666666,
+        "max": 0.4372083333333333
+      },
+      "soil_moisture_7_to_28cm_stats": {
+        "mean": 0.2470415411990145,
+        "min": 0.1414583333333333,
+        "max": 0.436
+      },
+      "soil_moisture_28_to_100cm_stats": {
+        "mean": 0.2517472739301031,
+        "min": 0.132,
+        "max": 0.4061666666666667
+      },
+      "soil_depth_profile": {
+        "0_to_7cm": 0.24535452596039783,
+        "7_to_28cm": 0.2470415411990145,
+        "28_to_100cm": 0.2517472739301031
+      }
+    },
+    "NAG": {
+      "et0": {
+        "n": 3653,
+        "pearson_r": 0.9259507153449471,
+        "mean_project": 4.528711196277033,
+        "mean_external": 4.738160416096359,
+        "bias_external_minus_project": 0.20944921981932657,
+        "ratio_external_over_project": 1.0462491889506025,
+        "mae": 0.6799523679167807,
+        "p90_abs_error": 1.3449999999999995
+      },
+      "rain": {
+        "n": 3653,
+        "pearson_r": 0.6587506989008965,
+        "mean_project": 3.685964960306597,
+        "mean_external": 3.834820695318916,
+        "bias_external_minus_project": 0.14885573501231864,
+        "ratio_external_over_project": 1.040384468277728,
+        "mae": 2.776564467560909,
+        "p90_abs_error": 7.648000000000002
+      },
+      "inputs": {
+        "humidity_pct": {
+          "n": 3653,
+          "pearson_r": 0.9260823652826075,
+          "mean_project": 58.45188338352039,
+          "mean_external": 58.80536545305229,
+          "bias_external_minus_project": 0.3534820695318916,
+          "ratio_external_over_project": 1.0060474025655015,
+          "mae": 7.67681631535724,
+          "p90_abs_error": 16.586000000000006
+        },
+        "wind_speed_m_s": {
+          "n": 3653,
+          "pearson_r": 0.8586588610366583,
+          "mean_project": 1.981300301122365,
+          "mean_external": 2.3608297594062715,
+          "bias_external_minus_project": 0.37952945828390666,
+          "ratio_external_over_project": 1.19155574653116,
+          "mae": 0.5011676856160843,
+          "p90_abs_error": 0.9366666666666665,
+          "scale_note": "external divided by 3.6 from km/h to m/s"
+        },
+        "solar_radiation_mj_m2_day": {
+          "n": 3653,
+          "pearson_r": 0.8771586639638963,
+          "mean_project": 17.97442376129209,
+          "mean_external": 18.441513824254038,
+          "bias_external_minus_project": 0.46709006296194905,
+          "ratio_external_over_project": 1.025986372034236,
+          "mae": 1.8516999726252397,
+          "p90_abs_error": 4.168000000000002
+        },
+        "tmax_c": {
+          "n": 3653,
+          "pearson_r": 0.9485908156944084,
+          "mean_project": 33.182614289624965,
+          "mean_external": 32.460498220640574,
+          "bias_external_minus_project": -0.7221160689843964,
+          "ratio_external_over_project": 0.9782381200383548,
+          "mae": 1.6913468382151655,
+          "p90_abs_error": 3.1399999999999997
+        }
+      },
+      "soil_moisture_0_to_7cm_stats": {
+        "mean": 0.327580595274313,
+        "min": 0.1460416666666666,
+        "max": 0.5140833333333333
+      },
+      "soil_moisture_7_to_28cm_stats": {
+        "mean": 0.3478083865733698,
+        "min": 0.241375,
+        "max": 0.517375
+      },
+      "soil_moisture_28_to_100cm_stats": {
+        "mean": 0.36426125646486157,
+        "min": 0.2560416666666666,
+        "max": 0.5181250000000001
+      },
+      "soil_depth_profile": {
+        "0_to_7cm": 0.327580595274313,
+        "7_to_28cm": 0.3478083865733698,
+        "28_to_100cm": 0.36426125646486157
+      }
+    },
+    "PNJ": {
+      "et0": {
+        "n": 3653,
+        "pearson_r": 0.9393191553889789,
+        "mean_project": 4.544191075828087,
+        "mean_external": 4.355398302764851,
+        "bias_external_minus_project": -0.1887927730632357,
+        "ratio_external_over_project": 0.9584540416736697,
+        "mae": 0.5805973172734739,
+        "p90_abs_error": 1.2956000000000005
+      },
+      "rain": {
+        "n": 3653,
+        "pearson_r": 0.5930912674104529,
+        "mean_project": 2.3979797426772516,
+        "mean_external": 1.9477142075006841,
+        "bias_external_minus_project": -0.4502655351765672,
+        "ratio_external_over_project": 0.8122313015564245,
+        "mae": 1.9316014234875445,
+        "p90_abs_error": 5.838000000000002
+      },
+      "inputs": {
+        "humidity_pct": {
+          "n": 3653,
+          "pearson_r": 0.7693087209843985,
+          "mean_project": 50.30316999726253,
+          "mean_external": 65.46099096632905,
+          "bias_external_minus_project": 15.157820969066522,
+          "ratio_external_over_project": 1.3013293390832308,
+          "mae": 16.213003011223652,
+          "p90_abs_error": 33.586000000000006
+        },
+        "wind_speed_m_s": {
+          "n": 3653,
+          "pearson_r": 0.7974240404569319,
+          "mean_project": 1.8661949082945524,
+          "mean_external": 2.5067372327158806,
+          "bias_external_minus_project": 0.6405423244213281,
+          "ratio_external_over_project": 1.3432344186421001,
+          "mae": 0.6990701706360068,
+          "p90_abs_error": 1.2744444444444447,
+          "scale_note": "external divided by 3.6 from km/h to m/s"
+        },
+        "solar_radiation_mj_m2_day": {
+          "n": 3653,
+          "pearson_r": 0.8915846420021561,
+          "mean_project": 17.320292909937038,
+          "mean_external": 17.71,
+          "bias_external_minus_project": 0.389707090062962,
+          "ratio_external_over_project": 1.0225000288441646,
+          "mae": 1.9290062961949082,
+          "p90_abs_error": 4.268000000000002
+        },
+        "tmax_c": {
+          "n": 3653,
+          "pearson_r": 0.9657497832587136,
+          "mean_project": 31.91927730632357,
+          "mean_external": 29.83542294004927,
+          "bias_external_minus_project": -2.083854366274295,
+          "ratio_external_over_project": 0.9347148638023373,
+          "mae": 2.351360525595401,
+          "p90_abs_error": 4.3700000000000045
+        }
+      },
+      "soil_moisture_0_to_7cm_stats": {
+        "mean": 0.2361403640843142,
+        "min": 0.1306666666666666,
+        "max": 0.436125
+      },
+      "soil_moisture_7_to_28cm_stats": {
+        "mean": 0.23824715986860112,
+        "min": 0.1179583333333333,
+        "max": 0.4339583333333333
+      },
+      "soil_moisture_28_to_100cm_stats": {
+        "mean": 0.2442914841682635,
+        "min": 0.088875,
+        "max": 0.419875
+      },
+      "soil_depth_profile": {
+        "0_to_7cm": 0.2361403640843142,
+        "7_to_28cm": 0.23824715986860112,
+        "28_to_100cm": 0.2442914841682635
+      }
+    },
+    "PNQ": {
+      "et0": {
+        "n": 3653,
+        "pearson_r": 0.9253089795217019,
+        "mean_project": 4.067618395839037,
+        "mean_external": 4.496917601970982,
+        "bias_external_minus_project": 0.42929920613194633,
+        "ratio_external_over_project": 1.105540678685861,
+        "mae": 0.6530599507254312,
+        "p90_abs_error": 1.2416000000000005
+      },
+      "rain": {
+        "n": 3653,
+        "pearson_r": 0.7020926381569836,
+        "mean_project": 5.9307829181494665,
+        "mean_external": 3.001341363263071,
+        "bias_external_minus_project": -2.929441554886395,
+        "ratio_external_over_project": 0.5060615781566248,
+        "mae": 3.968050917054476,
+        "p90_abs_error": 12.304000000000006
+      },
+      "inputs": {
+        "humidity_pct": {
+          "n": 3653,
+          "pearson_r": 0.9314492122606582,
+          "mean_project": 68.73560635094444,
+          "mean_external": 64.31289351218177,
+          "bias_external_minus_project": -4.422712838762661,
+          "ratio_external_over_project": 0.935656160270391,
+          "mae": 6.810388721598685,
+          "p90_abs_error": 14.134000000000006
+        },
+        "wind_speed_m_s": {
+          "n": 3653,
+          "pearson_r": 0.9211479628666972,
+          "mean_project": 2.650780180673419,
+          "mean_external": 2.8858320406363114,
+          "bias_external_minus_project": 0.2350518599628919,
+          "ratio_external_over_project": 1.0886727091430035,
+          "mae": 0.44919183623809955,
+          "p90_abs_error": 0.9866666666666664,
+          "scale_note": "external divided by 3.6 from km/h to m/s"
+        },
+        "solar_radiation_mj_m2_day": {
+          "n": 3653,
+          "pearson_r": 0.8683207975856838,
+          "mean_project": 17.943134410073913,
+          "mean_external": 18.704092526690392,
+          "bias_external_minus_project": 0.7609581166164796,
+          "ratio_external_over_project": 1.042409430773101,
+          "mae": 1.9439091157952368,
+          "p90_abs_error": 4.62
+        },
+        "tmax_c": {
+          "n": 3653,
+          "pearson_r": 0.9467687687733778,
+          "mean_project": 30.2899069258144,
+          "mean_external": 30.602408978921435,
+          "bias_external_minus_project": 0.3125020531070352,
+          "ratio_external_over_project": 1.0103170357661517,
+          "mae": 1.3014426498768137,
+          "p90_abs_error": 2.5600000000000023
+        }
+      },
+      "soil_moisture_0_to_7cm_stats": {
+        "mean": 0.3144933957002332,
+        "min": 0.1469166666666666,
+        "max": 0.5161666666666667
+      },
+      "soil_moisture_7_to_28cm_stats": {
+        "mean": 0.33614822279687656,
+        "min": 0.2240833333333333,
+        "max": 0.5174583333333334
+      },
+      "soil_moisture_28_to_100cm_stats": {
+        "mean": 0.3429287977892708,
+        "min": 0.1885416666666667,
+        "max": 0.5180833333333333
+      },
+      "soil_depth_profile": {
+        "0_to_7cm": 0.3144933957002332,
+        "7_to_28cm": 0.33614822279687656,
+        "28_to_100cm": 0.3429287977892708
+      }
+    }
+  },
+  "summary": {
+    "et0": {
+      "stations": 12,
+      "mean_pearson_r": 0.9109345917287293,
+      "min_pearson_r": 0.8567229418739458,
+      "mean_bias": -0.013846085409252673,
+      "mean_ratio": 0.9982667429186084,
+      "worst_station": "HYD"
+    },
+    "rain": {
+      "stations": 12,
+      "mean_pearson_r": 0.6684831798799175,
+      "min_pearson_r": 0.49557591377837285,
+      "mean_bias": -0.15385505064330687,
+      "mean_ratio": 0.9797393163438303,
+      "worst_station": "LUD"
+    }
+  }
+}

@@ -1,0 +1,164 @@
+{
+  "generatedAt": "2026-10-23T11:46:08+00:00",
+  "generator": "backend/ml/crop_health/build_manifest.py",
+  "splitRules": {
+    "trainValidationTest": "split before any tuning, kept in three disjoint groups",
+    "grouping": "by plant / farm / capture session / source, so near-duplicates never straddle splits",
+    "independentTest": "a held-out field-photo test set never used for architecture or threshold selection"
+  },
+  "tabularDatasets": [
+    {
+      "file": "irrigation_prediction.csv",
+      "bytes": 1199515,
+      "sha256": "3d311f2999a5857e6612fdd673762f565fe9cb788923d78abd93ad04e4ce1ab7",
+      "status": "present",
+      "columns": [
+        "Soil_Type",
+        "Soil_pH",
+        "Soil_Moisture",
+        "Organic_Carbon",
+        "Electrical_Conductivity",
+        "Temperature_C",
+        "Humidity",
+        "Rainfall_mm",
+        "Sunlight_Hours",
+        "Wind_Speed_kmh",
+        "Crop_Type",
+        "Crop_Growth_Stage",
+        "Season",
+        "Irrigation_Type",
+        "Water_Source",
+        "Field_Area_hectare",
+        "Mulching_Used",
+        "Previous_Irrigation_mm",
+        "Region",
+        "Irrigation_Need"
+      ],
+      "rows": 10000
+    },
+    {
+      "file": "plant_health_data.csv",
+      "bytes": 293220,
+      "sha256": "bdc6828c884eeb796cc1c742b229fe6172f6729153f5bbfa322fad83c0ff2ef1",
+      "status": "present",
+      "columns": [
+        "Timestamp",
+        "Plant_ID",
+        "Soil_Moisture",
+        "Ambient_Temperature",
+        "Soil_Temperature",
+        "Humidity",
+        "Light_Intensity",
+        "Soil_pH",
+        "Nitrogen_Level",
+        "Phosphorus_Level",
+        "Potassium_Level",
+        "Chlorophyll_Content",
+        "Electrochemical_Signal",
+        "Plant_Health_Status"
+      ],
+      "rows": 1200
+    },
+    {
+      "file": "training_corpus.csv",
+      "bytes": 22215625,
+      "sha256": "ba15342a88d23e3d3176f1c61a527a68b964eacb3dfdb792e81fe3a42b8d54ce",
+      "status": "present",
+      "columns": [
+        "date",
+        "station",
+        "climate",
+        "crop",
+        "soil_type",
+        "source",
+        "temperature",
+        "humidity",
+        "soil_moisture",
+        "soil_ph",
+        "ec",
+        "nitrogen",
+        "phosphorus",
+        "potassium",
+        "light_intensity",
+        "rainfall",
+        "wind_speed",
+        "cloud_amount",
+        "crop_stress_index",
+        "et0_mm_day",
+        "kc",
+        "season_progress",
+        "field_area_m2",
+        "taw_mm",
+        "raw_mm",
+        "water_stress",
+        "root_depth_cm",
+        "bulk_density_g_cm3",
+        "field_capacity_pct",
+        "wilting_point_pct",
+        "depletion_mm",
+        "depletion_fraction",
+        "water_required_mm",
+        "soil_moisture_mean_3d",
+        "soil_moisture_mean_7d",
+        "soil_moisture_trend_3d",
+        "et0_mean_3d",
+        "rainfall_sum_3d",
+        "et0_mean_7d",
+        "rainfall_sum_7d",
+        "kc_mean_3d",
+        "target_disease",
+        "yield_estimate_t_ha",
+        "nitrogen_demand_kg_ha",
+        "phosphorus_demand_kg_ha",
+        "potassium_demand_kg_ha",
+        "npk_demand_kg_ha",
+        "water_required_liters",
+        "irrigation_action"
+      ],
+      "rows": 68149
+    },
+    {
+      "file": "training_dataset_with_yield.csv",
+      "bytes": 572204,
+      "sha256": "fc6cb73ab7b4f68ca04da970b2e5d367830c68358c96ba8ad0f6e0cd0017e15e",
+      "status": "present",
+      "columns": [
+        "Temperature",
+        "Humidity",
+        "Moisture",
+        "Nitrogen",
+        "Phosphorus",
+        "Potassium",
+        "PH",
+        "Light_Intensity",
+        "Yield_Rate",
+        "Target_Disease",
+        "Water_Required_Liter_m2"
+      ],
+      "rows": 8347
+    }
+  ],
+  "imageCollections": [
+    {
+      "collection": "leaf-disease-first-crop",
+      "purpose": "disease classification baseline, first pilot crop",
+      "status": "pending",
+      "needs": "field photos with expert-verified labels; group splits by plant/capture session to prevent near-duplicate leakage"
+    },
+    {
+      "collection": "pest-presence-first-crop",
+      "purpose": "pest detection, separate task from disease",
+      "status": "pending"
+    },
+    {
+      "collection": "nutrient-symptoms-first-crop",
+      "purpose": "nutrient deficiency symptoms, crop-specific labels only",
+      "status": "pending",
+      "needs": "crop-specific expert review; no universal nutrient claim"
+    }
+  ],
+  "imageModelStatus": {
+    "deployed": false,
+    "note": "no crop image dataset, no trained image artifact; the crop-health service runs quality gates and abstains on classification until a validated artifact is installed"
+  }
+}
