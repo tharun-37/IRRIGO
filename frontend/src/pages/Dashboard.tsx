@@ -16,7 +16,7 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import { useLive } from '../App'
 import { usePollingFetch } from '../hooks/usePollingFetch'
@@ -398,15 +398,6 @@ export default function Dashboard() {
               fields need water
             </span>
           )}
-          {/* The crop-health desk stays on its own route; the farmer reaches it
-              from the field view without hunting any analytical page. V3 has no
-              console any more — this is the one page away from the field. */}
-          <Link
-            to="/crop-health"
-            className="shrink-0 rounded-pill bg-white/70 px-2.5 py-1 text-[12px] font-semibold text-ink-700 transition-colors hover:bg-white hover:text-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-800"
-          >
-            Crop health
-          </Link>
         </div>
       </header>
 

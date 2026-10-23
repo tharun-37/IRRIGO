@@ -544,12 +544,11 @@ describe('Field view', () => {
       expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
     )
 
-    // The "More" handover used to open the console. V3 has none, so it opens the
-    // crop-photo check the header also links to.
-    expect(
-      screen.getByRole('link', { name: 'Crop health' }).getAttribute('href'),
-    ).toBe('/crop-health')
-    fireEvent.click(screen.getByRole('button', { name: /More: crop photo check/ }))
+    // The "More" handover used to open the console. V3 has none, and the header
+    // carries no extra button either — the widget covers a quick check, so the
+    // full page is reached through "More".
+    const more = screen.getByRole('button', { name: /More: crop photo check/ })
+    fireEvent.click(more)
 
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'Crop health' })).toBeTruthy(),
@@ -577,7 +576,9 @@ describe('Field view', () => {
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
     )
-    fireEvent.click(screen.getByRole('link', { name: 'Crop health' }))
+    // Reaching the full page takes "More": the header has no crop-health button,
+    // and the widget on the field view handles the everyday capture.
+    fireEvent.click(screen.getByRole('button', { name: /More: crop photo check/ }))
 
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'Crop health' })).toBeTruthy(),
