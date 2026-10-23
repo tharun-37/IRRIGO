@@ -558,7 +558,7 @@ function SoilWaterCard({
   return (
     <section className="card h-full min-h-0 flex-col overflow-hidden" aria-label="Soil water">
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <header className="flex shrink-0 items-baseline justify-between gap-2 px-4 pt-3">
+      <header className="flex shrink-0 items-baseline justify-between gap-2 px-4 pt-2">
         <h2 className="text-[11px] font-bold uppercase tracking-[0.1em] text-ink-600">
           Soil water
         </h2>
@@ -567,8 +567,8 @@ function SoilWaterCard({
         </span>
       </header>
 
-      <div className="flex min-h-0 flex-1 items-center gap-4 px-4 pb-3 pt-2">
-        <div className="relative aspect-square w-[116px] shrink-0 self-center">
+      <div className="flex min-h-0 flex-1 items-center gap-4 px-4 pb-2 pt-1.5">
+        <div className="relative aspect-square w-[100px] shrink-0 self-center">
           <svg viewBox="0 0 140 140" className="h-full w-full -rotate-90">
             <defs>
               <linearGradient id="farmerRing" x1="0" y1="0" x2="1" y2="1">
@@ -598,7 +598,7 @@ function SoilWaterCard({
           </div>
         </div>
 
-        <dl className="panel flex min-w-0 flex-1 flex-col justify-between gap-1 px-4 py-3 text-[11px] text-ink-700">
+        <dl className="panel flex min-w-0 flex-1 flex-col justify-between gap-1 px-3 py-2 text-[11px] text-ink-700">
           <Line label="Used" value={`${num(field.water.depletionMm)} mm`} />
           <Line label="Available" value={`${num(field.water.tawMm)} mm`} />
           <Line label="Refill at" value={`${num(field.water.rawMm)} mm`} />
@@ -606,7 +606,7 @@ function SoilWaterCard({
         </dl>
       </div>
 
-      <p className="shrink-0 px-4 pb-3 text-[11px] leading-snug text-slate-700">
+      <p className="shrink-0 px-4 pb-2 text-[11px] leading-snug text-slate-700">
         {band === 'rest'
           ? 'No crop in the ground, so soil wetness does not drive a decision here.'
           : `31% of soil volume is water. ${Math.round(fill * 100)}% of usable water left. Pump on at refill point.`}
@@ -640,11 +640,11 @@ function YieldCard({ chips }: { chips: FarmerChip[] }) {
   return (
     <section className="card h-full min-h-0 flex-col overflow-hidden" aria-label="Yield and today's notes">
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="flex min-h-0 flex-1 flex-col px-4 pb-3 pt-3">
+      <div className="flex min-h-0 flex-1 flex-col px-4 pb-2 pt-2">
         <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-500">
           {yieldChip?.title ?? 'Expected yield'}
         </p>
-        <p className="tnum mt-1 text-[24px] font-semibold leading-tight tracking-tight text-ink-900">
+        <p className="tnum mt-0.5 text-[24px] font-semibold leading-tight tracking-tight text-ink-900">
           {totalLabel}
         </p>
         <p className="tnum mt-0.5 text-[12px] font-semibold leading-snug text-slate-700">
@@ -654,9 +654,9 @@ function YieldCard({ chips }: { chips: FarmerChip[] }) {
           What this field should give at harvest.
         </p>
 
-        <ul className="mt-3 flex flex-1 flex-col justify-center divide-y divide-ink-200/70">
+        <ul className="mt-2 flex flex-1 flex-col justify-center divide-y divide-ink-200/70">
           {notes.map((chip) => (
-            <li key={chip.key} className="flex items-start gap-3 py-2.5">
+            <li key={chip.key} className="flex items-start gap-3 py-1.5">
               <span className={`mt-0.5 shrink-0 ${CHIP_TONE[chip.tone]}`}>
                 <ChipIcon chip={chip} />
               </span>
@@ -905,8 +905,11 @@ export function FarmerView({
         </div>
 
         {/* ---- Right side: the field, then water and yield ----------------- */}
+        {/* The map takes three shares to the bottom row's one: that makes the
+            soil-water and yield cards roughly as tall as the four left-rail
+            cards, so the whole screen reads as one even set of tiles. */}
         <div className="flex min-h-0 flex-col gap-2.5">
-          <div className="min-h-0 flex-[2]">
+          <div className="min-h-0 flex-[3]">
             <FieldMap
               fields={plots}
               selectedId={field.fieldId}
