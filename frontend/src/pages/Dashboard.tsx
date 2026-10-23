@@ -399,7 +399,7 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <main className="scroll-smooth min-h-0 flex-1 overflow-y-auto lg:overflow-hidden">
+      <main className="scroll-smooth min-h-0 flex-1 overflow-y-auto">
         {advisor.error ? (
           <p className="p-6 text-[13px] text-status-alert">{advisor.error}</p>
         ) : adding ? (

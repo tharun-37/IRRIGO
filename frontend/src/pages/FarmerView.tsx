@@ -782,11 +782,11 @@ export function FarmerView({
     <div className="flex w-full flex-col gap-2.5 px-3 pb-3 xl:h-full xl:min-h-0 xl:px-4 xl:pb-4">
       <div className="grid min-h-0 gap-2.5 xl:flex-1 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)]">
         {/* ---- Left rail: the season, the decision, the week, the photo check
-            Four cards of one width, each allowed to compress (`minmax(0,1fr)`):
-            adding the photo check must not change the map's size, and the
-            `minmax(0,1fr)` rows shrink to fit instead of forcing the whole grid
-            taller from the left side. */}
-        <div className="grid min-h-0 grid-rows-[repeat(4,minmax(0,1fr))] gap-2.5">
+            Four cards of one width. Rows share the height evenly, but each one
+            keeps a floor at its own content (`minmax(min-content,1fr)`), so a
+            shorter screen grows the card that needs it instead of clipping,
+            and a taller screen keeps the tiles level. */}
+        <div className="grid min-h-0 grid-rows-[repeat(4,minmax(min-content,1fr))] gap-2.5">
           <CropAgeCard field={field} />
 
           {/* The whole decision: what to do, how much, and the two things to press. */}
@@ -915,7 +915,7 @@ export function FarmerView({
             yield cards level with the four rail cards at any window size, and
             the map takes whatever is left. */}
         <div className="flex min-h-0 flex-col gap-2.5">
-          <div className="min-h-0 flex-[3] xl:[flex:1_1_0%]">
+          <div className="min-h-0 flex-[3] xl:min-h-[12rem] xl:[flex:1_1_0%]">
             <FieldMap
               fields={plots}
               selectedId={field.fieldId}
@@ -925,7 +925,10 @@ export function FarmerView({
             />
           </div>
 
-          <div className="grid min-h-0 flex-1 gap-2.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)] xl:[flex:0_0_calc((100%_-_30px)/4)]">
+          {/* One rail-row's height when it fits, never smaller than its own
+              content — so the soil-water and yield cards stay level with the
+              left tiles on big screens and stay whole on small ones. */}
+          <div className="grid min-h-0 flex-1 gap-2.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)] xl:[flex:0_1_calc((100%_-_30px)/4)] xl:min-h-[auto]">
             <SoilWaterCard field={field} remaining={1 - field.water.depletionFraction} band={band} />
             <YieldCard chips={chips} />
           </div>
