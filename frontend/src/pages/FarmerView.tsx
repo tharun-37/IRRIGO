@@ -625,8 +625,8 @@ function Line({ label, value }: { label: string; value: string }) {
   )
 }
 
-/** What the crop should give, and the two things that are not on today's list. */
-function YieldCard({ chips, onMore }: { chips: FarmerChip[]; onMore: () => void }) {
+/** What the crop should give, and the things that are not on today's list. */
+function YieldCard({ chips }: { chips: FarmerChip[] }) {
   const yieldChip = chips.find((chip) => chip.key === 'yield')
   const notes = chips.filter((chip) => chip.key !== 'yield')
 
@@ -670,15 +670,6 @@ function YieldCard({ chips, onMore }: { chips: FarmerChip[]; onMore: () => void 
           ))}
         </ul>
       </div>
-
-      <button
-        type="button"
-        onClick={onMore}
-        className="flex h-10 w-full shrink-0 items-center justify-center gap-1.5 border-t border-ink-200/70 bg-white/40 px-4 text-[12px] font-semibold text-ink-700 transition-colors hover:bg-white hover:text-ink-900 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-600"
-      >
-        More: crop photo check
-        <span aria-hidden="true">›</span>
-      </button>
       </div>
     </section>
   )
@@ -696,7 +687,6 @@ export function FarmerView({
   chips,
   live,
   onSelect,
-  onMore,
 }: {
   field: Advisory
   fields: FarmerField[]
@@ -705,7 +695,6 @@ export function FarmerView({
   chips: FarmerChip[]
   live: LiveWeather | null
   onSelect: (fieldId: string) => void
-  onMore: () => void
 }) {
   const watered = depth > 0
   const rest = band === 'rest'
@@ -929,7 +918,7 @@ export function FarmerView({
 
           <div className="grid min-h-0 flex-1 gap-2.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)]">
             <SoilWaterCard field={field} remaining={1 - field.water.depletionFraction} band={band} />
-            <YieldCard chips={chips} onMore={onMore} />
+            <YieldCard chips={chips} />
           </div>
         </div>
       </div>

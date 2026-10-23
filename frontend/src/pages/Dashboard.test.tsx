@@ -239,9 +239,9 @@ function route(url: string): unknown {
 }
 
 /** The field view is the only view; the shell renders it directly. */
-function renderShell() {
+function renderShell(initial = '/') {
   return render(
-    <MemoryRouter initialEntries={['/']}>
+    <MemoryRouter initialEntries={[initial]}>
       <App />
     </MemoryRouter>,
   )
@@ -537,18 +537,11 @@ describe('Field view', () => {
     expect(screen.getByText('Saved for today.')).toBeTruthy()
   })
 
-  it('hands over to the crop photo check from More, not from a console', async () => {
-    renderShell()
-
-    await waitFor(() =>
-      expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
-    )
-
-    // The "More" handover used to open the console. V3 has none, and the header
-    // carries no extra button either — the widget covers a quick check, so the
-    // full page is reached through "More".
-    const more = screen.getByRole('button', { name: /More: crop photo check/ })
-    fireEvent.click(more)
+  it('keeps the crop photo check page a straight capture flow', async () => {
+    // The widget covers the everyday check on the field view, and there is no
+    // header button or More handover any more: the full page carries the guided
+    // flow plus history and is reached by its own route.
+    renderShell('/crop-health')
 
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'Crop health' })).toBeTruthy(),
@@ -568,17 +561,12 @@ describe('Field view', () => {
       screen.getByRole('button', { name: 'Open camera or choose photo' }),
     ).toBeTruthy()
     expect(screen.getByRole('button', { name: /Paddy-North Rice/ })).toBeTruthy()
+    // The recorded history lives here too.
+    expect(screen.getByText('Past checks')).toBeTruthy()
   })
 
   it('keeps the crop photo check honest about what the model can do', async () => {
-    renderShell()
-
-    await waitFor(() =>
-      expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
-    )
-    // Reaching the full page takes "More": the header has no crop-health button,
-    // and the widget on the field view handles the everyday capture.
-    fireEvent.click(screen.getByRole('button', { name: /More: crop photo check/ }))
+    renderShell('/crop-health')
 
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'Crop health' })).toBeTruthy(),

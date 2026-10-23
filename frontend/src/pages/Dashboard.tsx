@@ -16,7 +16,6 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import { useLive } from '../App'
 import { usePollingFetch } from '../hooks/usePollingFetch'
@@ -273,7 +272,6 @@ function farmerFields(fields: Advisory[]): FarmerField[] {
 
 export default function Dashboard() {
   const { bump, refresh } = useLive()
-  const navigate = useNavigate()
   const [fieldId, setFieldId] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
 
@@ -436,10 +434,6 @@ export default function Dashboard() {
               chips={farmerChips(field)}
               live={live.data?.station === field.station ? live.data : null}
               onSelect={setFieldId}
-              // The "More" handover used to open the console; V3 has none. The
-              // crop-photo check is the one place that reads the crop directly,
-              // so it is where the button goes now.
-              onMore={() => navigate('/crop-health')}
             />
           </div>
         )}
