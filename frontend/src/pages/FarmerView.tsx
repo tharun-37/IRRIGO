@@ -26,6 +26,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { AlertGlyph, LeafGlyph } from '../components/ui'
+import CropHealthCheck from '../components/CropHealthCheck'
 import { FieldMap, type MapField, type MapTone } from '../components/FieldMap'
 import { int, num, titleCase } from '../lib/format'
 import type { Advisory, LiveWeather, ScheduleDay } from '../types'
@@ -354,7 +355,7 @@ function CropAgeCard({ field }: { field: Advisory }) {
 
   return (
     <section className="card shrink-0 overflow-hidden" aria-label="Crop age">
-      <div className="pad-card pt-3 pb-3">
+      <div className="pad-card px-4 pt-2 pb-2.5">
         <div className="flex items-baseline justify-between gap-3">
           <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-500">
             Crop age
@@ -362,18 +363,18 @@ function CropAgeCard({ field }: { field: Advisory }) {
           <span className="text-[11px] font-semibold text-slate-600">{field.crop}</span>
         </div>
 
-        <div className="mt-1 flex items-baseline gap-1.5">
-          <span className="tnum text-[40px] font-semibold leading-none tracking-tight text-ink-900">
+        <div className="mt-0.5 flex items-baseline gap-1.5">
+          <span className="tnum text-[30px] font-semibold leading-none tracking-tight text-ink-900">
             {field.ageDays}
           </span>
-          <span className="text-[14px] font-medium text-slate-600">days old</span>
+          <span className="text-[13px] font-medium text-slate-600">days old</span>
         </div>
 
-        <p className="mt-1 text-[14px] font-semibold text-brand-700">
+        <p className="mt-0.5 text-[13px] font-semibold text-brand-700">
           {finished ? 'Season complete' : stageWords(field)}
         </p>
 
-        <div className="mt-3">
+        <div className="mt-2">
           <div className="relative">
             <div className="flex h-3 gap-0.5 overflow-hidden rounded-pill bg-ink-100">
               {segments.map((segment) => {
@@ -432,7 +433,7 @@ function CropAgeCard({ field }: { field: Advisory }) {
           </div>
         </div>
 
-        <dl className="panel mt-3 grid grid-cols-3 gap-2 px-3 py-2">
+        <dl className="panel mt-2 grid grid-cols-3 gap-2 px-3 py-1.5">
           <MiniStat label="Sun today" value={`${num(field.water.et0MmDay, 1)} mm`} />
           <MiniStat
             label="Season"
@@ -497,11 +498,11 @@ function WeekCard({ field }: { field: Advisory }) {
     <section
       className="card h-full min-h-0 flex-col overflow-hidden" aria-label="Next seven days">
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <header className="flex shrink-0 items-baseline justify-between gap-3 px-4 pt-3">
+      <header className="flex shrink-0 items-baseline justify-between gap-3 px-4 pt-2.5">
         <h2 className="text-[13px] font-semibold tracking-tight text-ink-900">Next 7 days</h2>
         <span className="text-[11px] text-slate-700">water planned</span>
       </header>
-      <div className="flex min-h-0 flex-1 gap-1.5 px-4 pb-2 pt-2.5">
+      <div className="flex min-h-0 flex-1 gap-1.5 px-4 pb-1.5 pt-2">
         {days.map((day) => {
           const minutes = Math.round((day.applyMm / 10.8) * 90) || (day.applyMm > 0 ? Math.round(day.applyMm * 8.33) : 0)
           return (
@@ -787,8 +788,12 @@ export function FarmerView({
   return (
     <div className="mx-auto flex w-full max-w-[1728px] flex-col gap-2.5 xl:h-full xl:min-h-0">
       <div className="grid min-h-0 gap-2.5 xl:flex-1 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)]">
-        {/* ---- Left rail: the season, the decision, the week --------------- */}
-        <div className="grid min-h-0 grid-rows-[repeat(3,1fr)] gap-2.5">
+        {/* ---- Left rail: the season, the decision, the week, the photo check
+            Four cards of one width, each allowed to compress (`minmax(0,1fr)`):
+            adding the photo check must not change the map's size, and the
+            `minmax(0,1fr)` rows shrink to fit instead of forcing the whole grid
+            taller from the left side. */}
+        <div className="grid min-h-0 grid-rows-[repeat(4,minmax(0,1fr))] gap-2.5">
           <CropAgeCard field={field} />
 
           {/* The whole decision: what to do, how much, and the two things to press. */}
@@ -796,27 +801,27 @@ export function FarmerView({
             className={`card h-full min-h-0 overflow-hidden border-2 ${accent.ring}`}
             aria-label="Today's action"
           >
-            <div className="pad-card flex h-full flex-col overflow-hidden py-2.5">
+            <div className="pad-card flex h-full flex-col overflow-hidden py-2">
               <div className="flex items-center gap-2.5">
                 <div className="min-w-0">
                   <p className={`text-[10px] font-bold uppercase tracking-[0.09em] ${accent.kicker}`}>
                     {kicker}
                   </p>
-                  <h1 className="text-[28px] font-semibold leading-tight tracking-tight text-ink-900 sm:text-[32px]">
+                  <h1 className="text-[24px] font-semibold leading-tight tracking-tight text-ink-900 sm:text-[28px]">
                     {action}
                   </h1>
                 </div>
               </div>
 
               {watered && (
-                <div className="mt-2">
+                <div className="mt-1.5">
                   <div className="flex items-baseline gap-2">
-                    <span className="tnum text-[56px] font-semibold leading-none tracking-tight text-ink-900 sm:text-[64px]">
+                    <span className="tnum text-[42px] font-semibold leading-none tracking-tight text-ink-900 sm:text-[50px]">
                       {minutes}
                     </span>
-                    <span className="text-[20px] font-medium text-ink-700 sm:text-[24px]">minutes</span>
+                    <span className="text-[18px] font-medium text-ink-700 sm:text-[20px]">minutes</span>
                   </div>
-                  <p className="mt-1 text-[14px] text-slate-700">
+                  <p className="mt-1 text-[13px] text-slate-700">
                     at the pump · {num(depth, 1)} mm over {num(acres, 1)} {acreWord}
                     <span className="text-ink-600"> · {int(field.recommendation.volumeLitres)} L</span>
                   </p>
@@ -824,28 +829,28 @@ export function FarmerView({
               )}
 
               {!watered && watch && typeof daysToStress === 'number' && daysToStress > 0 && (
-                <div className="mt-2">
+                <div className="mt-1.5">
                   <div className="flex items-baseline gap-2">
-                    <span className="tnum text-[52px] font-semibold leading-none tracking-tight text-ink-900">
+                    <span className="tnum text-[42px] font-semibold leading-none tracking-tight text-ink-900">
                       {Math.round(daysToStress)}
                     </span>
-                    <span className="text-[20px] font-medium text-ink-700">
+                    <span className="text-[18px] font-medium text-ink-700">
                       day{daysToStress === 1 ? '' : 's'} to go
                     </span>
                   </div>
-                  <p className="mt-1 text-[13px] text-slate-600">
+                  <p className="mt-1 text-[12px] text-slate-600">
                     until this field is likely to need water
                   </p>
                 </div>
               )}
 
-              <p className="mt-2 text-[14px] leading-relaxed text-ink-700">
+              <p className="mt-1.5 text-[13px] leading-relaxed text-ink-700">
                 <span className="font-semibold text-ink-900">Why: </span>
                 {why}
                 {rain}
               </p>
 
-              <p className="mt-1.5 flex items-center gap-1.5 text-[14px] text-slate-700">
+              <p className="mt-1 flex items-center gap-1.5 text-[13px] text-slate-700">
                 <span
                   aria-hidden="true"
                   className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500"
@@ -853,11 +858,11 @@ export function FarmerView({
                 {sky}
               </p>
 
-              <div className="mt-auto grid grid-cols-2 gap-2 pt-2">
+              <div className="mt-auto grid grid-cols-2 gap-2 pt-1.5">
                 <button
                   type="button"
                   onClick={listen}
-                  className="flex h-10 items-center justify-center gap-2 rounded-card border border-ink-200 bg-white text-[13px] font-semibold text-ink-900 transition-colors hover:border-ink-300 hover:bg-ink-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+                  className="flex h-9 items-center justify-center gap-2 rounded-card border border-ink-200 bg-white text-[13px] font-semibold text-ink-900 transition-colors hover:border-ink-300 hover:bg-ink-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
                 >
                   <SpeakerGlyph size={18} />
                   Listen
@@ -866,7 +871,7 @@ export function FarmerView({
                   type="button"
                   onClick={toggleDone}
                   aria-pressed={done}
-                  className={`flex h-10 items-center justify-center gap-2 rounded-card border text-[13px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${
+                  className={`flex h-9 items-center justify-center gap-2 rounded-card border text-[13px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${
                     done
                       ? 'border-status-healthy bg-status-healthySoft text-[#15803d]'
                       : 'border-ink-200 bg-white text-ink-900 hover:border-ink-300 hover:bg-ink-50'
@@ -889,6 +894,25 @@ export function FarmerView({
           </section>
 
           <WeekCard field={field} />
+
+          {/* ---- The crop-photo check, embedded like the map cards ---------- */}
+          {/* The same capture flow as the /crop-health page, compact. It follows
+              the field being read — picking a field here moves the whole view,
+              exactly like the map — and the answer renders in this card, so a
+              farmer never leaves the field to have a plant checked. */}
+          <section
+            className="card flex h-full min-h-0 flex-col overflow-hidden"
+            aria-label="Crop photo check"
+          >
+            <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-3 pb-2.5 pt-2.5">
+              <CropHealthCheck
+                compact
+                fields={fields.map((item) => ({ id: item.fieldId, crop: item.crop }))}
+                activeFieldId={field.fieldId}
+                onFieldSelect={onSelect}
+              />
+            </div>
+          </section>
         </div>
 
         {/* ---- Right side: the field, then water and yield ----------------- */}

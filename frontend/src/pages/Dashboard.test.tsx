@@ -435,7 +435,9 @@ describe('Field view', () => {
     renderShell()
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy())
 
-    expect(screen.getByRole('button', { name: /PNQ-wheat-01/ })).toBeTruthy()
+    // Exact match: the photo-check widget on this view also renders a
+    // "PNQ-wheat-01 Wheat" pill, so the switcher pill is matched exactly.
+    expect(screen.getByRole('button', { name: /^PNQ-wheat-01$/ })).toBeTruthy()
 
     // No dashboard furniture competing with the two facts, and no console
     // switcher to reach any of it.
@@ -455,6 +457,69 @@ describe('Field view', () => {
     expect(screen.getByText('1 of 1 fields need water')).toBeTruthy()
   })
 
+  it('embeds the photo check as a fourth card that follows the field being read', async () => {
+    // Two registered fields, so the widget's pills can be exercised: the
+    // farmer view is handed the whole feed, not just the displayed field.
+    const barley = {
+      ...FIELD,
+      fieldId: 'Barley-West',
+      crop: 'Barley',
+      headline: 'Irrigate 12.5 mm now',
+      summary: 'Barley at Barley-West is 77 days past sowing.',
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input)
+        const body = route(url)
+        const payload = url.includes('/advisor') ? { ...FEED, fields: [FIELD, barley] } : body
+        return {
+          ok: true,
+          status: 200,
+          json: async () => payload,
+          text: async () => JSON.stringify(payload),
+        } as Response
+      }),
+    )
+    renderShell()
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
+    )
+
+    // The widget is one of the four equal-width cards under the season, the
+    // decision and the week.
+    const widget = screen.getByLabelText('Crop photo check')
+    expect(widget).toBeTruthy()
+    expect(within(widget as HTMLElement).getByText(/Photo check · tap the field/)).toBeTruthy()
+    expect(within(widget as HTMLElement).getByRole('button', { name: 'Open camera' })).toBeTruthy()
+
+    // It follows the field the farmer is reading: the current field's pill is
+    // already pressed, so checking a photo needs one tap fewer.
+    const wheatPill = within(widget as HTMLElement).getByRole('button', {
+      name: /PNQ-wheat-01\s+Wheat/,
+    })
+    expect(wheatPill.getAttribute('aria-pressed')).toBe('true')
+
+    // It is the compact chrome: no step headings and no history, which stay on
+    // the /crop-health page.
+    expect(within(widget as HTMLElement).queryByText('1. Tap your field')).toBeNull()
+    expect(within(widget as HTMLElement).queryByText('Past checks')).toBeNull()
+
+    // Picking another field on the widget moves the whole view, like the map:
+    // the bar in the widget goes and the switcher's does too.
+    const barleyPill = within(widget as HTMLElement).getByRole('button', {
+      name: /Barley-West\s+Barley/,
+    })
+    fireEvent.click(barleyPill)
+    await waitFor(() => expect(barleyPill.getAttribute('aria-pressed')).toBe('true'))
+    expect(wheatPill.getAttribute('aria-pressed')).toBe('false')
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: /^Barley-West$/ }).className,
+      ).toContain('bg-ink-900'),
+    )
+  })
+
   it('offers to add a field from the switcher it will add to', async () => {
     renderShell()
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy())
@@ -462,7 +527,9 @@ describe('Field view', () => {
     // The button belongs in the switcher row, alongside the field pills: that row
     // is the one place on the screen that already answers "which fields exist".
     const add = screen.getByRole('button', { name: /Add field/i })
-    const lastField = screen.getByRole('button', { name: /PNQ-wheat-01/ })
+    // Exact name: the photo-check widget also carries a pill with this field's
+    // name, and `add.closest('header')` must be compared with the switcher's.
+    const lastField = screen.getByRole('button', { name: /^PNQ-wheat-01$/ })
     expect(add.getAttribute('aria-expanded')).toBe('false')
     expect(add.closest('header')).toBe(lastField.closest('header'))
 
