@@ -354,27 +354,31 @@ function CropAgeCard({ field }: { field: Advisory }) {
   }, [current, field.ageDays, finished, progress, seasonDays, windows])
 
   return (
-    <section className="card shrink-0 overflow-hidden" aria-label="Crop age">
-      <div className="pad-card px-4 pt-2 pb-2.5">
-        <div className="flex items-baseline justify-between gap-3">
+    <section className="card flex h-full min-h-0 flex-col overflow-hidden" aria-label="Crop age">
+      <div className="pad-card flex h-full min-h-0 flex-col px-4 pt-2 pb-2.5">
+        <div className="flex shrink-0 items-baseline justify-between gap-3">
           <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-500">
             Crop age
           </p>
           <span className="text-[11px] font-semibold text-slate-600">{field.crop}</span>
         </div>
 
-        <div className="mt-0.5 flex items-baseline gap-1.5">
-          <span className="tnum text-[30px] font-semibold leading-none tracking-tight text-ink-900">
-            {field.ageDays}
-          </span>
-          <span className="text-[13px] font-medium text-slate-600">days old</span>
+        {/* The figure and its stage breath in whatever room the tile has, so a
+            taller window spends it here instead of a hole above the track. */}
+        <div className="flex min-h-0 flex-1 flex-col justify-center">
+          <div className="flex items-baseline gap-1.5">
+            <span className="tnum text-[40px] font-semibold leading-none tracking-tight text-ink-900">
+              {field.ageDays}
+            </span>
+            <span className="text-[14px] font-medium text-slate-600">days old</span>
+          </div>
+
+          <p className="mt-1 text-[14px] font-semibold text-brand-700">
+            {finished ? 'Season complete' : stageWords(field)}
+          </p>
         </div>
 
-        <p className="mt-0.5 text-[13px] font-semibold text-brand-700">
-          {finished ? 'Season complete' : stageWords(field)}
-        </p>
-
-        <div className="mt-2">
+        <div className="shrink-0">
           <div className="relative">
             <div className="flex h-3 gap-0.5 overflow-hidden rounded-pill bg-ink-100">
               {segments.map((segment) => {
@@ -775,7 +779,7 @@ export function FarmerView({
     : `${num(field.sensors.temperature, 0)}° · ${num(field.water.rainfallMmDay, 1)} mm rain today`
 
   return (
-    <div className="mx-auto flex w-full max-w-[1728px] flex-col gap-2.5 xl:h-full xl:min-h-0">
+    <div className="flex w-full flex-col gap-2.5 px-3 pb-3 xl:h-full xl:min-h-0 xl:px-4 xl:pb-4">
       <div className="grid min-h-0 gap-2.5 xl:flex-1 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)]">
         {/* ---- Left rail: the season, the decision, the week, the photo check
             Four cards of one width, each allowed to compress (`minmax(0,1fr)`):
