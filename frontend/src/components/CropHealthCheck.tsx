@@ -170,53 +170,43 @@ export default function CropHealthCheck({
   return (
     <>
       {/* ---- Step 1: the field, so the crop is never asked --------------- */}
-      <section
-        className={
-          compact
-            ? 'rounded border border-ink-200/70 bg-white/60 px-3 py-2'
-            : 'rounded-card border border-ink-200 bg-white/70 px-4 py-3.5'
-        }
-      >
-        {!compact && (
+      {/* The page asks explicitly, because nothing else tells it which plant is
+          being photographed. The widget has no picker of its own: the switcher
+          at the top of the field view already chooses the field, and the map
+          moves it — so the widget silently follows the field being read and
+          just names it under the title. */}
+      {compact ? (
+        <p className="px-1 pt-1 text-[10px] font-bold uppercase tracking-[0.1em] text-ink-500">
+          Crop photo check{field ? ` · ${field.id}` : ''}
+        </p>
+      ) : (
+        <section className="rounded-card border border-ink-200 bg-white/70 px-4 py-3.5">
           <h2 className="text-[14px] font-semibold text-ink-900">1. Tap your field</h2>
-        )}
-        {compact && (
-          <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-ink-500">
-            Photo check · tap the field
-          </p>
-        )}
-        <div className={`flex flex-wrap gap-1.5 ${compact ? 'mt-1.5' : 'mt-2.5'}`}>
-          {fieldList.map((item) => {
-            const active = item.id === fieldId
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => pickField(item.id)}
-                aria-pressed={active}
-                className={`rounded-card border font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600 ${
-                  compact
-                    ? `px-2.5 py-1 text-[12px] ${
-                        active
-                          ? 'border-ink-900 bg-ink-900 text-white'
-                          : 'border-ink-200 bg-white text-ink-700 hover:border-ink-400'
-                      }`
-                    : `px-4 py-2.5 text-[14px] ${
-                        active
-                          ? 'border-ink-900 bg-ink-900 text-white shadow-lift'
-                          : 'border-ink-200 bg-white text-ink-700 hover:border-ink-400'
-                      }`
-                }`}
-              >
-                {item.id}
-                <span className={`ml-1.5 font-medium ${active ? 'text-white/70' : 'text-ink-400'}`}>
-                  {item.crop}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      </section>
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            {fieldList.map((item) => {
+              const active = item.id === fieldId
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => pickField(item.id)}
+                  aria-pressed={active}
+                  className={`rounded-card border px-4 py-2.5 text-[14px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600 ${
+                    active
+                      ? 'border-ink-900 bg-ink-900 text-white shadow-lift'
+                      : 'border-ink-200 bg-white text-ink-700 hover:border-ink-400'
+                  }`}
+                >
+                  {item.id}
+                  <span className={`ml-1.5 font-medium ${active ? 'text-white/70' : 'text-ink-400'}`}>
+                    {item.crop}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </section>
+      )}
 
       {/* ---- Step 2: the photo, captured with the camera ------------------ */}
       <section
