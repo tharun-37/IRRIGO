@@ -675,7 +675,7 @@ function YieldCard({ chips, onMore }: { chips: FarmerChip[]; onMore: () => void 
         onClick={onMore}
         className="flex h-10 w-full shrink-0 items-center justify-center gap-1.5 border-t border-ink-200/70 bg-white/40 px-4 text-[12px] font-semibold text-ink-700 transition-colors hover:bg-white hover:text-ink-900 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-600"
       >
-        More: soil, weather, yield
+        More: crop photo check
         <span aria-hidden="true">›</span>
       </button>
       </div>

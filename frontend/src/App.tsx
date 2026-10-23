@@ -2,10 +2,10 @@
  * Application shell.
  *
  * The field view is the product, so the shell is deliberately thin: a status
- * bar and the route. There is no navigation rail and no list of destinations
- * competing with the map for attention. The analytical pages still exist behind
- * their routes for whoever is checking the model's numbers rather than acting on
- * them, and the field view links to that one page.
+ * bar and two routes. V3 removed the console pages entirely — the app is for
+ * farmers, not developers, so there is no Farmer/Console switch to hide the
+ * analytical pages behind, and the only page beyond the field is the
+ * crop-photo check.
  *
  * The live stream is opened once here and pushed down through context so the
  * map and the detail panel refresh together.
@@ -16,12 +16,6 @@ import { Route, Routes } from 'react-router-dom'
 import { useLiveTelemetry } from './hooks/useLiveTelemetry'
 import type { Recommendation, Telemetry } from './types'
 import Dashboard from './pages/Dashboard'
-import Overview from './pages/Overview'
-import Zones from './pages/Zones'
-import Analytics from './pages/Analytics'
-import ModelHealth from './pages/ModelHealth'
-import Alerts from './pages/Alerts'
-import Advisor from './pages/Advisor'
 import CropHealth from './pages/CropHealth'
 
 interface LiveContextValue {
@@ -68,13 +62,7 @@ export default function App() {
       <main className="min-h-screen lg:h-screen lg:min-h-0">
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/overview" element={<Overview />} />
-          <Route path="/zones" element={<Zones />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/model" element={<ModelHealth />} />
-          <Route path="/alerts" element={<Alerts />} />
           <Route path="/crop-health" element={<CropHealth />} />
-          <Route path="/advisor" element={<Advisor />} />
           <Route path="*" element={<Dashboard />} />
         </Routes>
       </main>
