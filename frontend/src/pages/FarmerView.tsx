@@ -905,11 +905,13 @@ export function FarmerView({
         </div>
 
         {/* ---- Right side: the field, then water and yield ----------------- */}
-        {/* The map takes three shares to the bottom row's one: that makes the
-            soil-water and yield cards roughly as tall as the four left-rail
-            cards, so the whole screen reads as one even set of tiles. */}
+        {/* The bottom row gets exactly one left-rail row's height: the rail is
+            four 1fr rows with three 10px gaps, so one row is
+            (100% - 30px)/4 — the same formula here keeps the soil-water and
+            yield cards level with the four rail cards at any window size, and
+            the map takes whatever is left. */}
         <div className="flex min-h-0 flex-col gap-2.5">
-          <div className="min-h-0 flex-[3]">
+          <div className="min-h-0 flex-[3] xl:[flex:1_1_0%]">
             <FieldMap
               fields={plots}
               selectedId={field.fieldId}
@@ -919,7 +921,7 @@ export function FarmerView({
             />
           </div>
 
-          <div className="grid min-h-0 flex-1 gap-2.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)]">
+          <div className="grid min-h-0 flex-1 gap-2.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)] xl:[flex:0_0_calc((100%_-_30px)/4)]">
             <SoilWaterCard field={field} remaining={1 - field.water.depletionFraction} band={band} />
             <YieldCard chips={chips} />
           </div>
