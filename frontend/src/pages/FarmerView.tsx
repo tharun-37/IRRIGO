@@ -620,34 +620,6 @@ function SoilWaterCard({
         </dl>
       </div>
 
-      {field.live?.isLive && (
-        <dl className="panel mx-4 mb-2 flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 text-[11px] text-ink-700">
-          <span className="sr-only">Live ESP32 sensor readings from {field.live.deviceId}</span>
-          <div className="flex items-baseline gap-1">
-            <dt className="text-ink-500">Air</dt>
-            <dd className="tnum font-semibold text-ink-900">{num(field.sensors.temperature, 1)}°C</dd>
-          </div>
-          <div className="flex items-baseline gap-1">
-            <dt className="text-ink-500">Humidity</dt>
-            <dd className="tnum font-semibold text-ink-900">{num(field.sensors.humidity, 0)}%</dd>
-          </div>
-          <div className="flex items-baseline gap-1">
-            <dt className="text-ink-500">Light</dt>
-            <dd className="tnum font-semibold text-ink-900">
-              {field.sensors.lightIntensity >= 1000
-                ? `${(field.sensors.lightIntensity / 1000).toFixed(1)} klx`
-                : `${num(field.sensors.lightIntensity, 0)} lx`}
-            </dd>
-          </div>
-          {field.sensors.rssiDbm != null && (
-            <div className="flex items-baseline gap-1">
-              <dt className="text-ink-500">Wi-Fi</dt>
-              <dd className="tnum font-semibold text-ink-900">{field.sensors.rssiDbm} dBm</dd>
-            </div>
-          )}
-        </dl>
-      )}
-
       <p className="shrink-0 px-4 pb-2 text-[11px] leading-snug text-slate-700">
         {band === 'rest'
           ? 'No crop in the ground, so soil wetness does not drive a decision here.'
@@ -664,6 +636,56 @@ function Line({ label, value }: { label: string; value: string }) {
       <dt className="shrink-0 text-ink-500">{label}</dt>
       <dd className="tnum truncate font-semibold text-ink-900">{value}</dd>
     </div>
+  )
+}
+
+/**
+ * The bench node's own readings, in the freed third of the row.
+ *
+ * Rendered only while a node's real telemetry is fresh for this field — the
+ * one field the node is attached to. The values are the node's measurements,
+ * not the plan derivation, which is the whole point of the card existing.
+ */
+function LiveNodeCard({ field }: { field: Advisory }) {
+  const live = field.live
+  const ageSeconds = live?.ageSeconds ?? 0
+  const ageText =
+    ageSeconds < 90
+      ? `${Math.max(1, Math.round(ageSeconds))}s ago`
+      : `${Math.round(ageSeconds / 60)}m ago`
+  return (
+    <section className="card h-full min-h-0 flex-col overflow-hidden" aria-label="Live node">
+      <header className="flex shrink-0 items-baseline justify-between gap-2 px-4 pt-2">
+        <h2 className="text-[11px] font-bold uppercase tracking-[0.1em] text-ink-600">
+          Node · live
+        </h2>
+        <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-emerald-800">
+          {ageText}
+        </span>
+      </header>
+      <div className="flex min-h-0 flex-1 items-start px-4 pb-2 pt-1.5">
+        <dl className="panel w-full px-3 py-2 text-[11px] text-ink-700">
+          <Line label="Soil" value={`${num(field.sensors.soilMoisture, 1)}% (vol.)`} />
+          <Line label="Air" value={`${num(field.sensors.temperature, 1)}°C`} />
+          <Line label="Humidity" value={`${num(field.sensors.humidity, 0)}%`} />
+          <Line
+            label="Light"
+            value={
+              field.sensors.lightIntensity >= 1000
+                ? `${(field.sensors.lightIntensity / 1000).toFixed(1)} klx`
+                : `${num(field.sensors.lightIntensity, 0)} lx`
+            }
+          />
+          {field.sensors.rssiDbm != null && (
+            <Line label="Wi-Fi" value={`${field.sensors.rssiDbm} dBm`} />
+          )}
+        </dl>
+      </div>
+      <p className="shrink-0 px-4 pb-2 text-[11px] leading-snug text-slate-700">
+        ESP32 {live?.deviceId} posts every ~10 s. Soil water, air and light above are the
+        node's own measurements, not the plan's estimates.
+      </p>
+    </section>
   )
 }
 
@@ -965,10 +987,19 @@ export function FarmerView({
 
           {/* One rail-row's height when it fits, never smaller than its own
               content — so the soil-water and yield cards stay level with the
-              left tiles on big screens and stay whole on small ones. */}
-          <div className="grid min-h-0 flex-1 gap-2.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)] xl:[flex:0_1_calc((100%_-_30px)/4)] xl:min-h-[auto]">
+              left tiles on big screens and stay whole on small ones. With a
+              live node attached, both slim down and the third slot carries
+              the node's own sensor readings. */}
+          <div
+            className={
+              field.live?.isLive
+                ? 'grid min-h-0 flex-1 gap-2.5 sm:grid-cols-[minmax(0,0.95fr)_minmax(0,1fr)_minmax(0,0.95fr)] xl:[flex:0_1_calc((100%_-_30px)/4)] xl:min-h-[auto]'
+                : 'grid min-h-0 flex-1 gap-2.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)] xl:[flex:0_1_calc((100%_-_30px)/4)] xl:min-h-[auto]'
+            }
+          >
             <SoilWaterCard field={field} remaining={1 - field.water.depletionFraction} band={band} />
             <YieldCard chips={chips} />
+            {field.live?.isLive && <LiveNodeCard field={field} />}
           </div>
         </div>
       </div>
