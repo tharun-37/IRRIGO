@@ -14,11 +14,16 @@ success. The dashboard surfaces that message verbatim.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
+from ..core.config import get_settings
+from ..core.database import get_database, parse_iso
+from ..db.repository import ReadingRepository
 from ..services.compat import CompatService
+from ..services.ingest import IngestError, IngestService
 
 router = APIRouter(tags=["v1-compat"])
 
@@ -55,6 +60,131 @@ def get_advisor(request: Request) -> Any:
 @router.get("/health")
 def health(compat: CompatService = Depends(get_compat)) -> dict[str, Any]:
     return compat.health()
+
+
+# --------------------------------------------------------------------------
+# live telemetry (the V2 ingest pipeline)
+# --------------------------------------------------------------------------
+
+INGEST_SERVICE: IngestService | None = None
+
+
+def get_ingest() -> IngestService:
+    """
+    The telemetry pipeline, built on first use.
+
+    Every argument is a process-wide singleton — the sqlite database, the
+    settings, the 2.6 MB decision bundle, the weather cache — so the lazy
+    construction costs almost nothing, and this module stays importable even
+    when those pieces are still warming.
+    """
+    global INGEST_SERVICE
+    if INGEST_SERVICE is None:
+        from ..core.ml_bridge import get_controller
+        from ..services.weather import WeatherService
+
+        INGEST_SERVICE = IngestService(
+            database=get_database(),
+            settings=get_settings(),
+            controller=get_controller(),
+            weather=WeatherService(),
+        )
+    return INGEST_SERVICE
+
+
+@router.post("/telemetry")
+def telemetry(request: Request, body: dict[str, Any] | None = None) -> dict[str, Any]:
+    """
+    The node's ingest target: one reading in, the live decision out.
+
+    V1 pushed telemetry over a WebSocket from a client running inside its own
+    process; V2 turns the same contract into an HTTP POST so a bench node
+    speaks plain HTTP. The response carries the whole decision — should we
+    irrigate, at what depth, with what probability — so the node's Serial log
+    is the same answer the dashboard will render.
+
+    `device_api_key` in `.env` turns on a shared-secret check via the
+    `X-Device-Key` header; empty (the default, a bench setting) disables it.
+    """
+    settings = get_settings()
+    if settings.device_api_key and request.headers.get("x-device-key") != settings.device_api_key:
+        raise HTTPException(status_code=401, detail="a valid X-Device-Key header is required")
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="a JSON object body is required")
+    try:
+        return get_ingest().ingest(body)
+    except IngestError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+#: How long a node's own reading stays authoritative for its field's `sensors`.
+#: The bench posts every ~10 s; the window has to outlast a move or a couple of
+#: dropped samples, not a full outage — past it the advisory falls back to the
+#: plan-derived values and says so in its `live` block.
+LIVE_SENSOR_WINDOW_SECONDS = 1800.0
+
+
+def _overlay_live(advisory: dict[str, Any]) -> dict[str, Any]:
+    """
+    Attach the node's freshest real reading to one field's advisory.
+
+    The advisor's `sensors` are derived from the field's plan replay — a
+    documented approximation, not a measurement. When a device posts real
+    telemetry for the field's zone, the honest answer is the measurement, so
+    the quantities the node actually senses replace the plan-derived ones, and
+    a `live` block says which reading did it and how old it is. Everything the
+    node cannot sense (pH, EC, nutrients) keeps its derived value rather than
+    going blank, because downstream visualisations consume every sensor slot.
+
+    A stale node does not fake freshness: past the window its values are left
+    as-derived and `live.isLive` turns false, with the last seen time recorded.
+    """
+    field_id = advisory.get("fieldId")
+    if not field_id:
+        return advisory
+    try:
+        rows = ReadingRepository(get_database()).latest(None, limit=200)
+    except Exception:
+        # Missing or unreadable telemetry store: answer from the plan, the
+        # same as before this overlay existed.
+        return advisory
+    newest = next((row for row in rows if row.get("zone") == field_id), None)
+    if newest is None:
+        return advisory
+
+    live = {
+        "deviceId": newest.get("deviceId"),
+        "source": "real-sensor",
+        "isLive": False,
+    }
+    if newest.get("recordedAt"):
+        live["lastSeenAt"] = newest["recordedAt"]
+        try:
+            age = (datetime.now(timezone.utc) - parse_iso(newest["recordedAt"])).total_seconds()
+            live["ageSeconds"] = int(max(0.0, age))
+            live["isLive"] = 0.0 <= age <= LIVE_SENSOR_WINDOW_SECONDS
+        except (TypeError, ValueError):
+            pass
+
+    part_sensors = {"temperature", "humidity", "soilMoisture", "lightIntensity"}
+    sensors = advisory.setdefault("sensors", {})
+    for key in part_sensors:
+        value = newest.get(key)
+        if live["isLive"] and isinstance(value, (int, float)):
+            sensors[key] = float(value)
+    if live["isLive"] and newest.get("rssiDbm") is not None:
+        sensors["rssiDbm"] = int(newest["rssiDbm"])
+    advisory["live"] = live
+    return advisory
+
+
+def _overlay_live_all(payload: dict[str, Any]) -> dict[str, Any]:
+    """Overlay applied across the whole feed, tolerant of payload changes."""
+    for item in payload.get("fields") or []:
+        _overlay_live(item)
+    return payload
 
 
 # --------------------------------------------------------------------------
@@ -200,7 +330,7 @@ def advisor(
 ) -> dict[str, Any]:
     """Ranked, plain-language irrigation advice for every field, fusing the V1
     decision model with the V2 requirement model."""
-    return service.advisories()
+    return _overlay_live_all(service.advisories())
 
 
 @router.get("/advisor/{field_id}")
@@ -208,7 +338,7 @@ def advisor_field(
     field_id: str, service: Any = Depends(get_advisor)
 ) -> dict[str, Any]:
     try:
-        return service.advisory(field_id)
+        return _overlay_live(service.advisory(field_id))
     except KeyError as error:
         raise HTTPException(status_code=404, detail=f"no field {field_id!r}") from error
 

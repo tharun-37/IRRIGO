@@ -27,6 +27,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from ..core.ml_bridge import inference as ml_inference
+from ..core.ml_bridge import NUTRIENT_BANDS
 from ..core.config import Settings
 from ..core.database import Database, iso, parse_iso, utcnow
 from ..db.repository import (
@@ -39,6 +40,8 @@ from ..db.repository import (
 from ..realtime.hub import safe_broadcast
 from . import alerts as alert_rules
 from .weather import WeatherService
+
+from irrigation.data.crops import CROPS
 
 
 class IngestError(ValueError):
@@ -108,20 +111,50 @@ class IngestService:
             low, high = alert_rules.SENSOR_LIMITS.get(name, (-math.inf, math.inf))
             return min(max(self._require(payload, name), low), high)
 
+        def node(name: str, *aliases: str) -> float | None:
+            """
+            One sensor quantity from the node, omitted when unsensed.
+
+            `device_id` and `soil_moisture` are the only hard requirements: the
+            probe's core measurement is why the node exists. The air readings
+            may absent themselves (a DHT that reads NaN sends `null` rather
+            than a number), and a bench node has no probe at all for pH, EC or
+            the nutrients. Absent stays absent — filling a fabricated default
+            in here would be exactly the invented number this pipeline refuses.
+            What happens instead runs in `ingest()`, after the device is
+            resolved: the node's own previous sample is carried forward for a
+            sensor that usually works, and the documented derivations fill the
+            quantities the rig cannot sense. An alias key present on the wire
+            wins, and a value that is present but senseless is rejected.
+            """
+            for key in (name,) + aliases:
+                value = payload.get(key)
+                if value is None:
+                    continue
+                try:
+                    value = float(value)
+                except (TypeError, ValueError) as error:
+                    raise IngestError(f"field {key!r} must be numeric, got {payload[key]!r}") from error
+                if not math.isfinite(value):
+                    raise IngestError(f"field {key!r} must be finite, got {value!r}")
+                low, high = alert_rules.SENSOR_LIMITS.get(name, (-math.inf, math.inf))
+                return min(max(value, low), high)
+            return None
+
         return {
             "device_id": device_id,
             "zone": str(payload.get("zone") or "Unassigned"),
             "recorded_at": iso(recorded_at),
             "received_at": iso(now),
-            "temperature": clamp("temperature", 25.0),
-            "humidity": clamp("humidity", 60.0),
+            "temperature": node("temperature", "air_temperature"),
+            "humidity": node("humidity", "air_humidity"),
             "soil_moisture": clamp("soil_moisture", 40.0),
-            "soil_ph": clamp("soil_ph", 6.8),
-            "ec": clamp("ec", 1.0),
-            "nitrogen": clamp("nitrogen", 50.0),
-            "phosphorus": clamp("phosphorus", 30.0),
-            "potassium": clamp("potassium", 40.0),
-            "light_intensity": clamp("light_intensity", 30_000.0),
+            "soil_ph": node("soil_ph", "ph"),
+            "ec": node("ec"),
+            "nitrogen": node("nitrogen", "nitro"),
+            "phosphorus": node("phosphorus", "phosphor"),
+            "potassium": node("potassium"),
+            "light_intensity": node("light_intensity", "light_level"),
             "rainfall": max(0.0, float(payload.get("rainfall", 0.0) or 0.0)),
             "wind_speed": max(0.1, float(payload.get("wind_speed", 1.0) or 1.0)),
             "battery_volts": payload.get("battery_volts"),
@@ -155,6 +188,12 @@ class IngestService:
             et0 = self.weather.et0_for(device)
 
         record["et0_mm_day"] = et0
+        # Two honest fallbacks, in order: the node's own previous sample for a
+        # sensor that usually works, and the documented derivations for the
+        # quantities the rig has no probe for. Both must finish before the
+        # insert, so the stored row is a complete, consequence-free sample.
+        carried = self._carry_forward(record)
+        derived = self._derive_unsensed(record, device, et0)
         reading_id = self.readings.insert(record)
 
         # Trailing history, oldest first. The temporal features are a function of
@@ -244,6 +283,12 @@ class IngestService:
             "et0MmDay": et0,
             "alertsRaised": len(raised),
             "inferenceMs": decision.raw.get("inference_ms", 0.0),
+            # Transparency for exactly the two honest fallbacks above: which
+            # values were carried forward from the node's previous sample, and
+            # which were filled with the pipeline's documented derivations. A
+            # client that wants to distinguish "measured" from "derived" can.
+            "carriedSensors": carried,
+            "derivedSensors": sorted(derived),
             # The operating point that produced this decision, and how confident
             # the score is as a probability. A client showing a percentage next
             # to a recommendation needs both, or the number is decoration.
@@ -256,6 +301,105 @@ class IngestService:
         }
 
     # -- helpers ----------------------------------------------------------
+
+    #: A missing air reading may be carried forward from the node's previous
+    #: sample at most this long. An hour covers a moved node or a dropped
+    #: Wi-Fi sample; longer than that the sensor must report again, because a
+    #: stale value worn forward across hours is fiction, not telemetry.
+    CARRY_FORWARD_MAX_SECONDS = 3600.0
+
+    #: Row key -> payload key for the name each carries in the database.
+    _CARRY_ROW_KEY = {
+        "temperature": "temperature",
+        "humidity": "humidity",
+        "light_intensity": "lightIntensity",
+    }
+
+    def _carry_forward(self, record: dict[str, Any]) -> dict[str, str]:
+        """
+        Fill a node's absent sensor reading from its own previous sample.
+
+        One flaky sample must not cost the whole reading, and a default value
+        would be a fabricated number. The node's last reading within the hour
+        is the newest honest estimate there is: a real measurement of the same
+        probe, with its age stamped onto the response. A node whose sensor has
+        been dark longer than that is refused, which is what makes the carry
+        honest — it decays, and a dead sensor cannot hide behind it forever.
+        The raw payload is preserved in `record["metadata"]` in every case.
+        """
+        carried: dict[str, str] = {}
+        needed = [
+            name
+            for name in self._CARRY_ROW_KEY
+            if record.get(name) is None
+        ]
+        if not needed:
+            return carried
+        try:
+            previous = self.readings.latest(record["device_id"], limit=1)
+        except Exception:
+            previous = []
+        recorded = parse_iso(record["recorded_at"])
+        for name in needed:
+            if not previous:
+                raise IngestError(
+                    f"field {name!r} is required: the node has no previous "
+                    "reading to carry forward, so a sensor value must be sent"
+                )
+            last = previous[-1]
+            try:
+                age = (recorded - parse_iso(last["recordedAt"])).total_seconds()
+            except (TypeError, ValueError):
+                age = self.CARRY_FORWARD_MAX_SECONDS + 1.0
+            if age < 0.0 or age > self.CARRY_FORWARD_MAX_SECONDS:
+                raise IngestError(
+                    f"field {name!r} is required and the node's last {name} "
+                    f"reading is {age / 3600.0:.1f} h old. Report the sensor "
+                    "value; a gap this long cannot be filled honestly."
+                )
+            value = last.get(self._CARRY_ROW_KEY[name])
+            if value is None:
+                raise IngestError(
+                    f"field {name!r} is required and the node's previous "
+                    f"reading has no {name} on record, so a value must be sent"
+                )
+            record[name] = float(value)
+            carried[name] = last["recordedAt"]
+        return carried
+
+    def _derive_unsensed(
+        self, record: dict[str, Any], device: dict[str, Any], et0: float | None
+    ) -> dict[str, float]:
+        """
+        Fill the soil-chemistry values a rig without those probes cannot send.
+
+        Nothing here is invented: every value is the same documented derivation
+        the advisor already states for its plan replay (`compat.py`). Soil pH
+        sits at the midpoint of the crop's published optimum, EC follows the
+        corpus rule with the day's ET0 as the depletion proxy, and the
+        nutrients sit at the same bands the advisor uses, scaled toward the
+        high side of an adequately maintained regime. A node that grows a real
+        NPK probe simply sends each value in the payload and wins outright.
+        """
+        derived: dict[str, float] = {}
+
+        if record.get("soil_ph") is None:
+            crop = CROPS.get(device.get("crop") or "")
+            low, high = crop.optimal_ph if crop is not None else (6.0, 7.5)
+            record["soil_ph"] = derived["soil_ph"] = (float(low) + float(high)) / 2.0
+
+        if record.get("ec") is None:
+            record["ec"] = derived["ec"] = 0.35 + 0.002 * float(et0 or 0.0)
+
+        for name in ("nitrogen", "phosphorus", "potassium"):
+            if record.get(name) is not None:
+                continue
+            band = NUTRIENT_BANDS[name]
+            low, high = float(band[1]), float(band[2])
+            # 0.85 is the band position the advisor's `nitrogen_regime` study
+            # treats as "maintained": generous but not saturated.
+            record[name] = derived[name] = low + (high - low) * 0.85
+        return derived
 
     @staticmethod
     def _config_for(device: dict[str, Any]) -> ml_inference.DeviceConfig:

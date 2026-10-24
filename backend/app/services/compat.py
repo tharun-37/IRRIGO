@@ -729,12 +729,57 @@ class CompatService:
             snapshots = [snap for snap in snapshots if snap.event.field_id == device_id]
         readings = [self._reading_payload(point) for snap in snapshots for point in snap.points]
         recommendations = [point.decision for snap in snapshots for point in snap.points]
+        readings += self._real_readings(device_id, limit)
         readings.sort(key=lambda item: item["recordedAt"], reverse=True)
         recommendations.sort(key=lambda item: item["recordedAt"], reverse=True)
         return {
             "readings": readings[:limit],
             "recommendations": recommendations[:limit],
         }
+
+    def _real_readings(self, device_id: str | None, limit: int) -> list[dict[str, Any]]:
+        """
+        Real telemetry from the ingest database, in the replay payload shape.
+
+        The plan replay's `recordedAt` is a replay day in the archive window,
+        while a node posts "now", so a single sort on the same key puts
+        genuine measurements first — exactly what a live feed should lead
+        with. Values the node did not sense stay `None` (the carry-forward and
+        derivation rules decide what the *decision* sees; a live feed that
+        relabeled those as if they were measurements would be its own lie),
+        and an unreadable store degrades to the replay-only answer.
+        """
+        from ..core.database import get_database
+        from ..db.repository import ReadingRepository
+
+        try:
+            rows = ReadingRepository(get_database()).latest(device_id, limit)
+        except Exception:
+            logger.exception("real telemetry unavailable; replay only")
+            return []
+        readings: list[dict[str, Any]] = []
+        for row in rows:
+            readings.append(
+                {
+                    "id": str(row.get("id") or f"live-{row.get('deviceId')}"),
+                    "deviceId": row.get("deviceId"),
+                    "zone": row.get("zone"),
+                    "recordedAt": row.get("recordedAt"),
+                    "temperature": row.get("temperature"),
+                    "humidity": row.get("humidity"),
+                    "soilMoisture": row.get("soilMoisture"),
+                    "soilPh": row.get("soilPh"),
+                    "ec": row.get("ec"),
+                    "nitrogen": row.get("nitrogen"),
+                    "phosphorus": row.get("phosphorus"),
+                    "potassium": row.get("potassium"),
+                    "lightIntensity": row.get("lightIntensity"),
+                    "batteryVolts": row.get("batteryVolts"),
+                    "rssiDbm": row.get("rssiDbm"),
+                    "source": "live-node",
+                }
+            )
+        return readings
 
     def history(self, device_id: str, hours: int, limit: int) -> dict[str, Any]:
         snap = self._find(device_id)

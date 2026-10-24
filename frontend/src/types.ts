@@ -334,6 +334,20 @@ export interface Advisory {
     daysUntilStress: number | null
   }
   sensors: Telemetry
+  /**
+   * The field's attached hardware node, when one posts real telemetry for
+   * this zone. `isLive` is true only while the node's newest reading is
+   * recent; the advisory's `sensors` then carry the node's own measurements
+   * rather than the plan derivation. Present-but-stale records the last
+   * seen time without claiming freshness.
+   */
+  live?: {
+    deviceId: string
+    source: string
+    isLive: boolean
+    lastSeenAt?: string
+    ageSeconds?: number
+  }
   risk: {
     diseaseRisk: string | null
     diseaseConfidence: number

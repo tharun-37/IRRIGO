@@ -566,7 +566,17 @@ function SoilWaterCard({
         <h2 className="text-[11px] font-bold uppercase tracking-[0.1em] text-ink-600">
           Soil water
         </h2>
-        <span className="text-[11px] text-slate-700">
+        <span className="flex items-baseline gap-1.5 text-[11px] text-slate-700">
+          {field.live?.isLive && (
+            <span
+              className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-emerald-800"
+              title={`Live ESP32 node ${field.live.deviceId}, newest reading ${
+                field.live.ageSeconds != null ? `${Math.round(field.live.ageSeconds / 60) < 1 ? "<1 min" : `${Math.round(field.live.ageSeconds / 60)} min`} old` : "just now"
+              }`}
+            >
+              Live node
+            </span>
+          )}
           {num(field.sensors.soilMoisture, 0)}% moisture (vol.)
         </span>
       </header>
@@ -610,10 +620,38 @@ function SoilWaterCard({
         </dl>
       </div>
 
+      {field.live?.isLive && (
+        <dl className="panel mx-4 mb-2 flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 text-[11px] text-ink-700">
+          <span className="sr-only">Live ESP32 sensor readings from {field.live.deviceId}</span>
+          <div className="flex items-baseline gap-1">
+            <dt className="text-ink-500">Air</dt>
+            <dd className="tnum font-semibold text-ink-900">{num(field.sensors.temperature, 1)}°C</dd>
+          </div>
+          <div className="flex items-baseline gap-1">
+            <dt className="text-ink-500">Humidity</dt>
+            <dd className="tnum font-semibold text-ink-900">{num(field.sensors.humidity, 0)}%</dd>
+          </div>
+          <div className="flex items-baseline gap-1">
+            <dt className="text-ink-500">Light</dt>
+            <dd className="tnum font-semibold text-ink-900">
+              {field.sensors.lightIntensity >= 1000
+                ? `${(field.sensors.lightIntensity / 1000).toFixed(1)} klx`
+                : `${num(field.sensors.lightIntensity, 0)} lx`}
+            </dd>
+          </div>
+          {field.sensors.rssiDbm != null && (
+            <div className="flex items-baseline gap-1">
+              <dt className="text-ink-500">Wi-Fi</dt>
+              <dd className="tnum font-semibold text-ink-900">{field.sensors.rssiDbm} dBm</dd>
+            </div>
+          )}
+        </dl>
+      )}
+
       <p className="shrink-0 px-4 pb-2 text-[11px] leading-snug text-slate-700">
         {band === 'rest'
           ? 'No crop in the ground, so soil wetness does not drive a decision here.'
-          : `31% of soil volume is water. ${Math.round(fill * 100)}% of usable water left. Pump on at refill point.`}
+          : `${num(field.sensors.soilMoisture, 0)}% of soil volume is water. ${Math.round(fill * 100)}% of usable water left. Pump on at refill point.`}
       </p>
       </div>
     </section>
