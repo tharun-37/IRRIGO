@@ -92,19 +92,22 @@ async def lifespan(app: FastAPI):
     app.state.evaluation = evaluation
     app.state.settings = settings
 
-    # Live current conditions for the weather card. The key is read here and
-    # used from the API process only, so it never reaches the browser. With no
-    # key the service reports itself unavailable and the card falls back to the
-    # advisory's own readings.
+    # Live current conditions for the weather card. Open-Meteo needs no key,
+    # so the card works out of the box; an OpenWeather key in `.env` only adds
+    # a fallback for the days Open-Meteo is unreachable. Neither credential
+    # reaches the browser.
     app.state.live_weather = LiveWeatherService(
         api_key=settings.openweather_api_key,
         base_url=settings.openweather_url,
+        openmeteo_url=settings.openmeteo_url,
         cache_seconds=settings.openweather_cache_seconds,
     )
     if app.state.live_weather.configured:
-        logger.info("live weather: configured")
+        logger.info("live weather: open-meteo primary%s",
+                    " + OpenWeather fallback" if settings.openweather_api_key
+                    else " (no OpenWeather key configured)")
     else:
-        logger.info("live weather: no key configured; the sky card uses the plan's own readings")
+        logger.info("live weather: no upstream configured; the sky card uses the plan's own readings")
 
     # The V1-shaped surface the copied dashboard calls. It shares the same plan
     # service and, through the ML bridge, the inherited decision bundle.

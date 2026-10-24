@@ -63,24 +63,27 @@ class Settings(BaseSettings):
     #: rather than trusting the node. The models were fitted on FAO-56 values.
     enable_weather_enrichment: bool = True
 
-    # --- live weather, OpenWeather ---------------------------------------
-    #: Key for the live weather feed behind the dashboard's weather card.
-    #: Empty disables the feature entirely: the endpoint reports itself
-    #: unavailable and the card falls back to the advisory's own sensor values.
-    #: This is a secret and belongs in `.env`, never in source. It is read here
-    #: and called from the API process so the key never reaches the browser,
-    #: which matters because the key is a billable, per-account credential.
+    # --- live weather, Open-Meteo primary / OpenWeather fallback ----------
+    #: Open-Meteo needs no key and no account, so the live card works out of
+    #: the box. An OpenWeather key, when present in `.env`, turns the keyed
+    #: upstream into the fallback for the days Open-Meteo is unreachable.
+    #: The key is a billable, per-account credential: read here, called from
+    #: the API process only, never in source or the browser bundle.
     openweather_api_key: str = ""
 
-    #: Base URL for OpenWeather's current-conditions endpoint. Overridable so a
+    #: Base URL for Open-Meteo's current-weather endpoint. Overridable so a
     #: test can point at a stub instead of the real service.
+    openmeteo_url: str = "https://api.open-meteo.com/v1/forecast"
+
+    #: Base URL for OpenWeather's current-conditions endpoint. Overridable so
+    #: a test can point at a stub instead of the real service.
     openweather_url: str = "https://api.openweathermap.org/data/2.5/weather"
 
     #: Seconds a fetched observation is reused before going back upstream.
-    #: The free tier allows 60 calls a minute, and every open dashboard polls
-    #: this, so without a cache a handful of browsers would exhaust the quota
-    #: and start returning 429s. Ten minutes is far finer than the weather
-    #: itself changes.
+    #: Every open dashboard polls this, so without a cache a handful of
+    #: browsers would burn an upstream's goodwill and start returning 429s.
+    #: Ten minutes is far finer than the weather itself changes. The cache
+    #: is shared by both upstreams.
     openweather_cache_seconds: float = 600.0
 
     #: Where `.env` is looked for is fixed in `model_config` below, not here:

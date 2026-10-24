@@ -209,7 +209,7 @@ def live_weather(station: str, request: Request) -> dict[str, Any]:
             "reason": f"no live observation for {code}",
         }
 
-    return {"available": True, "source": "openweather", **observation.to_dict()}
+    return {"available": True, "source": observation.source, **observation.to_dict()}
 
 
 @router.get("/system/crops", response_model=CropCatalogueOut)
