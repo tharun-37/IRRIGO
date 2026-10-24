@@ -14,6 +14,8 @@
       "nitrogen_regime": 1.0,
       "restricting_depth_m": null,
       "emergence_fraction": 0.5,
+      "latitude": null,
+      "longitude": null,
       "notes": "Day 199, late season. The crop coefficient is falling, so demand is easing off compared with mid-season."
     },
     {
@@ -29,6 +31,8 @@
       "nitrogen_regime": 1.0,
       "restricting_depth_m": null,
       "emergence_fraction": 0.5,
+      "latitude": null,
+      "longitude": null,
       "notes": "Day 82. Shallow silt-loam profile, so it stores little and needs the largest single application of the four."
     },
     {
@@ -44,7 +48,26 @@
       "nitrogen_regime": 1.0,
       "restricting_depth_m": null,
       "emergence_fraction": 0.5,
+      "latitude": null,
+      "longitude": null,
       "notes": "Day 77, mid-season, peak demand."
+    },
+    {
+      "field_id": "Live-Field",
+      "station": "CHN",
+      "crop": "Cotton",
+      "sowing_date": "2024-11-15",
+      "soil_type": "Sandy_Loam",
+      "crop_variant": null,
+      "method_name": "Drip",
+      "field_area_m2": 1000,
+      "mulched": false,
+      "nitrogen_regime": 1.0,
+      "restricting_depth_m": null,
+      "emergence_fraction": 0.5,
+      "latitude": 11.3865,
+      "longitude": 77.6012,
+      "notes": "The live node: real ESP32 sensors (soil moisture, DHT11 air, GY-30 light) streaming over Wi-Fi. The pin sits on verified cropland ~8 km west of Erode, off the Perundurai road — farmland, not the city. Station CHN is the nearest of the twelve to Erode, and it is the model's weakest LOSO fold (R2 0.292), so its advisories carry the honest-transfer warning rather than full confidence."
     },
     {
       "field_id": "Paddy-North",
@@ -59,22 +82,9 @@
       "nitrogen_regime": 1.0,
       "restricting_depth_m": null,
       "emergence_fraction": 0.5,
+      "latitude": null,
+      "longitude": null,
       "notes": "Flooded paddy, day 41. Rice keeps a high crop coefficient from the start, so a young crop here already transpires like a mature one."
-    },
-    {
-      "field_id": "Bench-Field",
-      "station": "CHN",
-      "crop": "Cotton",
-      "sowing_date": "2024-11-15",
-      "soil_type": "Sandy_Loam",
-      "crop_variant": null,
-      "method_name": "Drip",
-      "field_area_m2": 1000,
-      "mulched": false,
-      "nitrogen_regime": 1.0,
-      "restricting_depth_m": null,
-      "emergence_fraction": 0.5,
-      "notes": "The bench node: real ESP32 sensors (soil moisture, DHT11 air, GY-30 light) streaming over Wi-Fi. Station CHN is the nearest of the twelve to Erode, and it is the model's weakest LOSO fold (R2 0.292), so its advisories carry the honest-transfer warning rather than full confidence."
     }
   ]
 }
