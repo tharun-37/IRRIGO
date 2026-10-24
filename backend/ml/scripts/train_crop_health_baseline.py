@@ -276,7 +276,8 @@ def main() -> int:
     print(f"meta + log     : {meta_path.parent}")
 
     if args.deploy:
-        serving = BACKEND / "models" / "crop_health"
+        # the server's models_dir is the REPO root's models/ (config.py: ROOT / "models")
+        serving = BACKEND.parent / "models" / "crop_health"
         serving.mkdir(parents=True, exist_ok=True)
         shutil.copy2(joblib_path, serving / joblib_path.name)
         shutil.copy2(meta_path, serving / meta_path.name)
