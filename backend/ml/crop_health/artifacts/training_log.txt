@@ -1,0 +1,22 @@
+==============================================================
+modelVersion           : crop-baseline-rice-barley-cotton-potato-20261024
+source                 : D:\Codings\MP3-V3\.build\combined
+classes                : ['Barley Bipolaris leaf spot', 'Barley Powdery mildew', 'Barley Rust', 'Cotton Alternaria leaf spot', 'Cotton Bacterial blight', 'Potato Early blight', 'Potato Healthy', 'Potato Late blight', 'Rice Bacterial leaf blight', 'Rice Brown spot', 'Rice Leaf smut']
+usable / attempted     : 2289 / 2402
+skipped by gates       : {'gates:blur,exposure,content': 4, 'gates:exposure': 20, 'gates:exposure,content': 2, 'gates:blur': 65, 'gates:resolution': 21, 'gates:resolution,blur': 1}
+holdout n              : 573  (random 75/25, seed 42)
+holdout accuracy       : 0.8726
+holdout macro-F1       : 0.7605
+per-class              :
+  Barley Bipolaris leaf spot   P=1.00  R=1.00  F1=1.00
+  Barley Powdery mildew        P=1.00  R=1.00  F1=1.00
+  Barley Rust                  P=1.00  R=1.00  F1=1.00
+  Cotton Alternaria leaf spot  P=0.85  R=0.92  F1=0.88
+  Cotton Bacterial blight      P=0.91  R=0.91  F1=0.91
+  Potato Early blight          P=0.94  R=0.88  F1=0.91
+  Potato Healthy               P=0.42  R=0.71  F1=0.52
+  Potato Late blight           P=0.94  R=0.90  F1=0.92
+  Rice Bacterial leaf blight   P=0.57  R=1.00  F1=0.73
+  Rice Brown spot              P=1.00  R=0.33  F1=0.50
+  Rice Leaf smut               P=0.00  R=0.00  F1=0.00
+==============================================================
