@@ -132,7 +132,17 @@ def collect(data_root: Path) -> tuple[list[Path], list[str], Counter, list[str]]
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", type=Path, required=True, help="folder-per-class image dataset root")
-    parser.add_argument("--crop", required=True, help="crop the labels belong to (as the app spells it, e.g. Rice)")
+    parser.add_argument(
+        "--crop",
+        action="append",
+        required=True,
+        help="a crop the labels belong to (as the app spells it, e.g. Rice); repeat for a multi-crop artifact",
+    )
+    parser.add_argument(
+        "--task",
+        default="disease",
+        help="artifact task label recorded in the meta (disease / pest / disease+pest)",
+    )
     parser.add_argument(
         "--out",
         type=Path,
@@ -201,12 +211,16 @@ def main() -> int:
     print("      with session grouping are what flips this to 'validated'.")
 
     classes = sorted(set(labels))
-    model_version = args.model_version or f"crop-baseline-{args.crop.lower()}-{datetime.now().strftime('%Y%m%d')}"
+    crops = [c.strip().lower() for c in args.crop]
+    model_version = (
+        args.model_version
+        or f"crop-baseline-{'-'.join(crops)}-{datetime.now().strftime('%Y%m%d')}"
+    )
     meta = {
         "modelVersion": model_version,
-        "task": "disease",
+        "task": args.task,
         "classes": classes,
-        "crops": [args.crop.strip().lower()],
+        "crops": crops,
         "calibrated": False,
         "calibrationMethod": None,
         "validationStatus": "uncalibrated - under test on held-out field set",
