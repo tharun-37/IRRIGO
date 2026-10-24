@@ -55,6 +55,9 @@ export interface FarmerField {
   station: string
   stationLat: number | null
   stationLon: number | null
+  /** The field's own GPS pin, when the operator placed one. */
+  latitude?: number | null
+  longitude?: number | null
 }
 
 /**
@@ -179,14 +182,22 @@ function writeDone(key: string, value: boolean): void {
  * Position the fields around their station.
  *
  * Fields sharing a station (two of the four demo fields do) are placed on a
- * ring so they do not sit on top of each other. The positions are illustrative
+ * ring so they do not sit on top of each other. A field the operator pinned
+ * with its own GPS coordinates is drawn exactly there — it was placed on the
+ * map already, at registration — and grouped apart so it never drags its
+ * station-neighbours with it. Positions without a pin are illustrative
  * and say so on the map.
  */
 function plotsFor(fields: FarmerField[]): MapField[] {
-  // A field with its own verified anchor is grouped apart from its station, so
-  // moving one plot never drags its neighbours with it.
+  // A field with its own verified anchor — a survey override or the
+  // operator's own GPS pin — is grouped apart from its station, so moving
+  // one plot never drags its neighbours with it.
+  const ownPin = (field: FarmerField): { lat: number; lon: number } | null =>
+    typeof field.latitude === 'number' && typeof field.longitude === 'number'
+      ? { lat: field.latitude, lon: field.longitude }
+      : null
   const groupKey = (field: FarmerField): string =>
-    FIELD_ANCHORS[field.fieldId] ? `field:${field.fieldId}` : field.station
+    FIELD_ANCHORS[field.fieldId] || ownPin(field) ? `field:${field.fieldId}` : field.station
   const byStation = new Map<string, FarmerField[]>()
   for (const field of fields) {
     const key = groupKey(field)
@@ -198,7 +209,9 @@ function plotsFor(fields: FarmerField[]): MapField[] {
   const plots: MapField[] = []
   for (const [, group] of byStation) {
     const first = group[0]
+    const pin = ownPin(first)
     const anchor =
+      pin ??
       FIELD_ANCHORS[first.fieldId] ??
       FARM_ANCHORS[first.station] ??
       (typeof first.stationLat === 'number' && typeof first.stationLon === 'number'
@@ -208,14 +221,18 @@ function plotsFor(fields: FarmerField[]): MapField[] {
 
     const lonScale = Math.max(0.2, Math.cos((anchor.lat * Math.PI) / 180))
     group.forEach((field, index) => {
+      // A single-plot group sits dead on its anchor — there is nothing to fan
+      // out from, and for a GPS-pinned field "exactly here" is the point.
+      const offset = group.length === 1 ? 0 : 1
       const angle = (2 * Math.PI * index) / group.length - Math.PI / 2
       const acres = field.areaM2 / 4046.86
       plots.push({
         fieldId: field.fieldId,
         label: `${acres.toFixed(1)} ac`,
-        lat: anchor.lat + Math.cos(angle) * RING_DEG,
-        lon: anchor.lon + (Math.sin(angle) * RING_DEG) / lonScale,
+        lat: anchor.lat + Math.cos(angle) * RING_DEG * offset,
+        lon: anchor.lon + (Math.sin(angle) * RING_DEG * offset) / lonScale,
         tone: plotTone(field),
+        gps: Boolean(ownPin(field)),
       })
     })
   }

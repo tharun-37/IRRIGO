@@ -358,6 +358,8 @@ def register_field(
                 if body.emergenceFraction is not None
                 else EMERGENCE_STAGE_FRACTION
             ),
+            latitude=body.latitude,
+            longitude=body.longitude,
             notes=body.notes,
         )
     except (SowingError, KeyError, ValueError) as error:

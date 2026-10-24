@@ -51,6 +51,8 @@ type FormState = {
   soilType: string
   methodName: string
   fieldAreaM2: string
+  latitude: string
+  longitude: string
   notes: string
 }
 
@@ -63,6 +65,8 @@ const EMPTY: FormState = {
   soilType: '',
   methodName: '',
   fieldAreaM2: '',
+  latitude: '',
+  longitude: '',
   notes: '',
 }
 
@@ -113,6 +117,24 @@ function validate(form: FormState, cropOption: CropOption | undefined): string[]
   if (form.fieldAreaM2) {
     const area = Number(form.fieldAreaM2)
     if (!Number.isFinite(area) || area <= 0) problems.push('The area must be a positive number.')
+  }
+  const lat = form.latitude.trim()
+  const lon = form.longitude.trim()
+  if (lat !== '' || lon !== '') {
+    // Half a pin is not a pin: the backend refuses it, and the map falls back
+    // to the station, so catch it here against the input that caused it.
+    if (lat === '' || lon === '') {
+      problems.push('Give latitude and longitude together, or leave both blank.')
+    } else {
+      const latitude = Number(lat)
+      const longitude = Number(lon)
+      if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) {
+        problems.push('The latitude should be a decimal degree between −90 and 90.')
+      }
+      if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+        problems.push('The longitude should be a decimal degree between −180 and 180.')
+      }
+    }
   }
   if (cropOption && !cropOption.variants.includes(form.cropVariant) && form.cropVariant) {
     problems.push(`"${form.cropVariant}" is not a known variety of ${cropOption.name}.`)
@@ -274,6 +296,47 @@ export function AddField({ onRegistered }: { onRegistered: (fieldId: string) => 
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState<FieldRecord | null>(null)
+  const [locating, setLocating] = useState(false)
+  const [geoStatus, setGeoStatus] = useState<string | null>(null)
+
+  /**
+   * The browser's own GPS, written straight into the two inputs.
+   *
+   * A phone standing in the field is the most accurate instrument the operator
+   * owns, and the one gesture that fills both boxes without typing. Accuracy
+   * varies (network fix vs satellite fix), so the achieved accuracy is reported
+   * rather than hidden — a pin accurate to 30 m says so.
+   */
+  const useMyLocation = useCallback(() => {
+    if (!('geolocation' in navigator)) {
+      setGeoStatus('This browser cannot report a location; type the coordinates.')
+      return
+    }
+    setLocating(true)
+    setGeoStatus(null)
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocating(false)
+        const accuracy = Math.round(position.coords.accuracy)
+        setForm((previous) => ({
+          ...previous,
+          latitude: position.coords.latitude.toFixed(5),
+          longitude: position.coords.longitude.toFixed(5),
+        }))
+        setSaved(null)
+        setGeoStatus(`Location set from the device (~${accuracy} m accuracy).`)
+      },
+      (failure) => {
+        setLocating(false)
+        setGeoStatus(
+          failure.code === failure.PERMISSION_DENIED
+            ? 'Location was refused; type the coordinates instead.'
+            : 'No location available right now; type the coordinates instead.',
+        )
+      },
+      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 30_000 },
+    )
+  }, [])
 
 // The `?? []` fallbacks are wrapped rather than left inline: an empty array
 // literal built during render is a new object every render, which makes every
@@ -334,6 +397,12 @@ const cropOption = useMemo(
       if (form.methodName) body.methodName = form.methodName
       if (form.cropVariant) body.cropVariant = form.cropVariant
       if (form.fieldAreaM2) body.fieldAreaM2 = Number(form.fieldAreaM2)
+      const latitude = Number(form.latitude.trim())
+      const longitude = Number(form.longitude.trim())
+      if (form.latitude.trim() !== '' && form.longitude.trim() !== '') {
+        body.latitude = latitude
+        body.longitude = longitude
+      }
       if (form.notes.trim()) body.notes = form.notes.trim()
       try {
         const created = await api.createField(body)
@@ -537,6 +606,49 @@ const cropOption = useMemo(
           />
         </Field>
       </div>
+
+      {/* ---- Location: an optional pin of the field's own ground ---------- */}
+      <fieldset className="mt-4">
+        <legend className="micro">Location</legend>
+        <p className="mt-1 text-[11px] leading-snug text-ink-500">
+          Optional. Without a pin the field is drawn near its weather station;
+          with one, the map places it exactly here.
+        </p>
+        <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto]">
+          <Field label="Latitude" hint="Decimal degrees, −90 to 90 (Erode ≈ 11.34).">
+            <input
+              className={CONTROL}
+              inputMode="decimal"
+              value={form.latitude}
+              placeholder="11.342"
+              onChange={(e) => set('latitude', e.target.value)}
+            />
+          </Field>
+          <Field label="Longitude" hint="Decimal degrees, −180 to 180 (Erode ≈ 77.72).">
+            <input
+              className={CONTROL}
+              inputMode="decimal"
+              value={form.longitude}
+              placeholder="77.717"
+              onChange={(e) => set('longitude', e.target.value)}
+            />
+          </Field>
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={useMyLocation}
+              className="w-full rounded-pill border border-white/70 bg-white/60 px-3 py-1.5 text-[11px] font-medium text-ink-600 transition-colors hover:border-ink-400 hover:bg-white sm:w-auto"
+            >
+              {locating ? 'Locating…' : 'Use my location'}
+            </button>
+          </div>
+        </div>
+        {!locating && geoStatus && (
+          <p className="mt-1 text-[10px] leading-snug text-ink-400" role="status">
+            {geoStatus}
+          </p>
+        )}
+      </fieldset>
 
       {cropOption && form.methodName && (
         <div className="mt-3">

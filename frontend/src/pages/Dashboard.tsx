@@ -297,6 +297,8 @@ function farmerFields(fields: Advisory[]): FarmerField[] {
       station: item.station,
       stationLat: item.stationLat ?? null,
       stationLon: item.stationLon ?? null,
+      latitude: item.latitude ?? null,
+      longitude: item.longitude ?? null,
     }
   })
 

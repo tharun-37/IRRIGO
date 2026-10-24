@@ -300,6 +300,9 @@ export interface Advisory {
   method: string | null
   sowingDate: string
   areaM2: number
+  /** The field's own GPS pin, when the operator placed one at registration. */
+  latitude?: number | null
+  longitude?: number | null
   ageDays: number
   stage: string
   stageLabel: string
@@ -509,6 +512,13 @@ export interface FieldCreate {
   restrictingDepthM?: number
   /** Fraction of the crop considered emerged; below 1 it transpires less. */
   emergenceFraction?: number
+  /**
+   * Optional GPS pin of the field's own ground, in degrees. Given together or
+   * not at all; when present the map draws the field here instead of near its
+   * weather station.
+   */
+  latitude?: number
+  longitude?: number
 }
 
 /** A stored sowing, as `POST /api/fields` and `GET /api/fields/{id}` return it. */

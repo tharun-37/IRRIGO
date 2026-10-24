@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 # The engine's own reference tables. They are the single source of truth for what a
 # field may be, and importing them here means the API validates a sowing against the
@@ -105,6 +105,18 @@ class FieldCreate(BaseModel):
     #: Fraction of the crop considered emerged. Below 1.0 the crop is partly below
     #: ground and transpires less than the curve assumes.
     emergenceFraction: float | None = Field(default=None, gt=0, le=1)
+    #: Optional GPS pin of the field itself, degrees. Without it the map places
+    #: the field near its station exactly as it always has; with it, the map
+    #: draws the field where the operator says their ground is. Given together
+    #: or not at all — half a pin is an error, not a feature.
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+
+    @model_validator(mode="after")
+    def _pin_complete(self) -> "FieldCreate":
+        if (self.latitude is None) != (self.longitude is None):
+            raise ValueError("latitude and longitude must be given together (GPS pin)")
+        return self
 
     @field_validator("sowingDate")
     @classmethod
@@ -434,6 +446,8 @@ def field_to_dict(event, plan=None) -> dict[str, Any]:
         "nitrogenRegime": event.nitrogen_regime,
         "restrictingDepthM": event.restricting_depth_m,
         "emergenceFraction": event.emergence_fraction,
+        "latitude": event.latitude,
+        "longitude": event.longitude,
         "daysSinceSowing": event.days_since_sowing(today),
         "seasonDay": (today - event.sown_on).days + 1,
         "notes": event.notes,

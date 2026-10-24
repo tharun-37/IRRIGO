@@ -40,6 +40,8 @@ export interface MapField {
   lat: number
   lon: number
   tone: MapTone
+  /** True when the position is the operator's own GPS pin, not an estimate. */
+  gps?: boolean
 }
 
 const TONE_COLOR: Record<MapTone, string> = {
@@ -272,7 +274,9 @@ export function FieldMap({
             {selected?.fieldId ?? 'No field selected'}
           </p>
           <p className="truncate text-[12px] text-white/90">
-            Approximate location · boundary illustrative
+            {selected?.gps
+              ? 'GPS pin · boundary illustrative'
+              : 'Approximate location · boundary illustrative'}
           </p>
         </div>
 

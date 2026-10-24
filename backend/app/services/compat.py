@@ -1249,6 +1249,12 @@ class CompatService:
             "stationName": reference.name if reference else None,
             "stationLat": reference.latitude if reference else None,
             "stationLon": reference.longitude if reference else None,
+            # The operator's own GPS pin, when the field carries one, to override
+            # the station anchor on the map. getattr because a snapshot pickled
+            # before the field existed lacks the attributes — and a missing pin
+            # on old data is the correct answer for it, not an error.
+            "latitude": getattr(event, "latitude", None),
+            "longitude": getattr(event, "longitude", None),
             "soilType": event.soil_type,
             "method": getattr(event, "method_name", None),
             "sowingDate": _as_date(event.sowing_date).isoformat(),

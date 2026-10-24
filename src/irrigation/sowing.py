@@ -93,6 +93,12 @@ class SowingEvent:
     nitrogen_regime: float = 1.0
     restricting_depth_m: float | None = None
     emergence_fraction: float = EMERGENCE_STAGE_FRACTION
+    #: Optional GPS anchor of the field itself. Station coordinates are district
+    #: references, often a city; a pin the operator places on their own ground
+    #: is the one location claim that is theirs, so the map uses it verbatim
+    #: when present and falls back to the station placement when not.
+    latitude: float | None = None
+    longitude: float | None = None
     notes: str = ""
 
     def __post_init__(self) -> None:
@@ -112,6 +118,22 @@ class SowingEvent:
                 f"{self.field_id}: emergence_fraction must be in (0, 1], "
                 f"got {self.emergence_fraction}"
             )
+        # A GPS pin must be a survivable number. The check lives here rather
+        # than only in the API schema because the registry file is also
+        # hand-editable, and a latitude of 210 degrees would otherwise land a
+        # field in the void at every map load instead of at registration.
+        if self.latitude is not None:
+            self.latitude = float(self.latitude)
+            if not -90.0 <= self.latitude <= 90.0:
+                raise SowingError(
+                    f"{self.field_id}: latitude must be within ±90 degrees, got {self.latitude}"
+                )
+        if self.longitude is not None:
+            self.longitude = float(self.longitude)
+            if not -180.0 <= self.longitude <= 180.0:
+                raise SowingError(
+                    f"{self.field_id}: longitude must be within ±180 degrees, got {self.longitude}"
+                )
         # Fail at registration rather than at the first irrigation, where a typo
         # would surface as a wrong recommendation instead of a bad name.
         lookup_crop(self.crop, self.crop_variant)
