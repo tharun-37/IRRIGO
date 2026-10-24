@@ -8,8 +8,9 @@ REM spawned a second and a third console ("each can be stopped on its own") and
 REM left three windows on the taskbar for one double-click.
 REM
 REM The API runs in the background of this console and writes to
-REM logs\backend.log, so its startup chatter - it spends about 17s warming the
-REM models - does not interleave with vite's output. The dashboard runs in the
+REM logs\backend.log, so its startup chatter - the advisor snapshots are
+REM cached on disk, so the warm-up is a few seconds after the first-ever
+REM run - does not interleave with vite's output. The dashboard runs in the
 REM foreground, because that is the output worth watching; the API's log stays
 REM on disk and its path is printed below.
 REM

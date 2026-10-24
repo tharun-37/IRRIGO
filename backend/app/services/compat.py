@@ -32,9 +32,12 @@ from __future__ import annotations
 import hashlib
 import logging
 import math
+import pickle
+import re
 import time
 from dataclasses import dataclass
 from datetime import date, datetime, time as clock_time, timedelta, timezone
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -78,6 +81,12 @@ SEASON_MAX_DAYS = 400
 #: inputs moved. This exists only as a backstop so a long-lived process cannot
 #: pin memory forever; the real key is `PlanService.version`.
 SNAPSHOT_MAX_AGE_SECONDS = 900.0
+
+#: Format marker for the persisted snapshot cache. Folding it into the cache
+#: filename's fingerprint means any change to the snapshot's shape - the walk
+#: depth, the history window, the caller's year range - invalidates every
+#: cached file at once, with no manual step.
+SNAPSHOT_CACHE_FORMAT = "irrigo-snapshots-v1"
 
 #: Controller defaults, matching what V1 commissioned its simulated nodes with.
 PUMP_RATE_LPM = 12.0
@@ -187,6 +196,11 @@ class CompatService:
         self._env: dict[str, dict[date, tuple[float, float, float, float]]] | None = None
         self._cache: dict[str, tuple[float, int, FieldSnapshot]] = {}
         self._acked: set[int] = set()
+        #: Content hash of the planning inputs, computed once per process and
+        #: reused for every persisted-snapshot read and write. It is the key
+        #: that lets the disk cache survive a restart; the in-memory `version`
+        #: counter cannot, because it restarts with the process.
+        self._snapshot_fingerprint: str | None = None
         self._load_controller()
 
     # --- lifecycle -------------------------------------------------------
@@ -419,16 +433,109 @@ class CompatService:
             points.append(FieldPoint(day, plan, reading, config, decision))
         return FieldSnapshot(event, soil_key, points)
 
+    # --- snapshot persistence -------------------------------------------
+
+    def _ready_for_disk_cache(self) -> bool:
+        """A cache needs a directory and a registry path to fingerprint."""
+        return bool(getattr(self.settings, "sowings_path", None) is not None
+                    and getattr(self.settings, "logs_dir", None) is not None)
+
+    def _fingerprint(self) -> str:
+        """
+        A content hash for "the planning inputs are the ones on disk".
+
+        The in-memory `version` counter restarts at one per process, so it
+        cannot key a cache that outlives the process. The registry's own bytes
+        can: any rewrite through `register` or `remove` produces different
+        content, and the weather archive is fixed, so hashing the registry
+        plus the constants that shape a snapshot is the honest key. The format
+        marker, the year range and the walk depth are folded in, so a code
+        change that alters the snapshot's shape invalidates every cached file
+        at once without manual action.
+        """
+        marker = "|".join(
+            [
+                SNAPSHOT_CACHE_FORMAT,
+                str(getattr(self.settings, "weather_start_year", "")),
+                str(getattr(self.settings, "weather_end_year", "")),
+                str(HISTORY_DAYS),
+                str(SEASON_MAX_DAYS),
+            ]
+        )
+        digest = hashlib.sha1()
+        digest.update(marker.encode("utf-8"))
+        try:
+            digest.update(Path(self.settings.sowings_path).read_bytes())
+        except OSError:
+            digest.update(b"<missing-registry>")
+        return digest.hexdigest()[:16]
+
+    def _snapshot_path(self, event: SowingEvent, fingerprint: str) -> Path | None:
+        directory = Path(self.settings.logs_dir) / "compat_snapshots" if self._ready_for_disk_cache() else None
+        if directory is None:
+            return None
+        safe = re.sub(r"[^A-Za-z0-9_.-]+", "_", event.field_id).strip("_")
+        if not safe:
+            return None
+        return directory / f"{safe}__{fingerprint}.pkl"
+
+    def _load_persisted(self, event: SowingEvent, fingerprint: str) -> FieldSnapshot | None:
+        """
+        Yesterday's answer for a field whose inputs did not move.
+
+        A hit removes the ~10 s engine walk at every startup; a miss is
+        indistinguishable from the pre-cache behaviour. The stored snapshot is
+        checked against the field it claims to be - a user-edited or truncated
+        cache file must degrade to a rebuild, never to a wrong answer.
+        """
+        if self._snapshot_fingerprint is None:
+            self._snapshot_fingerprint = self._fingerprint()
+        path = self._snapshot_path(event, self._snapshot_fingerprint)
+        if path is None or not path.exists():
+            return None
+        try:
+            with path.open("rb") as handle:
+                snapshot = pickle.load(handle)
+        except Exception:
+            # Any unreadable cache entry - a half-written file, a code change
+            # that moved a class, a disk fault - reverts to the walk.
+            logger.debug("snapshot cache miss for %s: unreadable file", event.field_id)
+            return None
+        if not isinstance(snapshot, FieldSnapshot) or snapshot.event.field_id != event.field_id:
+            logger.debug("snapshot cache miss for %s: content mismatch", event.field_id)
+            return None
+        return snapshot
+
+    def _persist_snapshot(self, event: SowingEvent, snapshot: FieldSnapshot) -> None:
+        """
+        Write one snapshot for the next startup. Strictly best-effort: a cache
+        that cannot be written must never be a reason the request fails.
+        """
+        if self._snapshot_fingerprint is None:
+            self._snapshot_fingerprint = self._fingerprint()
+        path = self._snapshot_path(event, self._snapshot_fingerprint)
+        if path is None:
+            return
+        temp = path.with_suffix(".tmp")
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with temp.open("wb") as handle:
+                pickle.dump(snapshot, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            temp.replace(path)  # atomic on the same volume: no half-written pickles
+        except OSError as error:
+            logger.debug("snapshot cache write skipped for %s: %s", event.field_id, error)
+
     def _snapshot(self, event: SowingEvent) -> FieldSnapshot:
         """
         Reuse a field's snapshot while the planning inputs are unchanged.
 
         A snapshot is a pure function of the sowing, the station's archive and the
         registry, so the honest cache key is `PlanService.version`, not a wall
-        clock. The previous 60-second TTL threw away a correct answer and rebuilt
-        it on a timer: the engine re-walked 14 days of FAO-56 for every field on
-        every expiry, which cost roughly 25 seconds and happened once a minute —
-        so the dashboard stalled open on a page load every minute of use.
+        clock. A rebuild is consulted against the persisted cache first - the
+        walk costs roughly ten seconds per field, and on the launcher's startup
+        path the same rebuild happens on every run of an unchanged season, so
+        the disk ferry keeps the honest semantics and drops the repeat cost.
+        The 15-minute wall-clock backstop still applies inside the process.
         """
         cached = self._cache.get(event.field_id)
         now = time.monotonic()
@@ -439,7 +546,12 @@ class CompatService:
             and now - cached[0] < SNAPSHOT_MAX_AGE_SECONDS
         ):
             return cached[2]
-        snapshot = self._snapshot_field(event)
+        if self._snapshot_fingerprint is None:
+            self._snapshot_fingerprint = self._fingerprint()
+        snapshot = self._load_persisted(event, self._snapshot_fingerprint)
+        if snapshot is None:
+            snapshot = self._snapshot_field(event)
+            self._persist_snapshot(event, snapshot)
         self._cache[event.field_id] = (now, version, snapshot)
         return snapshot
 

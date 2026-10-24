@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     app_name: str = "IRRIGO V2"
     app_version: str = "2.0.0"
 
+    #: Where the launcher writes runtime output, and where this app may keep
+    #: its own derived, rebuildable artefacts (the advisor snapshot cache).
+    #: Runtime noise, never project data: anything here can be deleted without
+    #: changing what the app would answer.
+    logs_dir: Path = ROOT / "logs"
+
     #: Origin allowed to call the API. The Vite dev server proxies `/api`, so in
     #: normal use the browser talks same-origin and this rarely matters.
     cors_origins: list[str] = [
