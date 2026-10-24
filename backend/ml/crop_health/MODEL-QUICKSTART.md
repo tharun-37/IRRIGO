@@ -54,10 +54,12 @@ Examples that work out of the box:
 
 ### 2. Train (one command)
 
-From `backend/`, with the project venv:
+One artifact covers every crop the app has (the service loads a single model
+slot), so for a multi-crop model repeat `--crop` and prefix every class folder
+with its crop so labels stay unique ("Rice Brown spot", "Potato Late blight", …):
 
 ```
-python ml/scripts/train_crop_health_baseline.py --data <dataset_root> --crop rice
+python ml/scripts/train_crop_health_baseline.py --data <dataset_root> --crop rice --crop cotton --crop potato --task "disease+pest" --deploy
 ```
 
 The script:
@@ -85,7 +87,9 @@ holdout accuracy : 0.889   macro-F1: 0.852   (n_test=9)
 python ml/scripts/train_crop_health_baseline.py --data <root> --crop rice --deploy
 ```
 
-`--deploy` copies the artifact into `backend/models/crop_health/`. Restart
+`--deploy` copies the artifact into the serving dir
+`D:\...\IRRIGO-V3-root\models\crop_health\` (the server's `settings.models_dir`
+resolves to the **repo root's** `models/`, not `backend/models`). Restart
 uvicorn, then check:
 
 ```
