@@ -431,6 +431,39 @@ describe('Field view', () => {
     expect(within(notes as HTMLElement).getByText(/37 kg\/acre · N short/)).toBeTruthy()
   })
 
+  it('carries the calendar top-dress when the sensors read adequate', async () => {
+    // Same feed, but a barley field at mid-season: the sensors sit inside the
+    // sufficiency bands, yet the crop calendar still owes the split N pass.
+    // The dose comes from the decision model's demand (42.5 kg/ha N), so the
+    // chip states the same product arithmetic as a shortage would.
+    const barley = {
+      ...FIELD,
+      crop: 'Barley',
+    }
+    renderWithField(barley)
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
+    )
+
+    const notes = screen.getByLabelText(/Yield and today.s notes/)
+    expect(within(notes as HTMLElement).getByText('Add half a bag of urea')).toBeTruthy()
+    expect(within(notes as HTMLElement).getByText(/37 kg\/acre · N top-dress at mid-season/)).toBeTruthy()
+  })
+
+  it('breeds no top-dress chip for a crop with no calendar pass', async () => {
+    // Wheat at mid-season has no top-dress on file here: the chips must not
+    // invent fertilizer for crops the rule does not cover.
+    renderWithField(FIELD)
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
+    )
+
+    const notes = screen.getByLabelText(/Yield and today.s notes/)
+    expect(within(notes as HTMLElement).getByText('No fertilizer today')).toBeTruthy()
+  })
+
   it('supports every registered field from a simple switcher, with no console left', async () => {
     renderShell()
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy())

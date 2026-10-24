@@ -141,6 +141,43 @@ function pesticideAdvice(
 }
 
 /**
+ * The split application the crop calendar calls for.
+ *
+ * Mid-season is the classic top-dress window for barley and potato: their N
+ * is fed in scheduled passes, not one basal dose, so the pass falls due on
+ * the calendar even when today's soil readings sit inside the sufficiency
+ * bands and the sensor test finds nothing short. The amount comes from the
+ * decision model's nitrogen demand for this field today (the same number the
+ * shortage path uses), not from a blanket table — and a field whose decision
+ * carried no demand estimate asks for nothing, because zero demand is not a
+ * dose anyone can hand over.
+ */
+const TOP_DRESS_CROPS = ['barley', 'potato'] as const
+
+function topDressChip(field: Advisory, acres: number): FarmerChip | null {
+  if (stageKey(field) !== 'mid_season') return null
+  if (!TOP_DRESS_CROPS.includes((field.crop ?? '').toLowerCase() as (typeof TOP_DRESS_CROPS)[number])) {
+    return null
+  }
+  const nitrogenKgHa = field.risk.nutrientDemandKgHa?.nitrogen ?? 0
+  if (nitrogenKgHa <= 0) return null
+  // Urea is 46% nitrogen; kg/ha of nutrient becomes kg/acre of product.
+  const ureaKgAcre = nitrogenKgHa / 0.46 / 2.471
+  const bags = (ureaKgAcre * acres) / 50
+  return {
+    key: 'fertilizer',
+    title:
+      bags < 0.25
+        ? 'Add a little urea'
+        : `Add ${
+            bags < 0.75 ? 'half a bag' : bags < 1.25 ? '1 bag' : `${Math.round(bags)} bags`
+          } of urea`,
+    detail: `${num(ureaKgAcre, 0)} kg/acre · N top-dress at mid-season`,
+    tone: 'warn',
+  }
+}
+
+/**
  * The farmer view's three chips: fertiliser, spray, yield.
  *
  * Built from the same helpers the old console cards used, so removing the
@@ -176,12 +213,14 @@ function farmerChips(field: Advisory): FarmerChip[] {
       tone: 'warn',
     }
   } else {
-    fertilizerChip = {
-      key: 'fertilizer',
-      title: 'No fertilizer today',
-      detail: 'No fertilizer needed at this stage.',
-      tone: 'healthy',
-    }
+    // No sensor shortage: the calendar can still owe this crop a pass.
+    fertilizerChip =
+      topDressChip(field, acres) ?? {
+        key: 'fertilizer',
+        title: 'No fertilizer today',
+        detail: 'No fertilizer needed at this stage.',
+        tone: 'healthy',
+      }
   }
 
   const sprayChip: FarmerChip =
