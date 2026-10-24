@@ -379,6 +379,24 @@ export function ResultCard({
           Contact your local agricultural officer for a confirmed identification.
         </p>
       )}
+
+      {analysis.treatment && (
+        <div
+          className={`mt-2 rounded border border-status-warn/40 bg-status-warnSoft ${
+            compact ? 'px-2.5 py-1.5' : 'px-3 py-2.5'
+          }`}
+        >
+          <p className={`font-bold text-ink-800 ${compact ? 'text-[12px]' : 'text-[14px]'}`}>
+            {analysis.treatment.heading}
+          </p>
+          <p className={`leading-relaxed text-ink-800 ${compact ? 'text-[12px]' : 'text-[14px]'}`}>
+            {analysis.treatment.text}
+          </p>
+          <p className={`text-ink-500 ${compact ? 'mt-1 text-[11px]' : 'mt-1.5 text-[12px]'}`}>
+            {analysis.treatment.disclaimer}
+          </p>
+        </div>
+      )}
       <p className={`text-ink-400 ${compact ? 'mt-1.5 text-[10px]' : 'mt-2.5 text-[11px]'}`}>
         Checked at {clockTime(analysis.createdAt)}
       </p>

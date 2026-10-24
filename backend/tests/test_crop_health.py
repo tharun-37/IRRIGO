@@ -64,6 +64,12 @@ def client(tmp_path, monkeypatch):
     images_dir = tmp_path / "images"
     main_module.settings.crop_health_images_dir = images_dir
 
+    # Point the artifact loader at an empty directory so tests exercise the
+    # no-deployed-model service exactly as written; a repo checkout that has a
+    # model deployed must not flip these expectations.
+    models_dir = tmp_path / "models"
+    main_module.settings.models_dir = models_dir
+
     with TestClient(app) as test_client:
         yield test_client
 

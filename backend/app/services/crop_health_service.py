@@ -2,10 +2,10 @@
 The crop-health analysis service.
 
 What this is, honestly: an image-receiving, quality-gating, record-keeping
-service with an inference *slot*. No validated disease/pet/nutrient image model
-exists in this repository yet, so unless a versioned artifact is installed the
-service never returns `result` — it runs the quality gates and returns
-`uncertain` with the reason stated. A raw heuristic statistic is not a
+service with an inference *slot*. A validated artifact covers rice, barley,
+cotton and potato when `models/crop_health/` carries one; only then can the
+service return `result`. Without an artifact it runs the quality gates and
+returns `uncertain` with the reason stated. A raw heuristic statistic is not a
 diagnosis, and the advice text says so.
 
 The status machine follows the blueprint:
@@ -129,6 +129,68 @@ ADVICE: dict[str, dict[str, Any]] = {
         "followUpQuestion": None,
         "expertReferral": False,
     },
+}
+
+#: General-practice treatment guidance, attached ONLY when the deployed model
+#: returned a supported class. These are product *types* and the nutrition
+#: mistake each disease feeds on — never doses, never brands. Versioned like
+#: the advice text so the wording can be traced.
+TREATMENT_VERSION = "treat-en-1"
+TREATMENT_DISCLAIMER = (
+    "General practice, not a prescription. Always confirm with your "
+    "agricultural officer before buying or spraying any product."
+)
+TREATMENTS: dict[str, str] = {
+    "Rice Brown spot": (
+        "Fungicide sprays of the mancozeb or tricyclazole type are the usual "
+        "field practice at the first spots. Brown spot feeds on stressed "
+        "plants: before adding more nitrogen, check that potassium is not "
+        "short and that the field is not drying out."
+    ),
+    "Rice Bacterial leaf blight": (
+        "No spray reliably cures this once it shows. Stop extra nitrogen "
+        "until the crop recovers and keep standing water drained — water "
+        "carries the bacteria. Next season, sow certified clean seed."
+    ),
+    "Rice Leaf smut": (
+        "Sprays rarely pay for leaf smut. Strengthen the crop with balanced "
+        "fertilisation and plan clean seed for the next sowing."
+    ),
+    "Barley Bipolaris leaf spot": (
+        "A triazole-type foliar fungicide applied early in the infection is "
+        "standard practice. Treat seed before the next sowing and correct "
+        "any nitrogen shortfall."
+    ),
+    "Barley Powdery mildew": (
+        "Sulphur or triazole-type mildew fungicides work when applied "
+        "promptly. Cut back on excess nitrogen — soft, over-fed leaves "
+        "invite mildew."
+    ),
+    "Barley Rust": (
+        "A triazole-type fungicide at the first rust pustules protects the "
+        "top leaves that fill the grain. Re-check the canopy within ten "
+        "days."
+    ),
+    "Cotton Alternaria leaf spot": (
+        "Protectant sprays of the mancozeb type are common practice through "
+        "humid spells. Alternaria thrives on potassium-starved plants, so "
+        "check potash before adding more nitrogen."
+    ),
+    "Cotton Bacterial blight": (
+        "No spray cures an established blight. Remove and destroy infected "
+        "leaves, avoid water splash from rain or overhead irrigation, and "
+        "sow clean treated seed next season."
+    ),
+    "Potato Early blight": (
+        "Mancozeb or chlorothalonil-type protectant sprays hold it back."
+        "Keep nitrogen steady — stressed plants get blight first — and "
+        "remove the worst leaves."
+    ),
+    "Potato Late blight": (
+        "Act the same day: a systemic mancozeb or cymoxanil-type spray "
+        "slows the spread, and infected plants should be pulled out and "
+        "buried. Humid weather runs it — watch the field weekly."
+    ),
 }
 
 
@@ -427,6 +489,19 @@ class CropHealthService:
         """The minimum analysis record, exactly as the blueprint lists it."""
         advice_key = status if status in ADVICE else "processing_error"
         source = source or ADVICE[advice_key]
+        # Treatment guidance is written only for a *named* class: no label,
+        # no treatment — the farmer is never given something to spray from a
+        # sub-threshold or unsupported answer.
+        treatment = None
+        if status == RESULT and prediction.classLabel:
+            treatment_text = TREATMENTS.get(prediction.classLabel)
+            if treatment_text:
+                treatment = {
+                    "heading": "Treatment & nutrition guidance",
+                    "text": treatment_text,
+                    "disclaimer": TREATMENT_DISCLAIMER,
+                    "textVersion": TREATMENT_VERSION,
+                }
         return {
             "created_at": datetime.now(timezone.utc)
             .isoformat(timespec="seconds"),
@@ -454,5 +529,6 @@ class CropHealthService:
             "advice_text_version": ADVICE_VERSION,
             "advice_follow_up": source["followUpQuestion"],
             "advice_expert_referral": source["expertReferral"],
+            "treatment": treatment,
             "consent_given": bool(consent),
         }

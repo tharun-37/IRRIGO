@@ -80,6 +80,21 @@ class CropHealthAdviceOut(BaseModel):
     expertReferral: bool
 
 
+class CropHealthTreatmentOut(BaseModel):
+    """
+    General-practice guidance attached ONLY to a named `result`.
+
+    Never a dose, never a brand: the text names product *types* that exist and
+    the nutrition mistake the disease feeds on, then sends the farmer to the
+    agricultural officer like every other path in this service.
+    """
+
+    heading: str
+    text: str
+    disclaimer: str
+    textVersion: str
+
+
 class CropHealthAnalysisOut(BaseModel):
     """The full minimum analysis record the blueprint requires."""
 
@@ -94,6 +109,7 @@ class CropHealthAnalysisOut(BaseModel):
     statusReason: str
     prediction: CropHealthPredictionOut
     advice: CropHealthAdviceOut
+    treatment: CropHealthTreatmentOut | None = None
     quality: dict[str, Any] = Field(default_factory=dict)
     gates: list[CropHealthGateOut] = Field(default_factory=list)
     modelVersion: str

@@ -565,8 +565,8 @@ class CropHealthRepository:
                     status_reason, model_version, preprocessing_version,
                     validation_status, advice_code, advice_text,
                     advice_text_version, advice_follow_up,
-                    advice_expert_referral, consent_given
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    advice_expert_referral, treatment, consent_given
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     analysis_id,
@@ -595,6 +595,7 @@ class CropHealthRepository:
                     record.get("advice_text_version"),
                     record.get("advice_follow_up"),
                     1 if record.get("advice_expert_referral") else 0,
+                    json_dumps(record.get("treatment")) if record.get("treatment") else None,
                     1 if record.get("consent_given") else 0,
                 ),
             )
@@ -739,6 +740,7 @@ def _crop_health_row(row: sqlite3.Row) -> dict[str, Any]:
             "followUpQuestion": row["advice_follow_up"],
             "expertReferral": bool(row["advice_expert_referral"]),
         },
+        "treatment": json_loads(row["treatment"], None) if row["treatment"] else None,
         "consentGiven": bool(row["consent_given"]),
         "farmerFeedback": row["farmer_feedback"],
     }

@@ -634,6 +634,18 @@ export interface CropHealthAdviceOut {
   expertReferral: boolean
 }
 
+/**
+ * General-practice spray/nutrition guidance, attached only to a named
+ * `result` verdict. Never a dose, never a brand — the officer referral is
+ * still the rule.
+ */
+export interface CropHealthTreatmentOut {
+  heading: string
+  text: string
+  disclaimer: string
+  textVersion: string
+}
+
 export interface CropHealthQuality {
   width?: number
   height?: number
@@ -657,6 +669,7 @@ export interface CropHealthAnalysis {
   statusReason: string
   prediction: CropHealthPrediction
   advice: CropHealthAdviceOut
+  treatment?: CropHealthTreatmentOut | null
   quality?: CropHealthQuality
   gates: CropHealthGate[]
   modelVersion: string

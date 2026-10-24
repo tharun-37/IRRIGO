@@ -177,6 +177,7 @@ CREATE TABLE IF NOT EXISTS crop_health_analyses (
     advice_follow_up    TEXT,
     advice_expert_referral INTEGER NOT NULL DEFAULT 0,
     consent_given       INTEGER NOT NULL DEFAULT 0,
+    treatment           TEXT,
     farmer_feedback     TEXT
 );
 
@@ -271,6 +272,9 @@ class Database:
                 "crop_age_days": "REAL",
                 "stage": "TEXT",
                 "gdd": "REAL",
+            },
+            "crop_health_analyses": {
+                "treatment": "TEXT",
             },
             "decisions": {
                 "crop_age_days": "REAL NOT NULL DEFAULT 0",
