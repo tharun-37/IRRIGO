@@ -320,11 +320,21 @@ export function ResultCard({
   const className = analysis.prediction.classLabel
   // A "healthy" class is not a disease worth naming; reading "Possible: Healthy"
   // back to the farmer would be the model's vocabulary, not theirs.
+  // The shared model names across every crop's class list, so a barley photo
+  // can carry a cotton-flavoured label; the leading crop word is presentation
+  // noise and is stripped — the farmer already knows their crop. The full
+  // label still travels in the record.
+  const diseaseName = className?.replace(
+    /^(rice|barley|wheat|cotton|potato|maize|tomato|sugarcane)\s+/i,
+    '',
+  )
   const headline = className
     ? /health/i.test(className)
       ? 'No disease spotted in this photo'
-      : `Possible: ${titleCase(className)}`
-    : `${analysis.crop} · no disease could be named`
+      : `Possible: ${titleCase(diseaseName ?? '')}`
+    : analysis.resultStatus === 'result'
+      ? 'Reads normal — no disease found'
+      : `${analysis.crop} · no disease could be named`
   return (
     <section
       className={

@@ -249,8 +249,9 @@ def main() -> int:
             " diagnosis.",
             "Trained on a random split of a pre-collected dataset; field-photo"
             " validation with session-grouped splits has not happened yet.",
-            "Probabilities are uncalibrated (calibrated: false); the service's"
-            " abstention threshold is the only confidence control.",
+            "Probabilities are uncalibrated (calibrated: false); the service"
+            " answers either normal or a named disease (reads under the 0.40"
+            " confidence floor say normal).",
         ],
     }
 

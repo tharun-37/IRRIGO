@@ -62,8 +62,25 @@ LUMA_DARK_MAX = 45.0
 LUMA_BRIGHT_MIN = 230.0
 LUMA_STD_FLAT_MAX = 8.0
 
-#: Below this calibrated-equivalent confidence a deployed model abstains.
-ABSTENTION_CONFIDENCE = 0.55
+#: Below this top-1 confidence the model is not naming a disease: the photo
+#: reads NORMAL rather than hedging. The service always answers with one of
+#: two verdicts — a named disease, or normal — so the farmer is never left
+#: with "not sure". The floor sits low (a sub-floor read means even the best
+#: disease guess was weak); every answer still carries its score.
+NORMAL_FLOOR = 0.40
+
+#: Advice carried by a normal read — either a healthy class was named or no
+#: disease cleared the floor. "Nothing to spray" is the farmer-facing half.
+NORMAL_READ_ADVICE: dict[str, Any] = {
+    "adviceCode": "no_disease_read",
+    "adviceText": (
+        "This photo read normal — no disease is named. Nothing to spray "
+        "now. Keep watching: if the same pattern shows up on neighbouring "
+        "plants, check again in a day."
+    ),
+    "followUpQuestion": None,
+    "expertReferral": False,
+}
 
 #: The advice text set. Each entry has a version so a wording change is
 #: traceable from the analysis record.
@@ -430,24 +447,43 @@ class CropHealthService:
                 prediction.calibrated = bool(
                     self.artifact.meta.get("calibrated", False)
                 )
-                if confidence is not None and confidence < ABSTENTION_CONFIDENCE:
-                    # The blueprint's abstention path: a low-confidence score
-                    # never reaches the farmer as a label.
-                    status = UNCERTAIN
+                if confidence is not None and confidence < NORMAL_FLOOR:
+                    # A read this weak is not going to name a disease. It
+                    # still has to give the farmer a verdict, so it answers
+                    # NORMAL: nothing worth treating was found. The score
+                    # travels so the farmer can see the strength of that
+                    # read; this remains a model reading, not a diagnosis.
+                    status = RESULT
                     status_reason = (
-                        f"The model's confidence is {confidence:.2f}, below the "
-                        f"abstention threshold {ABSTENTION_CONFIDENCE:.2f}; no "
-                        "reliable class is reported."
+                        f"The model's best disease guess scored "
+                        f"{confidence:.2f}, under the {NORMAL_FLOOR:.2f} "
+                        "floor where a disease is named, so this photo "
+                        "reads normal. Still a model reading, not a "
+                        "confirmed diagnosis."
                     )
                     prediction.classLabel = None
                     prediction.rawScore = round(confidence, 4)
                     return self._record(
                         status, status_reason, prediction, gates, quality,
                         stored, crop, plant_part, growth_stage, field_id,
-                        zone_id, consent,
+                        zone_id, consent, source=NORMAL_READ_ADVICE,
                     )
                 prediction.classLabel = self.artifact.classes()[best]
                 status = RESULT
+                class_label = prediction.classLabel or ""
+                if "health" in class_label.lower():
+                    # A healthy class is a normal read, dressed in the
+                    # model's vocabulary; the advice matches the verdict.
+                    status_reason = (
+                        "The model read this photo as the healthy class — "
+                        "no disease named. Still a model reading, not a "
+                        "confirmed diagnosis."
+                    )
+                    return self._record(
+                        status, status_reason, prediction, gates, quality,
+                        stored, crop, plant_part, growth_stage, field_id,
+                        zone_id, consent, source=NORMAL_READ_ADVICE,
+                    )
                 status_reason = (
                     "A deployed model returned a supported class. This is not "
                     "a confirmed diagnosis; verify in the field."
