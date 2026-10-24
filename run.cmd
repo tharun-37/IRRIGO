@@ -108,7 +108,10 @@ if not exist "%ROOT%logs" mkdir "%ROOT%logs"
 
 if "%START_API%"=="1" (
   echo [1/2] backend    http://127.0.0.1:8000   log: logs\backend.log
-  start "IRRIGO V2 API" /b /D "%ROOT%backend" cmd /c ""%VENV%" -m uvicorn app.main:app --host 127.0.0.1 --port 8000 1>>"%ROOT%logs\backend.log" 2>&1"
+  REM --host 0.0.0.0, not loopback: the bench node posts from the LAN, and a
+  REM loopback-only bind never sees its POST. The dashboard keeps using 127.0.0.1
+  REM without change; the wider bind only adds the LAN interface.
+  start "IRRIGO V2 API" /b /D "%ROOT%backend" cmd /c ""%VENV%" -m uvicorn app.main:app --host 0.0.0.0 --port 8000 1>>"%ROOT%logs\backend.log" 2>&1"
 ) else (
   echo [1/2] backend    already running
 )
