@@ -23,7 +23,7 @@ import { GrainFilter, LeafGlyph } from '../components/ui'
 import { AddField } from '../components/AddField'
 import { FarmerView, type FarmerChip, type FarmerField } from './FarmerView'
 import { int, num, relativeTime, titleCase } from '../lib/format'
-import type { Advisory } from '../types'
+import type { Advisory, Telemetry } from '../types'
 
 const REFRESH = 15_000
 
@@ -84,6 +84,15 @@ const ACRE_M2 = 4046.86
  * by quoting the same constant.
  */
 const MOISTURE_DRY_PCT = 38
+
+/**
+ * How fresh a node POST must be for the action card to announce it, in
+ * seconds. Mirrors the backend's own live window (`LIVE_SENSOR_WINDOW_SECONDS
+ * = 1800`, backend/app/api/compat.py): past it a reading is history, not a
+ * live node. Without this the strip would keep announcing the DB's oldest row
+ * — a node that last posted months or years ago — as if it were on the air.
+ */
+const NODE_FRESH_SECONDS = 1800
 /**
  * Near-wilting floor for the live stress curve: stress is 1 at 12% by volume
  * and 0 at the dry band. A bench probe rarely reads below 12; the taper from
@@ -473,11 +482,23 @@ export default function Dashboard() {
   // The node's freshest own POST for the field being read, from the live
   // telemetry poll (10 s) — faster than the advisor's 15 s, so the valve
   // state and the node's last-seen time on the action card lead the cards
-  // that wait for the next advisory payload.
-  const node = useMemo(
-    () => (field ? telemetry.find((row) => row.zone === field.fieldId) ?? null : null),
-    [field, telemetry],
-  )
+  // that wait for the next advisory payload. Only genuinely fresh posts
+  // count (NODE_FRESH_SECONDS): the telemetry feed also carries the DB's
+  // historical rows, and "posted 663 days ago" is not a live node.
+  const node = useMemo(() => {
+    if (!field) return null
+    let freshest: Telemetry | null = null
+    for (const row of telemetry) {
+      if (row.zone === field.fieldId && (!freshest || row.recordedAt > freshest.recordedAt)) {
+        freshest = row
+      }
+    }
+    if (!freshest) return null
+    const ageSeconds = (Date.now() - new Date(freshest.recordedAt).getTime()) / 1000
+    return Number.isFinite(ageSeconds) && ageSeconds >= 0 && ageSeconds <= NODE_FRESH_SECONDS
+      ? freshest
+      : null
+  }, [field, telemetry])
 
   // The live sky reading, when a live feed is configured. Polled far less often
   // than the advisory: the upstream observation is cached for ten minutes
