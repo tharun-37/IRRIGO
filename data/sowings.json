@@ -60,7 +60,7 @@
       "soil_type": "Sandy_Loam",
       "crop_variant": null,
       "method_name": "Drip",
-      "field_area_m2": 1000,
+      "field_area_m2": 8094,
       "mulched": false,
       "nitrogen_regime": 1.0,
       "restricting_depth_m": null,
