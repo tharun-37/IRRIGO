@@ -35,7 +35,7 @@ import math
 import pickle
 import re
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime, time as clock_time, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -48,6 +48,8 @@ from irrigation.data.soil import texture as lookup_texture
 from irrigation.physics.kc_curve import kc_profile_stage_means, peak_water_stage_span
 from irrigation.sowing import SowingEvent, season_depletion
 
+from ..core.database import get_database, parse_iso
+from ..db.repository import ReadingRepository
 from ..core.ml_bridge import (
     CROP_PROFILES,
     NUTRIENT_BANDS,
@@ -82,6 +84,14 @@ SEASON_MAX_DAYS = 400
 #: inputs moved. This exists only as a backstop so a long-lived process cannot
 #: pin memory forever; the real key is `PlanService.version`.
 SNAPSHOT_MAX_AGE_SECONDS = 900.0
+
+#: How long a node's own reading is authoritative for *planning*. The API
+#: overlay uses the same window for display (`LIVE_SENSOR_WINDOW_SECONDS` in
+#: `api.compat`); keeping them equal is deliberate — a value authoritative
+#: enough to display is authoritative enough to plan from. The bench posts
+#: every ~10 s, so a fresh reading is seconds old, and the plan follows it at
+#: every request.
+LIVE_NODE_FRESH_SECONDS = 1800.0
 
 #: Format marker for the persisted snapshot cache. Folding it into the cache
 #: filename's fingerprint means any change to the snapshot's shape - the walk
@@ -1131,14 +1141,45 @@ class CompatService:
             return crop in levels
         return crop in CROP_PROFILES
 
+    def _live_node_moisture(self, field_id: str) -> float | None:
+        """
+        The field's freshest real node soil moisture, or `None`.
+
+        Mirrors the API overlay's lookup: newest row whose zone is the field,
+        authoritative only inside the freshness window. Telemetry problems
+        degrade to `None`, which keeps the advisory running on the weather
+        replay — a missing probe must never kill the plan.
+        """
+        try:
+            rows = ReadingRepository(get_database()).latest(None, limit=200)
+        except Exception:
+            # Missing or unreadable telemetry store: plan from the replay.
+            return None
+        row = next((item for item in rows if item.get("zone") == field_id), None)
+        if row is None or not row.get("recordedAt"):
+            return None
+        try:
+            age = (datetime.now(timezone.utc) - parse_iso(row["recordedAt"])).total_seconds()
+        except (TypeError, ValueError):
+            return None
+        if not (0.0 <= age <= LIVE_NODE_FRESH_SECONDS):
+            return None
+        value = row.get("soilMoisture")
+        if isinstance(value, (int, float)):
+            return float(value)
+        return None
+
     def _advisory(self, snap: FieldSnapshot) -> dict[str, Any]:
         """
         One field's advisory: the water decision plus the reasoning behind it.
 
-        This is the payload the operator-facing advisor renders. Everything here
-        is computed from the engine's own plan for the field, so the narrative
-        and the numbers cannot disagree: the stage, the thermal time, the
-        root-zone balance and the schedule all come from the same call.
+        The stage, thermal time and season come from the engine's replayed plan.
+        The soil state, however, comes from the field itself when a probe has
+        posted into the freshness window: moisture becomes the plan's starting
+        depletion, and the decision is re-made through the same controller on
+        the reading the node actually took. Narrative and numbers stay on one
+        source of truth per quantity — measured where it can be measured,
+        replayed where it cannot.
         """
         event = snap.event
         point = snap.current
@@ -1153,10 +1194,86 @@ class CompatService:
         stage_label = self._stage_label(stage)
         stage_progress = float(getattr(plan, "stage_progress", 0.0) or 0.0)
         gdd = float(getattr(plan, "gdd_accumulated", 0.0) or 0.0)
-        days_until = getattr(plan, "days_until_stress", None)
+
+        # A fresh probe reading replaces the replay's *assumed* soil state.
+        # The node's scale is relative wetness — 100 at field capacity, 0 with
+        # every millimetre of plant-available water gone — so a reading of p
+        # percent means a depletion fraction of 1 - p/100 of TAW. Everything
+        # downstream (ET, Kc, rain credit, the optimiser's search) then runs
+        # forward from that measured state, which is exactly what precision
+        # scheduling means: the physics is the same, the starting point is real.
+        # Stage-based quantities are untouched; a probe cannot move Kc or age.
+        state_plan = plan
+        moisture = self._live_node_moisture(event.field_id)
+        if moisture is not None:
+            taw_now = float(getattr(plan, "taw_mm", 0.0) or 0.0)
+            if taw_now > 0.0:
+                measured_fraction = float(np.clip(1.0 - moisture / 100.0, 0.0, 1.0))
+                measured_depletion = round(measured_fraction * taw_now, 1)
+                replay_depletion = float(getattr(plan, "depletion_mm", 0.0) or 0.0)
+                if abs(measured_depletion - replay_depletion) > 1.0:
+                    try:
+                        state_plan = self.plans.plan_cached(
+                            event.field_id,
+                            point.day.isoformat(),
+                            measured_depletion,
+                            with_season=False,
+                        )
+                        schedule = getattr(state_plan, "schedule", None) or schedule
+                        # The decision is re-made through the same controller,
+                        # on the reading the probe actually took, at the live
+                        # plan's ET0. An empty history is the controller's own
+                        # documented single-sample mode (its warmup does it).
+                        decision = self._decide(
+                            state_plan,
+                            replace(point.reading, soil_moisture=moisture),
+                            point.config,
+                            [],
+                        )
+                    except Exception:
+                        logger.exception(
+                            "live-soil replan for %s failed; keeping the replay",
+                            event.field_id,
+                        )
+                        state_plan = plan
+
+        days_until = getattr(state_plan, "days_until_stress", None)
+
+        # When the live plan itself begins with an application today, the
+        # decision and the schedule have to agree: the same optimiser that
+        # combined the measured soil, the crop curve and the forecast into "18
+        # mm today" cannot let the decision block say "hold". The factors are
+        # re-priced off the day-0 event the engine scheduled, so the action
+        # card, the week chart and the pump command describe one event.
+        if state_plan is not plan:
+            today_events = [
+                scheduled
+                for scheduled in (getattr(getattr(state_plan, "schedule", None), "events", None) or [])
+                if int(getattr(scheduled, "offset", -1)) == 0
+                and float(getattr(scheduled, "apply_mm", 0.0) or 0.0) > 0.5
+            ]
+            if today_events:
+                event_depth = float(getattr(today_events[0], "apply_mm", 0.0))
+                decision = {
+                    **decision,
+                    "shouldIrrigate": True,
+                    "depthMm": round(event_depth, 2),
+                    "volumeLitres": round(
+                        event_depth * float(event.field_area_m2 or 1000.0) / 10.0, 1
+                    ),
+                    "durationSeconds": int(round(event_depth * 1000.0 / PUMP_RATE_LPM)),
+                }
+                explanation = list(decision.get("explanation") or [])
+                explanation.append(
+                    "The plan applies water today because the node's own reading "
+                    f"({moisture:.0f}% moisture) put the root zone below the "
+                    "irrigation trigger."
+                )
+                decision["explanation"] = explanation
+
         should = bool(decision.get("shouldIrrigate"))
         depth = float(decision.get("depthMm") or 0.0)
-        depletion = float(getattr(plan, "depletion_fraction", 0.0) or 0.0)
+        depletion = float(getattr(state_plan, "depletion_fraction", 0.0) or 0.0)
         et0 = float(getattr(plan, "et0_mm_day", 0.0) or 0.0)
         etc = float(getattr(plan, "etc_mm_day", 0.0) or 0.0)
         rain = float(getattr(plan, "rainfall_mm_day", 0.0) or 0.0)
@@ -1249,6 +1366,15 @@ class CompatService:
                     "value": f"{days_until} day(s)",
                     "detail": "Time until the root zone reaches the stress threshold.",
                     "tone": "warn" if days_until <= 2 else "healthy",
+                }
+            )
+        if moisture is not None and state_plan is not plan:
+            reasoning.append(
+                {
+                    "label": "Probe override",
+                    "value": f"{moisture:.0f}% moisture",
+                    "detail": "The plan starts from the node's measured soil state, not the weather replay.",
+                    "tone": "neutral",
                 }
             )
 
@@ -1387,6 +1513,12 @@ class CompatService:
             "stageLabel": stage_label,
             "stageProgress": round(stage_progress, 4),
             "gdd": round(gdd, 1),
+            # Which soil state today's plan started from: the node's own probe
+            # when a fresh reading is in the window, the engine's weather
+            # replay when it is not. Downstream code (and the dashboard) reads
+            # this to open the loop-follower honestly: a probe-driven field
+            # moves with the sensor, the others move with the weather archive.
+            "plannedFrom": "probe" if state_plan is not plan else "replay",
             "status": status,
             "priority": priority,
             "headline": headline,
@@ -1408,7 +1540,9 @@ class CompatService:
                 "rainfallMmDay": round(rain, 2),
                 "tawMm": round(taw, 1),
                 "rawMm": round(raw_water, 1),
-                "depletionMm": round(float(getattr(plan, "depletion_mm", 0.0) or 0.0), 1),
+                # The depletion the plan itself ran from — the probe's measured
+                # value when a node is fresh, the replay's otherwise.
+                "depletionMm": round(float(getattr(state_plan, "depletion_mm", 0.0) or 0.0), 1),
                 "depletionFraction": round(depletion, 4),
                 "rootDepthCm": round(root_cm, 1),
                 "daysUntilStress": days_until,

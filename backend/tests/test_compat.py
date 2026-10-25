@@ -453,20 +453,24 @@ def test_pipeline_runs_the_requirement_model_in_season(client, device_id):
 
 def test_advisor_fields_get_different_amounts(client):
     """
-    Two fields must never be given the same advice for the same reason.
+    Fields planned from the replay must never be given the same advice for the
+    same reason.
 
     The seeded registry holds a young paddy, two mid-season cereals and a
     late-season cotton on four different soils and methods. Their depths are
     driven by crop coefficient against days of growth and by how much water the
     soil can hold, so an identical answer across all four would mean one of those
-    inputs had stopped reaching the model.
+    inputs had stopped reaching the model. Fields whose plan starts from a fresh
+    node probe are exempt: the probe is another legitimate input, and two
+    different fields may well need the same depth from it.
     """
     body = client.get("/api/advisor").json()
-    depths = {field["fieldId"]: field["recommendation"]["finalDepthMm"] for field in body["fields"]}
-    assert len(body["fields"]) >= 3
+    fields = [field for field in body["fields"] if field.get("plannedFrom") == "replay"]
+    depths = {field["fieldId"]: field["recommendation"]["finalDepthMm"] for field in fields}
+    assert len(fields) >= 3
     assert len(set(depths.values())) == len(depths), f"depths collided: {depths}"
 
-    ages = {field["fieldId"]: field["ageDays"] for field in body["fields"]}
+    ages = {field["fieldId"]: field["ageDays"] for field in fields}
     assert len(set(ages.values())) == len(ages), f"ages collided: {ages}"
 
     # The stage drives daily demand, so equal crop coefficients at different ages
