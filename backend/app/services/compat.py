@@ -49,7 +49,12 @@ from irrigation.physics.kc_curve import kc_profile_stage_means, peak_water_stage
 from irrigation.sowing import SowingEvent, season_depletion
 
 from ..core.database import get_database, parse_iso
-from ..db.repository import ReadingRepository
+from ..db.repository import (
+    AlertRepository,
+    DecisionRepository,
+    EventRepository,
+    ReadingRepository,
+)
 from ..core.ml_bridge import (
     CROP_PROFILES,
     NUTRIENT_BANDS,
@@ -680,7 +685,10 @@ class CompatService:
     def _field_alerts(self, snap: FieldSnapshot) -> list[dict[str, Any]]:
         event = snap.event
         current = snap.current
-        plan = current.plan
+        # The alert's numbers must describe the soil the plan started from: a
+        # probe-backed field must not raise "stress in N days" at a replay
+        # depletion the node contradicts.
+        plan, _ = self.grounded_plan(event, current.plan, current.day)
         schedule = getattr(plan, "schedule", None)
 
         def alert(kind: str, severity: str, message: str) -> dict[str, Any]:
@@ -744,10 +752,22 @@ class CompatService:
         if device_id:
             snapshots = [snap for snap in snapshots if snap.event.field_id == device_id]
         readings = [self._reading_payload(point) for snap in snapshots for point in snap.points]
-        recommendations = [point.decision for snap in snapshots for point in snap.points]
+        recommendations = [
+            {**point.decision, "source": "replay"}
+            for snap in snapshots
+            for point in snap.points
+        ]
         readings += self._real_readings(device_id, limit)
+        # The ingest POST path also assigns a persisted model decision to every
+        # real row, so the recommendation feed gains those at the top: they are
+        # models that actually saw the node's measurements and wrote an answer.
+        try:
+            decisions = DecisionRepository(get_database()).latest(device_id, limit)
+        except Exception:
+            decisions = []
+        recommendations += [{**decision, "source": "telemetry"} for decision in decisions]
+        recommendations.sort(key=lambda item: item.get("recordedAt") or item.get("decidedAt") or "", reverse=True)
         readings.sort(key=lambda item: item["recordedAt"], reverse=True)
-        recommendations.sort(key=lambda item: item["recordedAt"], reverse=True)
         return {
             "readings": readings[:limit],
             "recommendations": recommendations[:limit],
@@ -945,19 +965,60 @@ class CompatService:
         return readings
 
     def alerts(self, open_only: bool, limit: int) -> dict[str, Any]:
-        alerts = [alert for snap in self._snapshots() for alert in self._field_alerts(snap)]
+        """
+        Open alert feed: the planner's replay alerts plus the real telemetry
+        alerts the ingest rules raised on every node POST.
+
+        A real row (drought floor, battery, sensor fault, offline) is what the
+        ESP32 itself triggered — it outranks a replay-derived alert at equal
+        severity because it says something measured, not modelled. Each alert
+        carries its `source` so the operator knows which kind it is, and
+        acknowledging is routed by the same flag: a telemetry alert is
+        acknowledged in the store where it lives, a planner alert in the
+        planner's memory.
+        """
+        planner = [
+            {**alert, "source": "planner"}
+            for snap in self._snapshots()
+            for alert in self._field_alerts(snap)
+        ]
+        try:
+            telemetry = [
+                {**alert, "source": "telemetry"}
+                for alert in AlertRepository(get_database()).list(open_only, limit)
+            ]
+        except Exception:
+            # Telemetry store unreadable: the replay feed still ships.
+            telemetry = []
+        merged = telemetry + planner
         if open_only:
-            alerts = [alert for alert in alerts if not alert["acknowledged"]]
-        alerts.sort(key=lambda alert: (SEVERITY_ORDER.get(alert["severity"], 9), alert["raisedAt"]))
-        return {"alerts": alerts[:limit]}
+            merged = [alert for alert in merged if not alert["acknowledged"]]
+        merged.sort(
+            key=lambda alert: (SEVERITY_ORDER.get(alert["severity"], 9), alert["raisedAt"]),
+        )
+        return {"alerts": merged[:limit]}
 
     def acknowledge(self, alert_id: int) -> dict[str, Any]:
+        # Telemetry alerts live in the ingest database; acknowledging them must
+        # persist there, so an acknowledged drought warning does not resurface
+        # after a restart. Look them up by their recent feed entry first.
+        try:
+            live = AlertRepository(get_database()).list(True, limit=500)
+        except Exception:
+            live = []
+        open_alert = next(
+            (alert for alert in live if alert["id"] == alert_id), None
+        )
+        if open_alert is not None:
+            acknowledged = AlertRepository(get_database()).acknowledge(alert_id)
+            if acknowledged is not None:
+                return {**acknowledged, "source": "telemetry"}
         for snap in self._snapshots():
             for alert in self._field_alerts(snap):
                 if alert["id"] == alert_id:
                     self._acked.add(alert_id)
                     alert["acknowledged"] = True
-                    return alert
+                    return {**alert, "source": "planner"}
         raise KeyError(alert_id)
 
     def events(self, limit: int) -> dict[str, Any]:
@@ -990,11 +1051,44 @@ class CompatService:
                         "source": "engine",
                     }
                 )
+        # Real node activity — ingests, valve commands, raised alerts — is the
+        # audit trail the operator actually needs to see, and it is written to
+        # the ingest store on every POST. It outranks the replay entries at
+        # anything like the same time.
+        try:
+            events += EventRepository(get_database()).list(limit)
+        except Exception:
+            # Store unreadable: the replay trail still ships.
+            pass
         events.sort(key=lambda item: item["createdAt"], reverse=True)
         return {"events": events[:limit]}
 
     def recommendation(self, device_id: str) -> dict[str, Any]:
-        return self._find(device_id).current.decision
+        """
+        The device's current model decision, on its own measurements when alive.
+
+        With a fresh node reading in the window this is the same evaluation the
+        advisory makes: the sense-framed reading (moisture, air, light), the
+        node's trailing history behind it, and the plan the probe grounded —
+        not the replay decision the field has modelled by weather alone. A
+        stale or broken feed degrades to the replay answer rather than
+        returning nothing.
+        """
+        snap = self._find(device_id)
+        point = snap.current
+        plan, live_row = self.grounded_plan(snap.event, point.plan, point.day)
+        if live_row is None:
+            return point.decision
+        try:
+            return self._decide(
+                plan,
+                self._live_sensed_reading(live_row, point.reading),
+                point.config,
+                self._live_history(live_row, point.reading),
+            )
+        except Exception:
+            logger.exception("live recommendation for %s failed", device_id)
+            return point.decision
 
     def advisory(self, field_id: str) -> dict[str, Any]:
         """One field's advisory. Same shape the fusion pipeline returns, minus
