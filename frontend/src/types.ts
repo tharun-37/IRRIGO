@@ -217,6 +217,12 @@ export interface ScheduleDay {
    * not an empty chart.
    */
   needMm?: number
+  /**
+   * Projected root-zone depletion at the end of this day on the planned path,
+   * from the optimiser's own bookkeeping. A pump day dips; the day it reaches
+   * the crop's stress line (water.rawMm) is when the plan would pump.
+   */
+  soilDepletionMm?: number | null
   stage: string
 }
 

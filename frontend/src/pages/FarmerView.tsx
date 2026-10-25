@@ -732,6 +732,16 @@ function WeekCard({ field }: { field: Advisory }) {
                 }`}>
                   {isToday ? 'Today' : weekday(day.date)}
                 </span>
+                {/* The projected soil depletion at the end of this day, from
+                    the optimiser's own path. A pump day dips; the day the
+                    number reaches the crop's stress line is the day the plan
+                    would pump — which is why a wet-soil week legitimately
+                    carries no pump bars. */}
+                {!finished && day.soilDepletionMm != null && (
+                  <span className="tnum mt-0.5 shrink-0 text-[9px] leading-none text-ink-400">
+                    {Math.round(day.soilDepletionMm)}mm
+                  </span>
+                )}
               </div>
             )
           })}
@@ -742,8 +752,8 @@ function WeekCard({ field }: { field: Advisory }) {
           : liveHoldsToday
             ? 'The node reads wetter than the plan assumed — today’s pump is held, and the week of requirements still stands.'
             : anyPump
-              ? `Pale = the crop's daily need (${num(weekTotalNeed, 0)} mm this week) · blue = the plan's pump days.`
-              : `The plan holds the pump this week — moisture and expected rain carry the ${num(weekTotalNeed, 0)} mm need.`}
+              ? `Pale = the crop's daily need (${num(weekTotalNeed, 0)} mm this week) · blue = pump days · grey mm = projected soil depletion (pump at RAW when it nears the stress line).`
+              : `No pump this week: the soil holds ${num((field.water.tawMm ?? 0) - (field.water.depletionMm ?? 0), 0)} mm of available water and the week takes ${num(weekTotalNeed, 0)} mm — the pump returns when depletion (grey) nears the ${num(field.water.rawMm ?? 0, 0)} mm stress line.`}
       </p>
       </div>
     </section>

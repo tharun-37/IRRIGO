@@ -1289,6 +1289,16 @@ class CompatService:
                     # week chart can show the requirement even on days the
                     # optimiser correctly schedules no pump.
                     "needMm": round(max(0.0, demand_today - rain_today), 2),
+                    # The optimiser's own soil bookkeeping: the root-zone
+                    # depletion at the end of this day on the planned path,
+                    # pump included. Rendered under the bars so the reader can
+                    # watch the soil buffer drain towards its stress line —
+                    # which is the answer to "why no watering this week".
+                    "soilDepletionMm": round(
+                        float(getattr(scheduled, "depletion_after_mm", 0.0) or 0.0), 1
+                    )
+                    if scheduled
+                    else None,
                     "stage": self._stage_label(getattr(plan, "stage", stage)),
                 }
             )
