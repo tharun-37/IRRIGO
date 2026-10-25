@@ -45,7 +45,7 @@ import pandas as pd
 
 from irrigation.data.crops import CROPS
 from irrigation.data.soil import texture as lookup_texture
-from irrigation.physics.kc_curve import peak_water_stage_span
+from irrigation.physics.kc_curve import kc_profile_stage_means, peak_water_stage_span
 from irrigation.sowing import SowingEvent, season_depletion
 
 from ..core.ml_bridge import (
@@ -1270,6 +1270,33 @@ class CompatService:
                 }
             )
 
+        # The crop's thermal stage map, for the dashboard's growth track. The
+        # shares come from the catalogue's gdd_stage_ends — the engine's own
+        # phenology — so every field of one crop renders the same track, the
+        # same track widths and the same peak-water bar, however its own
+        # weather replay split the calendar. The per-field windows stay for
+        # the field's real dates and rates; the profile figures locate the
+        # crop on a crop-canonical axis.
+        crop_parameters = CROPS.get(event.crop)
+        thermal_total = (
+            float(crop_parameters.gdd_stage_ends[3])
+            if crop_parameters is not None
+            and crop_parameters.gdd_stage_ends
+            and float(crop_parameters.gdd_stage_ends[3]) > 0
+            else 0.0
+        )
+        thermal_spans: dict[str, float] | None = None
+        profile_kc_means: dict[str, float] | None = None
+        if crop_parameters is not None and thermal_total > 0:
+            ends = crop_parameters.gdd_stage_ends
+            thermal_spans = {
+                "initial": float(ends[0]),
+                "development": float(ends[1]) - float(ends[0]),
+                "mid_season": float(ends[2]) - float(ends[1]),
+                "late_season": float(ends[3]) - float(ends[2]),
+            }
+            profile_kc_means = kc_profile_stage_means(crop_parameters)
+
         windows = [
             {
                 "stage": window.stage,
@@ -1280,6 +1307,23 @@ class CompatService:
                 "meanEtcMmDay": round(float(window.mean_etc_mm_day), 2),
                 "meanRainMmDay": round(float(window.mean_rain_mm_day), 2),
                 "grossRequirementMm": round(float(window.gross_requirement_mm), 1),
+                # This stage's share of the season in thermal time per the crop
+                # catalogue, and the catalogue's own mean Kc over the stage. As a
+                # function of the crop's parameters alone, these render the same
+                # growth track — widths, peak bar and all — for every field of
+                # the crop. Omitted for stages or crops the catalogue does not
+                # name, which the client reads as "fall back to the field's own
+                # replay".
+                "profileShare": (
+                    round(thermal_spans[window.stage] / thermal_total, 4)
+                    if thermal_spans is not None and window.stage in thermal_spans
+                    else None
+                ),
+                "profileKc": (
+                    round(profile_kc_means[window.stage], 3)
+                    if thermal_spans is not None and window.stage in profile_kc_means
+                    else None
+                ),
             }
             for window in (getattr(plan, "stage_windows", None) or [])
         ]

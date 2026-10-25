@@ -336,10 +336,6 @@ function CropAgeCard({ field }: { field: Advisory }) {
   const current = String(field.stage ?? '').toLowerCase()
   const finished = current === 'post_harvest' || current === 'harvest'
   const progress = Math.max(0, Math.min(1, field.stageProgress))
-  const seasonDays =
-    field.season?.daysInSeason && field.season.daysInSeason > 0
-      ? field.season.daysInSeason
-      : null
   const windows = useMemo(() => field.season?.stageWindows ?? [], [field.season])
 
   /** The current stage's water rate, straight from the engine's stage plan. */
@@ -350,27 +346,59 @@ function CropAgeCard({ field }: { field: Advisory }) {
   const stageKc = currentWindow ? currentWindow.meanKc : field.water.kc
   const stageEtc = currentWindow ? currentWindow.meanEtcMmDay : field.water.etcMmDay
 
+  /**
+   * The track's stage shares — the axis the whole card is drawn on.
+   *
+   * Primary: the crop catalogue's thermal shares (`profileShare`, each stage's
+   * fraction of the season's growing degrees). Those are a function of the
+   * crop's parameters alone, so every field of one crop — Cotton-South,
+   * Live-Field, or a field registered tomorrow — lays out identical blocks and
+   * puts the peak bar and the arrow in identical places. The engine's
+   * stageProgress is linear in GDD within a stage, so the arrow is exact on
+   * this axis.
+   *
+   * Fallback: the field's own calendar replay (day shares), for advisories
+   * without the profile figures.
+   */
+  const shares = useMemo(() => {
+    if (windows.length === 0) return null
+    if (
+      windows.every(
+        (window) => typeof window.profileShare === 'number' && window.profileShare > 0,
+      )
+    ) {
+      return windows.map((window) => ({
+        key: window.stage,
+        share: (window.profileShare as number) * 100,
+      }))
+    }
+    const total = windows.reduce((sum, window) => sum + Math.max(1, window.days), 0)
+    return windows.map((window) => ({
+      key: window.stage,
+      share: (Math.max(1, window.days) / total) * 100,
+    }))
+  }, [windows])
+
   const segments = useMemo(() => {
-    if (windows.length > 0) {
-      const total = windows.reduce((sum, window) => sum + Math.max(1, window.days), 0)
+    if (shares) {
       const maxEtc = Math.max(...windows.map((window) => window.meanEtcMmDay), 0.001)
       let cursor = 0
-      return windows.map((window) => {
-        const share = (Math.max(1, window.days) / total) * 100
+      return shares.map((item) => {
+        const window = windows.find((entry) => entry.stage === item.key)
         const segment = {
-          key: window.stage,
-          label: titleCase(window.stage),
+          key: item.key,
+          label: titleCase(item.key),
           start: cursor,
-          share,
+          share: item.share,
           // Relative water demand of this stage, 0–1, by its own ETc against
           // the thirstiest stage of the same season. It does not colour the
           // track — it only locates the peak-water bar below when the advisory
           // has no crop-level peakStretch to use.
-          demand: window.meanEtcMmDay / maxEtc,
-          etc: window.meanEtcMmDay,
-          kc: window.meanKc,
+          demand: window ? window.meanEtcMmDay / maxEtc : 0.6,
+          etc: window ? window.meanEtcMmDay : null,
+          kc: window ? window.meanKc : null,
         }
-        cursor += share
+        cursor += item.share
         return segment
       })
     }
@@ -386,26 +414,24 @@ function CropAgeCard({ field }: { field: Advisory }) {
       etc: null,
       kc: null,
     }))
-  }, [windows])
+  }, [shares, windows])
 
   const marker = useMemo(() => {
     if (finished) return null
-    if (windows.length > 0 && seasonDays) {
+    if (shares) {
       let cursor = 0
-      for (const window of windows) {
-        const days = Math.max(1, window.days)
-        if (window.stage === current) {
-          const within = Math.max(0, Math.min(1, (field.ageDays - cursor) / days))
-          return ((cursor + within * days) / seasonDays) * 100
+      for (const item of shares) {
+        if (item.key === current) {
+          return Math.min(100, Math.max(0, cursor + progress * item.share))
         }
-        cursor += days
+        cursor += item.share
       }
       return null
     }
     const stage = FALLBACK_STAGES.find((item) => item.key === current)
     if (!stage) return null
     return (stage.from + progress * (stage.to - stage.from)) * 100
-  }, [current, field.ageDays, finished, progress, seasonDays, windows])
+  }, [current, finished, progress, shares])
 
   /**
    * The peak-water interval the blue bar sits over.

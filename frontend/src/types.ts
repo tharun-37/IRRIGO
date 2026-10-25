@@ -273,6 +273,16 @@ export interface StageWindow {
   meanEtcMmDay: number
   meanRainMmDay: number
   grossRequirementMm: number
+  /**
+   * This stage's share of the season in thermal time, from the crop
+   * catalogue's gdd_stage_ends — a function of the crop alone, so every
+   * field of one crop renders the same growth track. Null for fields whose
+   * crop is outside the catalogue; the client falls back to the field's
+   * own replay then.
+   */
+  profileShare?: number | null
+  /** The catalogue's own mean Kc over this stage, companion to profileShare. */
+  profileKc?: number | null
 }
 
 export interface SeasonInfo {
