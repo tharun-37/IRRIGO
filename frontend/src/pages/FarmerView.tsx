@@ -25,11 +25,12 @@
  */
 
 import { useEffect, useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import { AlertGlyph, LeafGlyph } from '../components/ui'
 import CropHealthCheck from '../components/CropHealthCheck'
 import { FieldMap, type MapField, type MapTone } from '../components/FieldMap'
-import { int, num, titleCase } from '../lib/format'
-import type { Advisory, LiveWeather, ScheduleDay } from '../types'
+import { int, num, relativeTime, titleCase } from '../lib/format'
+import type { Advisory, LiveWeather, ScheduleDay, Telemetry } from '../types'
 
 type Band = 'dry' | 'good' | 'wet' | 'rest' | 'none'
 
@@ -327,6 +328,14 @@ function CropAgeCard({ field }: { field: Advisory }) {
       : null
   const windows = useMemo(() => field.season?.stageWindows ?? [], [field.season])
 
+  /** The current stage's water rate, straight from the engine's stage plan. */
+  const currentWindow = useMemo(
+    () => windows.find((window) => window.stage === current) ?? null,
+    [current, windows],
+  )
+  const stageKc = currentWindow ? currentWindow.meanKc : field.water.kc
+  const stageEtc = currentWindow ? currentWindow.meanEtcMmDay : field.water.etcMmDay
+
   const segments = useMemo(() => {
     if (windows.length > 0) {
       const total = windows.reduce((sum, window) => sum + Math.max(1, window.days), 0)
@@ -455,14 +464,10 @@ function CropAgeCard({ field }: { field: Advisory }) {
         </div>
 
         <dl className="panel mt-2 grid grid-cols-3 gap-2 px-3 py-1.5">
-          <MiniStat label="Sun today" value={`${num(field.water.et0MmDay, 1)} mm`} />
+          <MiniStat label="Stage Kc" value={finished ? '—' : num(stageKc, 2)} />
           <MiniStat
-            label="Season"
-            value={
-              seasonDays
-                ? `${field.ageDays}/${seasonDays} d`
-                : `day ${field.ageDays}`
-            }
+            label="Stage water"
+            value={finished ? '—' : `${num(stageEtc, 1)} mm/d`}
           />
           <MiniStat
             label="Season water"
@@ -473,6 +478,20 @@ function CropAgeCard({ field }: { field: Advisory }) {
             }
           />
         </dl>
+
+        {/* The connection this card exists to make visible: the age is not a
+            fact to admire, it is the water plan's driver. Each stage carries
+            its own crop coefficient, so the same field drinks a different
+            amount as it grows — and two crops of the same age drink different
+            amounts. This is why one cotton field and another, sown weeks
+            apart, get different pump minutes. */}
+        <p className="mt-1.5 text-[11px] leading-snug text-slate-700">
+          {finished
+            ? 'Season over — the plan stops watering a harvested crop.'
+            : field.ageDays < 10
+              ? `Young crop: stage Kc ${num(stageKc, 2)} keeps early watering small until roots reach deeper.`
+              : `Growth drives water: this stage's Kc ${num(stageKc, 2)} is why the plan asks for ${num(stageEtc, 1)} mm/day.`}
+        </p>
       </div>
     </section>
   )
@@ -489,31 +508,45 @@ function MiniStat({ label, value }: { label: string; value: string }) {
   )
 }
 
-/** The next seven days, as the days the plan actually applies water. */
+/**
+ * The next seven days, as the plan actually applies water.
+ *
+ * The bars are the plan's own replay — days the engine schedules an
+ * application, at the depth it scheduled. Nothing is fabricated into an
+ * empty-looking week: a gap means the plan scheduled nothing, and the text
+ * says which it is.
+ *
+ * With a live node attached, the week bends to what the probe reads, in one
+ * place only: today. The plan's replay opens the soil at a historical
+ * depletion; the node reports what is really in the ground now. If the probe
+ * reads the band the plan would water from, today's bar is marked held —
+ * water the plan wanted today is not needed on the moisture the node
+ * measured — and the day the plan expects it moves is not invented either;
+ * the node's next decision at the next POST settles it.
+ */
 function WeekCard({ field }: { field: Advisory }) {
-  let days = (field.schedule ?? []).slice(0, 7)
-  if (days.length === 0) {
-    const today = new Date()
-    days = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(today)
-      d.setDate(today.getDate() + i)
-      const applyMm = i === 0 && field.recommendation.shouldIrrigate ? Number((field.water.etcMmDay || 5).toFixed(1)) : i === 2 ? 4.5 : i === 4 ? 3.5 : 0
-      return {
-        date: d.toISOString().split('T')[0],
-        dayOffset: i,
-        applyMm,
-        grossMm: applyMm,
-        stage: field.stage,
-      } satisfies ScheduleDay
-    })
-  } else if (!days.some((d) => d.applyMm > 0)) {
-    days = days.map((d, i) => ({
-      ...d,
-      applyMm: i === 0 ? Number((field.water.etcMmDay || 4).toFixed(1)) : i === 3 ? 3.2 : 0,
-    }))
-  }
-  const peak = Math.max(1, ...days.map((day) => day.applyMm))
+  const days = (field.schedule ?? []).slice(0, 7)
   const planned = days.some((day) => day.applyMm > 0)
+
+  // Today's hold decision, from the node's own reading. Same band rule the
+  // decision model uses (dry floor 38% — see Dashboard's liveMoistureBand):
+  // hold only when the node is fresh AND the soil is not in the dry band.
+  // When the season is over, there is nothing to hold.
+  const liveHoldsToday =
+    field.live?.isLive &&
+    field.stage !== 'post_harvest' &&
+    field.stage !== 'harvest' &&
+    field.sensors.soilMoisture != null &&
+    Number.isFinite(field.sensors.soilMoisture) &&
+    field.sensors.soilMoisture >= 38
+
+  // Day-0 minutes from the decision's own runtime-to-depth ratio, so the
+  // bar's label and today's action card cannot disagree.
+  const depthToday = field.recommendation.finalDepthMm ?? field.recommendation.depthMm
+  const secondsPerMm =
+    depthToday > 0 ? field.recommendation.durationSeconds / depthToday : 0
+
+  const peak = Math.max(1, ...days.map((day) => day.applyMm))
 
   return (
     <section
@@ -521,67 +554,97 @@ function WeekCard({ field }: { field: Advisory }) {
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <header className="flex shrink-0 items-baseline justify-between gap-3 px-4 pt-2.5">
         <h2 className="text-[13px] font-semibold tracking-tight text-ink-900">Next 7 days</h2>
-        <span className="text-[11px] text-slate-700">water planned</span>
+        <span className="text-[11px] text-slate-700">plan · {field.crop.toLowerCase()}</span>
       </header>
       <div className="flex min-h-0 flex-1 gap-1.5 px-4 pb-1.5 pt-2">
-        {days.map((day) => {
-          const minutes = Math.round((day.applyMm / 10.8) * 90) || (day.applyMm > 0 ? Math.round(day.applyMm * 8.33) : 0)
-          return (
-            <div key={day.dayOffset} className="flex min-w-0 flex-1 flex-col items-center">
-              <span className="tnum flex h-4 shrink-0 items-end text-[10px] font-semibold text-slate-700">
-                {day.applyMm > 0 ? `${minutes}m` : 'No water'}
-              </span>
-              <div className="flex w-full flex-1 items-end">
-                <span
-                  className={`w-full rounded-t-[3px] ${
-                    day.applyMm > 0 ? 'bg-brand-500' : 'bg-ink-100'
-                  }`}
-                  style={{
-                    height: day.applyMm > 0 ? `${Math.max(12, (day.applyMm / peak) * 100)}%` : '3px',
-                  }}
-                />
-              </div>
-              <span className="mt-1 shrink-0 text-[11px] font-medium uppercase tracking-[0.04em] text-slate-700">
-                {weekday(day.date)}
-              </span>
-            </div>
-          )
-        })}
+        {days.length === 0 ? (
+          <div className="flex-1 self-center text-center text-[12px] text-ink-400">
+            Nothing scheduled in the plan week.
+          </div>
+        ) : (
+          days.map((day) => {
+              const isToday = day.dayOffset === 0
+              const held = isToday && liveHoldsToday
+              const minutes =
+                isToday && secondsPerMm > 0
+                  ? Math.round(day.applyMm * secondsPerMm / 60)
+                  : Math.round(day.applyMm * 8.33)
+              return (
+                <div key={day.dayOffset} className="flex min-w-0 flex-1 flex-col items-center">
+                  <span className={`tnum flex h-4 shrink-0 items-end text-[10px] font-semibold ${
+                    held ? 'text-[#b45309]' : 'text-slate-700'
+                  }`}>
+                    {day.applyMm > 0 ? (held ? 'held' : `${minutes}m`) : ''}
+                  </span>
+                  <div className="flex w-full flex-1 items-end">
+                    <span
+                      className={`w-full rounded-t-[3px] ${
+                        held
+                          ? 'bg-gradient-to-b from-[#fbbf24] to-[#ea580c] opacity-60'
+                          : day.applyMm > 0
+                            ? 'bg-brand-500'
+                            : 'bg-ink-100'
+                      }`}
+                      style={{
+                        height: day.applyMm > 0 ? `${Math.max(12, (day.applyMm / peak) * 100)}%` : '3px',
+                      }}
+                    />
+                  </div>
+                  <span className={`mt-1 shrink-0 text-[11px] font-medium uppercase tracking-[0.04em] ${
+                    isToday ? 'text-brand-700 font-semibold' : 'text-slate-700'
+                  }`}>
+                    {isToday ? 'Today' : weekday(day.date)}
+                  </span>
+                </div>
+              )
+            }))}
       </div>
       <p className="shrink-0 px-4 pb-2 text-[11px] leading-snug text-slate-700">
         {planned
-          ? `Water planned this week.`
-          : 'No water.'}
+          ? liveHoldsToday
+            ? 'The node reads wetter than the plan assumed — the plan is waiting, and the next schedule still stands for the later days.'
+            : 'The plan week, from the engine schedule.'
+          : 'The plan schedules no water this week — the soil and rain in the replay carry the crop.'}
       </p>
       </div>
     </section>
   )
 }
 
-/** How much plantable water is left, and the four figures behind the ring. */
+/**
+ * The soil, as one number, and the watering plan it drives.
+ *
+ * The ring is the soil-moisture percentage — the same reading that decides
+ * irrigation on the node — not a volume: a farmer reading their probe thinks
+ * "thirty-one percent", not "twelve millimetres". When a live node is fresh
+ * the ring shows the node's own measurement; otherwise the plan-derived
+ * value. The right column connects it to the plan: when the crop reaches
+ * stress, where the field stands now, and today's pump minutes.
+ */
 function SoilWaterCard({
   field,
-  remaining,
   band,
 }: {
   field: Advisory
-  remaining: number
   band: Band
 }) {
   const style = BAND_STYLE[band]
   const radius = 58
   const circumference = 2 * Math.PI * radius
-  let fill = Math.max(0, Math.min(1, remaining))
-  if (fill >= 0.999) {
-    fill = 0.92
-  }
+  // The ring's fill is the moisture itself, on the probe's 0–100% scale.
+  const moisture = Math.max(0, Math.min(100, Number(field.sensors.soilMoisture) || 0))
+  const fill = moisture / 100
+  const finishedSoil = field.stage === 'post_harvest' || field.stage === 'harvest'
+  const daysToStress = field.water.daysUntilStress
+  const minutes = Math.max(1, Math.round(field.recommendation.durationSeconds / 60))
+  const watering = field.recommendation.durationSeconds > 0
 
   return (
     <section className="card h-full min-h-0 flex-col overflow-hidden" aria-label="Soil water">
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <header className="flex shrink-0 items-baseline justify-between gap-2 px-4 pt-2">
         <h2 className="text-[11px] font-bold uppercase tracking-[0.1em] text-ink-600">
-          Soil water
+          Soil moisture
         </h2>
         <span className="flex items-baseline gap-1.5 text-[11px] text-slate-700">
           {field.live?.isLive && (
@@ -594,7 +657,6 @@ function SoilWaterCard({
               Live node
             </span>
           )}
-          {num(field.sensors.soilMoisture, 0)}% moisture (vol.)
         </span>
       </header>
 
@@ -621,33 +683,56 @@ function SoilWaterCard({
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className={`tnum text-[clamp(1rem,5cqw,1.35rem)] font-semibold leading-none ${style.text}`}>
-              {Math.round(fill * 100)}%
+              {Math.round(moisture)}%
             </span>
             <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-ink-400">
-              left
+              moisture
             </span>
           </div>
         </div>
 
         <dl className="panel flex min-w-0 flex-1 flex-col justify-between gap-1 px-3 py-2 text-[11px] text-ink-700">
-          <Line label="Used" value={`${num(field.water.depletionMm)} mm`} />
-          <Line label="Available" value={`${num(field.water.tawMm)} mm`} />
-          <Line label="Refill at" value={`${num(field.water.rawMm)} mm`} />
-          <Line label="Roots" value={`${num(field.water.rootDepthCm, 0)} cm`} />
+          <Line
+            label="Stress"
+            value={finishedSoil
+              ? 'season over'
+              : daysToStress != null && daysToStress > 0
+                ? `in ${Math.round(daysToStress)} d`
+                : 'now'}
+          />
+          <Line
+            label="Stage"
+            value={titleCase(String(field.stageLabel ?? '').replace(/\(.*?\)/g, '').trim())}
+          />
+          <Line
+            label="Plan today"
+            value={finishedSoil ? 'none' : watering ? `${minutes} min pump` : 'rest'}
+          />
+          {field.live?.valveOpen != null && (
+            <Line label="Valve" value={field.live.valveOpen ? 'OPEN' : 'CLOSED'} />
+          )}
         </dl>
       </div>
 
       <p className="shrink-0 px-4 pb-2 text-[11px] leading-snug text-slate-700">
         {band === 'rest'
           ? 'No crop in the ground, so soil wetness does not drive a decision here.'
-          : `${num(field.sensors.soilMoisture, 0)}% of soil volume is water. ${Math.round(fill * 100)}% of usable water left. Pump on at refill point.`}
+          : `${num(field.sensors.soilMoisture, 0)}% soil moisture — ${
+              field.live?.isLive ? 'the node’s own probe' : 'the plan’s estimate'
+            }. The plan waters before it reaches stress.`}
       </p>
       </div>
     </section>
   )
 }
 
-function Line({ label, value }: { label: string; value: string }) {
+function Line({
+  label,
+  value,
+}: {
+  label: string
+  value: ReactNode
+}) {
   return (
     <div className="flex items-baseline justify-between gap-2">
       <dt className="shrink-0 text-ink-500">{label}</dt>
@@ -696,11 +781,32 @@ function LiveNodeCard({ field }: { field: Advisory }) {
           {field.sensors.rssiDbm != null && (
             <Line label="Wi-Fi" value={`${field.sensors.rssiDbm} dBm`} />
           )}
+          {live?.valveOpen != null && (
+            <Line
+              label="Valve"
+              value={
+                live.valveOpen ? (
+                  <span
+                    aria-hidden="true"
+                    className="inline-flex items-center gap-1 font-bold text-brand-700"
+                  >
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-500 opacity-75" />
+                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brand-600" />
+                    </span>
+                    OPEN
+                  </span>
+                ) : (
+                  <span className="font-semibold text-ink-500">CLOSED</span>
+                )
+              }
+            />
+          )}
         </dl>
       </div>
       <p className="shrink-0 px-4 pb-2 text-[11px] leading-snug text-slate-700">
-        ESP32 {live?.deviceId} posts every ~10 s. Soil water, air and light above are the
-        node's own measurements, not the plan's estimates.
+        ESP32 {live?.deviceId} posts every ~10 s{live?.valveOpen != null ? ' and reports its valve' : ''}. Soil
+        water, air and light above are the node's own measurements, not the plan's estimates.
       </p>
     </section>
   )
@@ -767,6 +873,7 @@ export function FarmerView({
   band,
   chips,
   live,
+  node,
   onSelect,
 }: {
   field: Advisory
@@ -775,6 +882,8 @@ export function FarmerView({
   band: Band
   chips: FarmerChip[]
   live: LiveWeather | null
+  /** The node's freshest own POST for this field, from the 10 s telemetry poll. */
+  node?: Telemetry | null
   onSelect: (fieldId: string) => void
 }) {
   const watered = depth > 0
@@ -928,6 +1037,37 @@ export function FarmerView({
                 {sky}
               </p>
 
+              {/* The node's own state, the moment it last told the backend — the
+                  closed loop, as the node reports it, on the card that issued
+                  the plan it is running. Shown only while the node is fresh. */}
+              {node && (
+                <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 rounded-panel bg-white/70 px-2.5 py-1.5 text-[12px] text-ink-700">
+                  <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-emerald-800">
+                    ESP32 node
+                  </span>
+                  <span className="tnum text-ink-700">
+                    posted{' '}
+                    {relativeTime(node.recordedAt)}
+                  </span>
+                  {node.valveOpen != null && (
+                    <span className="tnum">
+                      · valve{' '}
+                      <span
+                        className={`font-bold ${
+                          node.valveOpen ? 'text-brand-700' : 'text-ink-500'
+                        }`}
+                      >
+                        {node.valveOpen ? 'OPEN' : 'CLOSED'}
+                      </span>
+                      {node.valveOpen &&
+                        watered &&
+                        field.live?.isLive &&
+                        ' · running this plan'}
+                    </span>
+                  )}
+                </p>
+              )}
+
               <div className="mt-auto grid grid-cols-2 gap-2 pt-1.5">
                 <button
                   type="button"
@@ -1014,7 +1154,7 @@ export function FarmerView({
                 : 'grid min-h-0 flex-1 gap-2.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)] xl:[flex:0_1_calc((100%_-_30px)/4)] xl:min-h-[auto]'
             }
           >
-            <SoilWaterCard field={field} remaining={1 - field.water.depletionFraction} band={band} />
+            <SoilWaterCard field={field} band={band} />
             <YieldCard chips={chips} />
             {field.live?.isLive && <LiveNodeCard field={field} />}
           </div>

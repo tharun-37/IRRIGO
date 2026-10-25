@@ -76,6 +76,49 @@ function stageKey(field: Advisory): string {
 const ACRE_M2 = 4046.86
 
 /**
+ * The moisture band the decision model works in.
+ *
+ * Backend's `MOISTURE_BAND = (38, 62)` (`backend/ml/inference.py`) — a reading
+ * below 38% is the band the model treats as dry. Restated here so the visible
+ * live-soil adjustments land inside the same bands the inference used, purely
+ * by quoting the same constant.
+ */
+const MOISTURE_DRY_PCT = 38
+/**
+ * Near-wilting floor for the live stress curve: stress is 1 at 12% by volume
+ * and 0 at the dry band. A bench probe rarely reads below 12; the taper from
+ * there into the model's dry band is the documented assumption, not a
+ * calibration claim.
+ */
+const MOISTURE_WILTING_PCT = 12
+
+/**
+ * The node's own moisture band, by the decision model's rule.
+ */
+function liveMoistureBand(soilMoisture: number): 'dry' | 'optimal' | 'wet' {
+  if (soilMoisture < MOISTURE_DRY_PCT) return 'dry'
+  if (soilMoisture > 62) return 'wet'
+  return 'optimal'
+}
+
+/**
+ * Live water-stress coefficient, FAO-33's Ks, from the node's own probe.
+ *
+ * 1 means fully supplied (the reading is inside or above the model's optimal
+ * band), falling linearly to 0 at the wilting floor. Returns null when the
+ * node is not live or has no reading — no measurement, no adjustment.
+ */
+function liveWaterStress(field: Advisory): number | null {
+  if (!field.live?.isLive) return null
+  const moisture = field.sensors.soilMoisture
+  if (typeof moisture !== 'number' || !Number.isFinite(moisture)) return null
+  return Math.max(
+    0,
+    Math.min(1, (moisture - MOISTURE_WILTING_PCT) / (MOISTURE_DRY_PCT - MOISTURE_WILTING_PCT)),
+  )
+}
+
+/**
  * The fertilizer a shortfall turns into, in the product an operator buys.
  *
  * `fraction` is the share of the nutrient in the product, so the dose in kg/ha
@@ -138,6 +181,53 @@ function pesticideAdvice(
     return { label: 'Monitor closely', tone: 'warn' }
   }
   return { label: 'No pesticide needed', tone: 'healthy' }
+}
+
+/**
+ * One first remedy, per disease class the decision model labels.
+ *
+ * The class names are the decision bundle's own (`Root_Rot`, `Rust`, … — the
+ * word-list lives in `ml/artifacts/disease_thresholds.json`). The remedies are
+ * general agronomic practice, deliberately without doses or brands — the same
+ * rule the crop-health treatment text follows: what to do first, and when to
+ * call the officer, never a prescription.
+ */
+const DISEASE_REMEDIES: Record<string, string> = {
+  Root_Rot:
+    'Stop watering for 2–3 days to let the soil drain, clear standing water, and treat seed before the next sowing.',
+  Powdery_Mildew:
+    'Spray a sulfur-based fungicide at first white patches, and avoid watering the leaves in the evening.',
+  Early_Blight:
+    'Remove the worst leaves and spray a protectant fungicide (mancozeb type); water at the roots, not the leaves.',
+  Rust:
+    'Spray a rust-active fungicide (propiconazole type) at the first pustules; keep leaves dry overnight.',
+  Bacterial_Leaf_Spot:
+    'Spray a copper-based product early, keep the foliage dry, and do not walk the field while leaves are wet.',
+}
+
+/** `Root_Rot` → `Root rot`, the way a farmer says it. */
+function diseaseName(raw: string): string {
+  return titleCase(raw.replace(/_/g, ' '))
+}
+
+/** Remedy for a class label, matched without regard to case or underscores. */
+function remedyFor(label: string): string | undefined {
+  const key = label.toLowerCase().replace(/_/g, ' ')
+  const found = Object.entries(DISEASE_REMEDIES).find(
+    ([name]) => name.toLowerCase().replace(/_/g, ' ') === key,
+  )
+  return found?.[1]
+}
+
+/** The likeliest named disease above the "healthy" remainder, if any. */
+function topDisease(
+  risk: Advisory['risk'],
+): { name: string; probability: number } | null {
+  const entries = Object.entries(risk.diseaseProbabilities ?? {})
+    .filter(([label, probability]) => label !== 'Healthy' && probability > 0.08)
+    .sort((a, b) => b[1] - a[1])
+  const top = entries[0]
+  return top ? { name: top[0], probability: top[1] } : null
 }
 
 /**
@@ -225,19 +315,33 @@ function farmerChips(field: Advisory): FarmerChip[] {
 
   const sprayChip: FarmerChip =
     pesticide.tone === 'alert'
-      ? {
-          key: 'spray',
-          title: 'Spray fungicide',
-          detail: 'Disease risk is high. Treat today.',
-          tone: 'alert',
-        }
-      : pesticide.tone === 'warn'
-        ? {
+      ? (() => {
+          const disease = topDisease(field.risk)
+          const remedy = disease ? remedyFor(disease.name) : undefined
+          return {
             key: 'spray',
-            title: 'Check for disease',
-            detail: 'Look for spots or rust before spraying.',
-            tone: 'warn',
+            title: disease
+              ? `Spray now — ${diseaseName(disease.name)}`
+              : 'Spray fungicide',
+            detail: remedy
+              ? `${remedy} (model says ${Math.round(disease!.probability * 100)}%.)`
+              : 'Disease risk is high. Treat today.',
+            tone: 'alert',
           }
+        })()
+      : pesticide.tone === 'warn'
+        ? (() => {
+            const disease = topDisease(field.risk)
+            const remedy = disease ? remedyFor(disease.name) : undefined
+            return {
+              key: 'spray',
+              title: disease ? `Watch for ${diseaseName(disease.name)}` : 'Check for disease',
+              detail: remedy
+                ? `${remedy} Photograph the leaf if it worsens.`
+                : 'Look for spots or rust before spraying.',
+              tone: 'warn',
+            }
+          })()
         : {
             key: 'spray',
             title: 'No spray today',
@@ -245,18 +349,59 @@ function farmerChips(field: Advisory): FarmerChip[] {
             tone: 'healthy',
           }
 
-  // Rough yield estimate: acres × 5 quintal/acre
-  const fieldAcres = field.areaM2 / ACRE_M2
-  const modelled = field.risk.yieldModelled ?? false
-  const quintalAcreModelled = (field.risk.yieldTPerHa ?? 0) * 4.047
-  const quintalAcre = modelled ? quintalAcreModelled : 5
-  const totalQuintal = modelled ? quintalAcreModelled * fieldAcres : fieldAcres * 5
-  const isBarleyGeneric = !modelled && field.crop?.toLowerCase().includes('barley')
-  const yieldChip: FarmerChip = {
-    key: 'yield',
-    title: modelled ? 'Expected yield' : 'Rough yield estimate',
-    detail: `${int(totalQuintal)} quintal total · ${num(quintalAcre, 0)} quintal/acre${isBarleyGeneric ? ' (rough)' : ''}`,
-    tone: isBarleyGeneric ? 'warn' : 'neutral',
+  /*
+   * Yield, by the best estimate each field can honestly carry.
+   *
+   * A modelled crop uses the trained yield model's number as-is. An
+   * unmodelled crop uses FAO-33's water response off the engine's own
+   * catalogue — potential yield × (1 − ky × deficit), where the deficit is
+   * the season plan's supply against the crop's stage requirements. That
+   * replaces the old flat "5 quintal/acre" guess, which was a number with no
+   * connection to this field's water at all.
+   *
+   * A live node sharpens either one the same way, only when it is under the
+   * floor: the estimate cannot assume better water supply than the probe
+   * reports today, so today's Ks caps the seasonal supply ratio.
+   */
+  const ky = field.risk.yieldKy ?? 0
+  const potential = field.risk.yieldPotentialTPerHa ?? 0
+  const liveKs = liveWaterStress(field)
+  let tPerHa: number | null = null
+  if ((field.risk.yieldModelled ?? false) && field.risk.yieldTPerHa > 0) {
+    tPerHa = field.risk.yieldTPerHa
+  } else {
+    const requirement = (field.season?.stageWindows ?? []).reduce(
+      (sum, window) => sum + window.grossRequirementMm,
+      0,
+    )
+    const supply = field.season?.seasonGrossMm ?? 0
+    const seasonRatio = requirement > 0 ? Math.min(1, supply / requirement) : 1
+    const effectiveRatio = liveKs !== null ? Math.min(seasonRatio, liveKs) : seasonRatio
+    if (potential > 0 && ky > 0) {
+      tPerHa = potential * Math.max(0, 1 - ky * (1 - effectiveRatio))
+    }
+  }
+  let yieldChip: FarmerChip
+  if (tPerHa !== null) {
+    const fieldAcres = field.areaM2 / ACRE_M2
+    const quintalAcre = tPerHa * 4.047
+    const totalQuintal = quintalAcre * fieldAcres
+    yieldChip = {
+      key: 'yield',
+      title: (field.risk.yieldModelled ?? false) ? 'Expected yield' : 'Water-limited estimate',
+      detail: `${int(totalQuintal)} quintal total · ${num(quintalAcre, 0)} quintal/acre${
+        liveKs !== null && liveKs < 1 ? ' · live soil stress applied' : ''
+      }`,
+      tone: 'neutral',
+    }
+  } else {
+    // No model and no ceiling in the catalogue: say so rather than invent.
+    yieldChip = {
+      key: 'yield',
+      title: 'Yield estimate unavailable',
+      detail: 'This crop is outside the yield model and the catalogue.',
+      tone: 'neutral',
+    }
   }
 
   return [fertilizerChip, sprayChip, yieldChip]
@@ -312,7 +457,7 @@ function farmerFields(fields: Advisory[]): FarmerField[] {
 }
 
 export default function Dashboard() {
-  const { bump, refresh } = useLive()
+  const { bump, refresh, telemetry } = useLive()
   const [fieldId, setFieldId] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
 
@@ -323,6 +468,15 @@ export default function Dashboard() {
   const field = useMemo(
     () => fields.find((item) => item.fieldId === fieldId) ?? fields[0],
     [fields, fieldId],
+  )
+
+  // The node's freshest own POST for the field being read, from the live
+  // telemetry poll (10 s) — faster than the advisor's 15 s, so the valve
+  // state and the node's last-seen time on the action card lead the cards
+  // that wait for the next advisory payload.
+  const node = useMemo(
+    () => (field ? telemetry.find((row) => row.zone === field.fieldId) ?? null : null),
+    [field, telemetry],
   )
 
   // The live sky reading, when a live feed is configured. Polled far less often
@@ -474,6 +628,7 @@ export default function Dashboard() {
               band={soil.band}
               chips={farmerChips(field)}
               live={live.data?.station === field.station ? live.data : null}
+              node={node}
               onSelect={setFieldId}
             />
           </div>

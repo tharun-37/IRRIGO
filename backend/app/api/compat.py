@@ -176,6 +176,11 @@ def _overlay_live(advisory: dict[str, Any]) -> dict[str, Any]:
             sensors[key] = float(value)
     if live["isLive"] and newest.get("rssiDbm") is not None:
         sensors["rssiDbm"] = int(newest["rssiDbm"])
+    # The node's own valve state, when it reports one, rides in the live block.
+    # It is the closed loop seen from the other end: what the actuator is doing
+    # right now, stated by the node rather than assumed by the planner.
+    if live["isLive"] and newest.get("valveOpen") is not None:
+        live["valveOpen"] = bool(newest["valveOpen"])
     advisory["live"] = live
     return advisory
 

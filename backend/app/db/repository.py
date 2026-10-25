@@ -187,8 +187,8 @@ class ReadingRepository:
                     temperature, humidity, soil_moisture, soil_ph, ec,
                     nitrogen, phosphorus, potassium, light_intensity,
                     rainfall, wind_speed, battery_volts, rssi_dbm,
-                    et0_mm_day, crop_age_days, stage, gdd, source
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    et0_mm_day, crop_age_days, stage, gdd, source, valve_open
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     payload["device_id"], payload["zone"],
@@ -201,6 +201,15 @@ class ReadingRepository:
                     payload.get("rssi_dbm"), payload.get("et0_mm_day"),
                     payload.get("crop_age_days"), payload.get("stage"),
                     payload.get("gdd"), payload.get("source", "http"),
+                    # The node's own valve state, when it reports one. It is an
+                    # observation of the actuator, not a decision of ours: the
+                    # closed loop runs on the node, and the dashboard's job is
+                    # to show what the node says it is doing.
+                    (
+                        int(bool(payload["valve_open"]))
+                        if payload.get("valve_open") is not None
+                        else None
+                    ),
                 ),
             )
             return int(cursor.lastrowid or 0)
@@ -500,6 +509,7 @@ def _reading_row(row: sqlite3.Row) -> dict[str, Any]:
         "stage": row["stage"],
         "gdd": row["gdd"],
         "source": row["source"],
+        "valveOpen": None if row["valve_open"] is None else bool(row["valve_open"]),
     }
 
 

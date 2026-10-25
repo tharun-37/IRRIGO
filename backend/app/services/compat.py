@@ -1057,6 +1057,24 @@ class CompatService:
             return 0.0
         return round(float(getattr(parameters, "yield_potential_t_ha", 0.0) or 0.0), 2)
 
+    @staticmethod
+    def _yield_ky(crop: str | None) -> float:
+        """
+        The crop's FAO-33 yield response factor, from the catalogue.
+
+        The dashboard's live-soil yield adjustment multiplies this against how
+        far the node's own reading sits below the moisture band: ky 1.25 (cotton)
+        loses 12.5% of potential yield per 10% of evapotranspiration the water
+        shortfall costs. Zero when unknown, which the client folds to "no live
+        adjustment offered".
+        """
+        if not crop:
+            return 0.0
+        parameters = CROPS.get(crop)
+        if parameters is None:
+            return 0.0
+        return round(float(getattr(parameters, "ky", 0.0) or 0.0), 3)
+
     def _yield_modelled(self, crop: str | None) -> bool:
         """
         Whether the yield model was trained on this crop.
@@ -1313,6 +1331,10 @@ class CompatService:
                 # and the gap against that crop's ceiling would be an artefact
                 # rather than an opportunity.
                 "yieldModelled": self._yield_modelled(event.crop),
+                # FAO-33 ky, the loss coefficient the live-soil adjustment and
+                # the water-limited estimate both multiply. Companion to the
+                # two yield fields above, from the same catalogue entry.
+                "yieldKy": self._yield_ky(event.crop),
                 # The NPK dose the engine asks for, in kg/ha. Without it the
                 # dashboard can only say "nitrogen is low"; with it the advice
                 # is a quantity the operator can actually buy.

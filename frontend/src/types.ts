@@ -42,6 +42,11 @@ export interface Telemetry {
   lightIntensity: number
   batteryVolts: number | null
   rssiDbm: number | null
+  /**
+   * The node's own valve state, when its firmware reports one. Null for rows
+   * that never said — absent is meaningful, not false.
+   */
+  valveOpen?: boolean | null
 }
 
 export interface Recommendation {
@@ -350,6 +355,8 @@ export interface Advisory {
     isLive: boolean
     lastSeenAt?: string
     ageSeconds?: number
+    /** The node's own valve state, when its firmware reports one. */
+    valveOpen?: boolean
   }
   risk: {
     diseaseRisk: string | null
@@ -368,6 +375,8 @@ export interface Advisory {
     yieldTPerHa: number
     /** The crop's potential yield from the engine's catalogue, t/ha. */
     yieldPotentialTPerHa: number
+    /** The crop's FAO-33 yield response factor, from the same catalogue. */
+    yieldKy?: number
     /**
      * Whether the yield model was trained on this crop.
      *

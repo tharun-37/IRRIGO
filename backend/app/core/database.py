@@ -74,7 +74,8 @@ CREATE TABLE IF NOT EXISTS readings (
     crop_age_days     REAL,
     stage             TEXT,
     gdd               REAL,
-    source            TEXT NOT NULL DEFAULT 'http'
+    source            TEXT NOT NULL DEFAULT 'http',
+    valve_open        INTEGER
 );
 
 CREATE INDEX IF NOT EXISTS idx_readings_device_time
@@ -272,6 +273,7 @@ class Database:
                 "crop_age_days": "REAL",
                 "stage": "TEXT",
                 "gdd": "REAL",
+                "valve_open": "INTEGER",
             },
             "crop_health_analyses": {
                 "treatment": "TEXT",

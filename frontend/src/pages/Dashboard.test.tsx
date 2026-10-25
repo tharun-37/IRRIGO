@@ -336,8 +336,8 @@ describe('Field view', () => {
     // The two facts that make each field's answer different are both on screen.
     expect(screen.getByText('Crop age')).toBeTruthy()
     expect(screen.getByText('days old')).toBeTruthy()
-    expect(screen.getByText('Soil water')).toBeTruthy()
-    expect(screen.getByText('Refill at')).toBeTruthy()
+    expect(screen.getByText('Soil moisture')).toBeTruthy()
+    expect(screen.getByText('Plan today')).toBeTruthy()
   })
 
   it('shows the live observation when the feed answers', async () => {
@@ -405,7 +405,8 @@ describe('Field view', () => {
     )
 
     expect(screen.getByText('No fertilizer today')).toBeTruthy()
-    expect(screen.getByText('Check for disease')).toBeTruthy()
+    // The watch chip names the likeliest disease above the healthy remainder.
+    expect(screen.getByText('Watch for Rust')).toBeTruthy()
 
     // 5.4 t/ha is about 22 quintal to the acre, which is how it is sold.
     expect(screen.getByText('Expected yield')).toBeTruthy()
@@ -544,7 +545,7 @@ describe('Field view', () => {
     // of the four headline crops but is cropped on this farm.
     expect(screen.getByRole('button', { name: /^Barley\b/i })).toBeTruthy()
     // And the field view is not rendered underneath it.
-    expect(screen.queryByText('Soil water')).toBeNull()
+    expect(screen.queryByText('Soil moisture')).toBeNull()
     expect(screen.queryByText('Crop age')).toBeNull()
     expect(screen.queryByRole('heading', { name: 'Water today' })).toBeNull()
 
