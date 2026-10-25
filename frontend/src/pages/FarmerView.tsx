@@ -128,6 +128,20 @@ const FALLBACK_STAGES = [
   { key: 'late_season', label: 'Late Season', from: 0.8, to: 1 },
 ] as const
 
+/**
+ * Relative water demand per FAO-56 stage, for the track's colour fallback.
+ *
+ * Used only when a crop has no engine stage windows. It is the shape the
+ * Kc curve implies — the crop drinks little while establishing, most through
+ * development and mid-season, easing off as it ripens — not a computed rate.
+ */
+const FALLBACK_DEMAND: Record<string, number> = {
+  initial: 0.5,
+  development: 0.85,
+  mid_season: 1,
+  late_season: 0.7,
+} as const
+
 /** One sentence, the reason the action is the action. Not a model explanation. */
 function whyLine(field: Advisory, band: Band, watered: boolean): string {
   const crop = field.crop.toLowerCase()
@@ -339,6 +353,7 @@ function CropAgeCard({ field }: { field: Advisory }) {
   const segments = useMemo(() => {
     if (windows.length > 0) {
       const total = windows.reduce((sum, window) => sum + Math.max(1, window.days), 0)
+      const maxEtc = Math.max(...windows.map((window) => window.meanEtcMmDay), 0.001)
       let cursor = 0
       return windows.map((window) => {
         const share = (Math.max(1, window.days) / total) * 100
@@ -347,16 +362,28 @@ function CropAgeCard({ field }: { field: Advisory }) {
           label: titleCase(window.stage),
           start: cursor,
           share,
+          // Relative water demand of this stage, 0–1, by its own ETc against
+          // the thirstiest stage of the same season. This is what colours the
+          // track, not the crop's age.
+          demand: window.meanEtcMmDay / maxEtc,
+          etc: window.meanEtcMmDay,
+          kc: window.meanKc,
         }
         cursor += share
         return segment
       })
     }
+    // No engine windows: the track falls back to the FAO-56 stage shape, and
+    // the colours fall back to the shape that shape implies — early and late
+    // stages drink less than development and mid-season.
     return FALLBACK_STAGES.map((stage) => ({
       key: stage.key,
       label: stage.label,
       start: stage.from * 100,
       share: (stage.to - stage.from) * 100,
+      demand: FALLBACK_DEMAND[stage.key] ?? 0.6,
+      etc: null,
+      kc: null,
     }))
   }, [windows])
 
@@ -408,16 +435,26 @@ function CropAgeCard({ field }: { field: Advisory }) {
           <div className="relative">
             <div className="flex h-3 gap-0.5 overflow-hidden rounded-pill bg-ink-100">
               {segments.map((segment) => {
-                const isCurrent = segment.key === current
-                const past = marker !== null && segment.start + segment.share <= marker
+                // The colour carries the water demand, not the crop's age:
+                // solid blue is the stretch the crop drinks most, the pale
+                // blue the shoulder stages, grey the light drinkers. Where the
+                // crop is is the arrow's job alone.
+                const fill =
+                  segment.demand >= 0.8
+                    ? 'bg-brand-500'
+                    : segment.demand >= 0.55
+                      ? 'bg-brand-300'
+                      : 'bg-ink-200/60'
+                const tip =
+                  segment.etc != null
+                    ? `${segment.label} · ~${num(segment.etc, 1)} mm/day${segment.kc != null ? `, Kc ${num(segment.kc, 2)}` : ''}`
+                    : segment.label
                 return (
                   <div
                     key={segment.key}
-                    title={segment.label}
+                    title={tip}
                     style={{ width: `${segment.share}%` }}
-                    className={
-                      isCurrent ? 'stage-live' : past ? 'bg-brand-100' : 'bg-ink-200/70'
-                    }
+                    className={fill}
                   />
                 )
               })}
@@ -461,6 +498,9 @@ function CropAgeCard({ field }: { field: Advisory }) {
               </span>
             ))}
           </div>
+          <p className="mt-1 text-[10px] leading-none text-ink-400">
+            Blue = the stretch the crop drinks most · arrow = today ({field.ageDays} days)
+          </p>
         </div>
 
         <dl className="panel mt-2 grid grid-cols-3 gap-2 px-3 py-1.5">
