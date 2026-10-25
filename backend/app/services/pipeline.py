@@ -74,6 +74,7 @@ AGREEMENT_LABELS: dict[str, str] = {
     "agree_hold": "Both models agree on hold",
     "v1_conservative": "Decision model more conservative",
     "v2_only": "Requirement model flags unmet demand",
+    "v1_hold": "Nothing due today",
     "not_applicable": "Out of season",
     "model_unavailable": "Model offline",
 }
@@ -392,24 +393,36 @@ class AdvisoryPipeline:
             "action": recommendation.get("action"),
         }
 
+    @staticmethod
+    def _day0_application(advisory: dict[str, Any]) -> float:
+        """The FAO-56 balance's own application scheduled for today, if any."""
+        for day in advisory.get("schedule") or []:
+            if int(day.get("dayOffset", -1)) == 0:
+                return _f(day.get("applyMm"))
+        return 0.0
+
     def _fuse(self, advisory: dict[str, Any], nir: dict[str, Any]) -> dict[str, Any]:
         """
         Reconcile the action model with the requirement model.
 
         The V1 decision stays the primary action — it is calibrated and
-        operator-facing — but the requirement model is allowed to *escalate*: when
-        the decision says hold while the estimator sees a real deficit beyond the
-        trigger, the advisory moves to a scheduled, method-capped application
-        rather than silently ignoring it. The converse is reported, not acted on,
-        because downgrading a calibrated irrigate on the strength of a
-        requirement estimate would trade a wasted irrigation for lost yield.
+        operator-facing — but the requirement model is allowed to *escalate* when
+        it sees water due today that the decision did not call. Escalation is
+        grounded in the FAO-56 balance's own day-0 application, not in the
+        horizon figure: a 14-day requirement is always non-trivial for a crop in
+        season, so treating `predictionMm > trigger` as "water is due today"
+        escalated nearly every in-season hold into a full application,
+        contradicting both the trigger and the week chart the plan produced.
+        The converse is reported, not acted on, because downgrading a calibrated
+        irrigate on the strength of a requirement estimate would trade a wasted
+        irrigation for lost yield.
         """
         prediction = nir.get("predictionMm")
         low, high = (nir.get("intervalMm") or [None, None])[:2]
         v1_should = bool(advisory["recommendation"].get("shouldIrrigate"))
         v1_depth = _f(advisory["recommendation"].get("depthMm"))
         base_status = advisory["status"]
-        single = _f(nir.get("physicsSingleApplicationMm"))
+        day0 = self._day0_application(advisory)
 
         if prediction is None:
             if nir.get("modelPresent"):
@@ -461,16 +474,33 @@ class AdvisoryPipeline:
                         "does not rule the application out."
                     )
                 )
-            else:
+            elif day0 > 0:
+                # The balance begins an application today while the calibrated
+                # decision held: the physics is the escalation's source. The
+                # depth is the scheduled application itself — not the horizon
+                # estimate clamped to it — so the escalation describes exactly
+                # the event the plan put on day 0 and the week chart draws.
                 agreement = "v2_only"
                 final_status = "schedule" if base_status == "hold" else base_status
-                capped = min(prediction, single) if single > 0 else prediction
-                final_depth = round(max(v1_depth, capped), 2)
+                final_depth = day0
                 note = (
-                    f"The requirement model sees {prediction:.0f} mm over the horizon "
-                    f"(90% interval {low:.0f}-{high:.0f} mm) that the decision model "
-                    f"did not call; escalating to a method-capped "
-                    f"{final_depth:.0f} mm application."
+                    f"The FAO-56 balance begins a {day0:.0f} mm application today at "
+                    f"this depletion, which the decision model did not call; the "
+                    f"scheduled application stands."
+                )
+            else:
+                # The horizon requirement is in-season demand spread over the
+                # fortnight the optimiser already scheduled; with no
+                # application on day 0 nothing is due today, and manufacturing
+                # one from a horizon total would redeploy the pump against the
+                # trigger the plan just honoured.
+                agreement = "v1_hold"
+                final_status = base_status
+                final_depth = v1_depth
+                note = (
+                    f"The decision holds and no application is due today: at this "
+                    f"depletion the balance schedules the fortnight's "
+                    f"{prediction:.0f} mm across the horizon rather than on day 0."
                 )
 
         return {
@@ -493,14 +523,17 @@ class AdvisoryPipeline:
         the depth and the field area alone; runtime follows from litres and the
         pump rate. Both are derived here rather than read off the decision so
         that an escalated depth is not displayed next to the un-escalated volume.
+        The rate comes from the advisory itself, which compat priced with the
+        configured setting, so this cannot disagree with the card it lands on.
         """
         recommendation = advisory["recommendation"]
         area = _f(getattr(snap.event, "field_area_m2", 0.0))
         if area <= 0:
             return
+        rate = _f(advisory.get("pumpRateLpm")) or PUMP_RATE_LPM
         litres = max(0.0, depth_mm) * area
         recommendation["volumeLitres"] = round(litres, 1)
-        recommendation["durationSeconds"] = int(round(litres / PUMP_RATE_LPM))
+        recommendation["durationSeconds"] = int(round(litres / rate))
 
     # --- enrichment ------------------------------------------------------
 
@@ -518,7 +551,16 @@ class AdvisoryPipeline:
         original_status = advisory["status"]
         new_status = fusion["finalStatus"]
         advisory["status"] = new_status
-        advisory["recommendation"]["finalDepthMm"] = fusion["finalDepthMm"]
+        recommendation = advisory["recommendation"]
+        final_depth = _f(fusion["finalDepthMm"])
+        recommendation["finalDepthMm"] = fusion["finalDepthMm"]
+        if final_depth > _f(recommendation.get("depthMm")):
+            # An escalation raises the shown application: the recommendation
+            # the reader acts on has to say one thing. `models.v1` above keeps
+            # the pre-fusion decision block, so the models' disagreement stays
+            # inspectable while the primary fields stay coherent.
+            recommendation["shouldIrrigate"] = True
+            recommendation["depthMm"] = fusion["finalDepthMm"]
 
         # Volume and pump runtime must follow the depth actually being shown.
         # The escalation can raise the depth above what the decision model asked

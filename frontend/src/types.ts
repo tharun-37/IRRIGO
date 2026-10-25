@@ -353,6 +353,13 @@ export interface Advisory {
     probability: number
     threshold: number
   }
+  /**
+   * The pump rate (litres/min) every runtime on this card was priced at:
+   * seconds per millimetre = areaM2 / pumpRateLpm, the same volume-over-rate
+   * arithmetic the decision block uses. Set so a held-today field can still
+   * price its week's pump bars with the decision's own maths.
+   */
+  pumpRateLpm?: number
   water: {
     et0MmDay: number
     etcMmDay: number

@@ -662,10 +662,18 @@ function WeekCard({ field }: { field: Advisory }) {
   const weekTotalNeed = days.reduce((sum, day) => sum + (day.needMm ?? 0), 0)
 
   // Pump-day minutes from the decision's own runtime-to-depth ratio, so any
-  // bar's label and today's action card cannot disagree.
+  // bar's label and today's action card cannot disagree. When the decision
+  // holds today (its own depth is 0), price the rate the card documents:
+  // seconds per millimetre is area over pump rate, the same volume-over-rate
+  // maths — not a relic constant from the old 1000 m2 bench size.
   const depthToday = field.recommendation.finalDepthMm ?? field.recommendation.depthMm
+  const rate = field.pumpRateLpm
   const secondsPerMm =
-    depthToday > 0 ? field.recommendation.durationSeconds / depthToday : 0
+    depthToday > 0
+      ? field.recommendation.durationSeconds / depthToday
+      : rate && rate > 0
+        ? field.areaM2 / rate
+        : 0
 
   const peak = Math.max(
     5,
@@ -689,11 +697,12 @@ function WeekCard({ field }: { field: Advisory }) {
               need > 0.05 ? `${Math.max(6, (need / peak) * 100)}%` : '3px'
             const pumpHeight =
               day.applyMm > 0 ? `${Math.max(6, (day.applyMm / peak) * 100)}%` : undefined
-            const minutes = Math.round(day.applyMm * (secondsPerMm > 0 ? secondsPerMm : 8.33) / 60)
+            const minutes =
+              secondsPerMm > 0 ? Math.round((day.applyMm * secondsPerMm) / 60) : 0
             return (
               <div key={day.dayOffset} className="flex min-w-0 flex-1 flex-col items-center">
                 <span className="tnum flex h-4 shrink-0 items-end text-[10px] font-semibold text-slate-700">
-                  {day.applyMm > 0 ? `${minutes}m` : ''}
+                  {day.applyMm > 0 && minutes > 0 ? `${minutes}m` : ''}
                 </span>
                 <div
                   className="relative w-full flex-1"
@@ -1009,7 +1018,7 @@ export function FarmerView({
   band: Band
   chips: FarmerChip[]
   live: LiveWeather | null
-  /** The node's freshest own POST for this field, from the 10 s telemetry poll. */
+  /** The node's freshest own POST for this field, from the 1 s telemetry poll. */
   node?: Telemetry | null
   onSelect: (fieldId: string) => void
 }) {

@@ -457,18 +457,62 @@ def test_advisor_fields_get_different_amounts(client):
     same reason.
 
     The seeded registry holds a young paddy, two mid-season cereals and a
-    late-season cotton on four different soils and methods. Their depths are
-    driven by crop coefficient against days of growth and by how much water the
-    soil can hold, so an identical answer across all four would mean one of those
-    inputs had stopped reaching the model. Fields whose plan starts from a fresh
-    node probe are exempt: the probe is another legitimate input, and two
-    different fields may well need the same depth from it.
+    late-season cotton on four different soils and methods. Their application
+    calendars are driven by crop coefficient against days of growth and by how
+    much water the soil can hold, so identical calendars across all four would
+    mean one of those inputs had stopped reaching the plan. Today's depth is
+    exempt in the boring direction: on a day no field's balance begins an
+    application, the honest depth is zero for every field — fusion must not
+    manufacture differentiated numbers to break the tie.
     """
     body = client.get("/api/advisor").json()
     fields = [field for field in body["fields"] if field.get("plannedFrom") == "replay"]
-    depths = {field["fieldId"]: field["recommendation"]["finalDepthMm"] for field in fields}
+    calendars = {
+        field["fieldId"]: tuple(
+            (day["dayOffset"], day["applyMm"])
+            for day in field.get("schedule") or []
+            if day["applyMm"] > 0
+        )
+        for field in fields
+    }
+    requirements = {
+        field["fieldId"]: round(
+            sum(day.get("needMm") or 0 for day in field.get("schedule") or []), 1
+        )
+        for field in fields
+    }
     assert len(fields) >= 3
-    assert len(set(depths.values())) == len(depths), f"depths collided: {depths}"
+    assert any(calendars.values()), (
+        "the replay scheduled no application for any field this week; the "
+        "fixture's horizon has collapsed"
+    )
+    # Two fields may both hold an empty week for the same honest reason — the
+    # soil buffer still covers the fortnight — so the digest folds in what the
+    # optimiser planned against, the week's own requirement.
+    digests = {
+        field_id: (calendars[field_id], requirements[field_id]) for field_id in calendars
+    }
+    assert len(set(digests.values())) == len(digests), (
+        f"plan digests collided: {digests}"
+    )
+
+    # Where neither the balance nor the decision calls for water today, the
+    # shown depth is zero — not an escalated number cobbled from the horizon.
+    for field in fields:
+        recommendation = field["recommendation"]
+        day0 = next(
+            (
+                day["applyMm"]
+                for day in field.get("schedule") or []
+                if day["dayOffset"] == 0
+            ),
+            0.0,
+        )
+        if not recommendation["shouldIrrigate"] and day0 == 0:
+            assert recommendation["finalDepthMm"] == 0.0, (
+                f"{field['fieldId']} plans nothing today but shows "
+                f"{recommendation['finalDepthMm']} mm"
+            )
 
     ages = {field["fieldId"]: field["ageDays"] for field in fields}
     assert len(set(ages.values())) == len(ages), f"ages collided: {ages}"
@@ -495,7 +539,37 @@ def test_advisor_fields_get_different_amounts(client):
         )
 
 
-def test_fusion_escalates_when_only_the_requirement_model_sees_demand(client):
+def test_fusion_escalates_to_the_plans_day0_application(client):
+    pipeline = client.app.state.pipeline
+    advisory = {
+        "status": "hold",
+        "recommendation": {"shouldIrrigate": False, "depthMm": 0.0},
+        "schedule": [{"dayOffset": 0, "applyMm": 15.0}],
+    }
+    nir = {
+        "modelPresent": True,
+        "predictionMm": 20.0,
+        "intervalMm": [10.0, 30.0],
+        "physicsSingleApplicationMm": 15.0,
+    }
+    fusion = pipeline._fuse(advisory, nir)
+    assert fusion["agreement"] == "v2_only"
+    assert fusion["finalStatus"] == "schedule"
+    # The escalation is the balance's own application for today — the same
+    # event the week chart draws — never a horizon figure clamped to a cap.
+    assert fusion["finalDepthMm"] == 15.0
+
+
+def test_fusion_never_escalates_a_horizon_demand_into_today(client):
+    """
+    A 14-day requirement is in-season demand spread over the fortnight.
+
+    Treating `predictionMm > trigger` as water due today escalated every
+    in-season hold into a full application — against a balance whose own
+    schedule placed nothing on day 0, and with litres and runtime to match.
+    With no day-0 application there is nothing to escalate: the advisory
+    keeps the hold the trigger just honoured.
+    """
     pipeline = client.app.state.pipeline
     advisory = {
         "status": "hold",
@@ -508,10 +582,9 @@ def test_fusion_escalates_when_only_the_requirement_model_sees_demand(client):
         "physicsSingleApplicationMm": 15.0,
     }
     fusion = pipeline._fuse(advisory, nir)
-    assert fusion["agreement"] == "v2_only"
-    assert fusion["finalStatus"] == "schedule"
-    # Escalation is capped by what one application can place.
-    assert fusion["finalDepthMm"] == 15.0
+    assert fusion["agreement"] == "v1_hold"
+    assert fusion["finalStatus"] == "hold"
+    assert fusion["finalDepthMm"] == 0.0
 
 
 def test_fusion_agrees_and_holds_without_escalating(client):

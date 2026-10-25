@@ -77,6 +77,14 @@ class Settings(BaseSettings):
     #: backend after changing this for it to take effect.
     irrigation_trigger_fraction: float = 1.0
 
+    #: Pump delivery rate in litres per minute. An event's depth is agronomic
+    #: — millimetres over the whole field — but the runtime the operator acts
+    #: on is volume over rate: 1 mm over 1 m2 is 1 litre, so minutes = depth x
+    #: area / rate. 12 L/min is V1's bench commissioning rate; size it to the
+    #: pump actually serving the field. Caches key on it alongside the
+    #: trigger, since a pickled schedule carries the runtime its rate implies.
+    pump_rate_lpm: float = 12.0
+
     # --- live weather, Open-Meteo primary / OpenWeather fallback ----------
     #: Open-Meteo needs no key and no account, so the live card works out of
     #: the box. An OpenWeather key, when present in `.env`, turns the keyed

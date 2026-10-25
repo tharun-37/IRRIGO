@@ -94,7 +94,7 @@ SNAPSHOT_MAX_AGE_SECONDS = 900.0
 #: overlay uses the same window for display (`LIVE_SENSOR_WINDOW_SECONDS` in
 #: `api.compat`); keeping them equal is deliberate — a value authoritative
 #: enough to display is authoritative enough to plan from. The bench posts
-#: every ~10 s, so a fresh reading is seconds old, and the plan follows it at
+#: every ~1 s, so a fresh reading is seconds old, and the plan follows it at
 #: every request.
 LIVE_NODE_FRESH_SECONDS = 1800.0
 
@@ -106,6 +106,9 @@ LIVE_NODE_FRESH_SECONDS = 1800.0
 SNAPSHOT_CACHE_FORMAT = "irrigo-snapshots-v2"
 
 #: Controller defaults, matching what V1 commissioned its simulated nodes with.
+#: The pump rate lives here as the fallback for `Settings.pump_rate_lpm`, which
+#: is the operator-facing knob — every runtime figure is priced as volume over
+#: this rate, so a different pump is a different number of minutes.
 PUMP_RATE_LPM = 12.0
 MAX_DEPTH_MM = 40.0
 MIN_DEPTH_MM = 1.0
@@ -336,17 +339,27 @@ class CompatService:
             soil_type=soil_key,
             field_area_m2=float(event.field_area_m2 or 1000.0),
             season_progress=float(np.clip(getattr(plan, "stage_progress", 0.5), 0.0, 1.0)),
-            pump_rate_lpm=PUMP_RATE_LPM,
+            pump_rate_lpm=self._pump_rate_lpm(),
             max_depth_mm=MAX_DEPTH_MM,
             min_depth_mm=MIN_DEPTH_MM,
         )
         return reading, config
 
+    def _pump_rate_lpm(self) -> float:
+        """The pump's delivery rate: the setting wins, the V1 constant falls back."""
+        value = getattr(self.settings, "pump_rate_lpm", None)
+        try:
+            return float(value) if value and float(value) > 0.0 else PUMP_RATE_LPM
+        except (TypeError, ValueError):
+            return PUMP_RATE_LPM
+
     def _decide(
         self, plan: Any, reading: Reading, config: DeviceConfig, history: list[Reading]
     ) -> dict[str, Any]:
         if self._controller is None:
-            return self._fallback_decision(plan, reading)
+            return self._fallback_decision(
+                plan, reading, float(getattr(config, "field_area_m2", 0.0) or 1000.0)
+            )
         # Passing the engine's FAO-56 ET0 matters: the models were trained on
         # FAO-56 values, so feeding the node's radiation-only estimate would be
         # the distribution shift V1 goes out of its way to avoid.
@@ -354,7 +367,9 @@ class CompatService:
             reading, config, history, et0_mm_day=float(plan.et0_mm_day)
         ).to_dict()
 
-    def _fallback_decision(self, plan: Any, reading: Reading) -> dict[str, Any]:
+    def _fallback_decision(
+        self, plan: Any, reading: Reading, area_m2: float = 1000.0
+    ) -> dict[str, Any]:
         """A plan-derived decision, used only when the bundle is missing."""
         should = bool(plan.days_until_stress is not None and plan.days_until_stress <= 0)
         depth = float(getattr(plan.requirement, "single_application_mm", 0.0)) if should else 0.0
@@ -364,8 +379,8 @@ class CompatService:
             "recordedAt": reading.recorded_at.isoformat(timespec="seconds"),
             "shouldIrrigate": should,
             "depthMm": round(depth, 2),
-            "volumeLitres": round(depth * 1000.0, 1),
-            "durationSeconds": int(round(depth * 1000.0 / PUMP_RATE_LPM)),
+            "volumeLitres": round(depth * area_m2, 1),
+            "durationSeconds": int(round(depth * area_m2 / self._pump_rate_lpm())),
             "action": "MODERATE_IRRIGATION" if should else "NO_IRRIGATION",
             "diseaseRisk": "Unknown",
             "diseaseConfidence": 0.0,
@@ -479,8 +494,11 @@ class CompatService:
                 str(SEASON_MAX_DAYS),
                 # The trigger fraction shapes the pickled schedule itself, so
                 # changing `.env` must invalidate the disk cache or a restart
-                # would serve plans computed at the previous trigger.
+                # would serve plans computed at the previous trigger. The pump
+                # rate is in the same position: the pickled decisions carry
+                # runtimes priced with it.
                 str(getattr(self.settings, "irrigation_trigger_fraction", "")),
+                str(getattr(self.settings, "pump_rate_lpm", "")),
             ]
         )
         digest = hashlib.sha1()
@@ -1412,8 +1430,8 @@ class CompatService:
         on quantities the firmware gained later — unsensed gaps fall back to
         the plan-derived `base` value, the same carry-forward rule ingest
         applies. Spacing is the posting cadence, not a calendar day; that is
-        the honest shape of a 10 s bench deployment and matches the ingest
-        path's history exactly.
+        the honest shape of a second-scale bench deployment and matches the
+        ingest path's history exactly.
         """
         recent: list[Reading] = []
         try:
@@ -1514,8 +1532,11 @@ class CompatService:
         # decision and the schedule have to agree: the same optimiser that
         # combined the measured soil, the crop curve and the forecast into "18
         # mm today" cannot let the decision block say "hold". The factors are
-        # re-priced off the day-0 event the engine scheduled, so the action
-        # card, the week chart and the pump command describe one event.
+        # re-priced off the day-0 event the engine scheduled, at the field's
+        # real area and pump rate — 1 mm over 1 m2 is 1 litre, so the runtime
+        # is volume over rate. The old depth x 1000 priced every field as if
+        # it were V1's bench size, which is how a 2-acre field was told to run
+        # for a quarter acre's minutes.
         if state_plan is not plan:
             today_events = [
                 scheduled
@@ -1525,14 +1546,14 @@ class CompatService:
             ]
             if today_events:
                 event_depth = float(getattr(today_events[0], "apply_mm", 0.0))
+                area = float(event.field_area_m2 or 1000.0)
+                rate = self._pump_rate_lpm()
                 decision = {
                     **decision,
                     "shouldIrrigate": True,
                     "depthMm": round(event_depth, 2),
-                    "volumeLitres": round(
-                        event_depth * float(event.field_area_m2 or 1000.0) / 10.0, 1
-                    ),
-                    "durationSeconds": int(round(event_depth * 1000.0 / PUMP_RATE_LPM)),
+                    "volumeLitres": round(event_depth * area, 1),
+                    "durationSeconds": int(round(event_depth * area / rate)),
                 }
                 explanation = list(decision.get("explanation") or [])
                 explanation.append(
@@ -1804,6 +1825,11 @@ class CompatService:
                 "probability": self._probability(decision, "irrigateProbability"),
                 "threshold": self._probability(decision, "irrigateThreshold"),
             },
+            # The pump rate every runtime on this card was priced at. The reader
+            # needs it to price any plan bar the decision does not own today:
+            # seconds per millimetre = area / rate, the same volume-over-rate
+            # arithmetic the decision block uses.
+            "pumpRateLpm": self._pump_rate_lpm(),
             "water": {
                 "et0MmDay": round(et0, 2),
                 "etcMmDay": round(etc, 2),

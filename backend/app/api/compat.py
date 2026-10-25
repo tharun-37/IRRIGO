@@ -120,7 +120,7 @@ def telemetry(request: Request, body: dict[str, Any] | None = None) -> dict[str,
 
 
 #: How long a node's own reading stays authoritative for its field's `sensors`.
-#: The bench posts every ~10 s; the window has to outlast a move or a couple of
+#: The bench posts every ~1 s; the window has to outlast a move or a couple of
 #: dropped samples, not a full outage — past it the advisory falls back to the
 #: plan-derived values and says so in its `live` block.
 LIVE_SENSOR_WINDOW_SECONDS = 1800.0
