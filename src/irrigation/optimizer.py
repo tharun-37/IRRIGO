@@ -96,6 +96,13 @@ class Schedule:
     infeasible: bool = False
     requirement_insufficient: bool = False
     notes: list[str] = field(default_factory=list)
+    #: The horizon's daily demand (Kc x ET0, the crop's own curve) and the
+    #: expected rain credited to each day, exactly as the search saw them.
+    #: Recorded so the schedule can be rendered as a week of requirements and
+    #: events rather than only events: a week in which the optimiser correctly
+    #: schedules nothing is not an empty week, the crop still drinks daily.
+    daily_demand_mm: list[float] = field(default_factory=list)
+    daily_rain_mm: list[float] = field(default_factory=list)
 
     def lines(self) -> list[str]:
         out = [f"  schedule: {self.total_events} event(s), "
@@ -195,7 +202,7 @@ def optimise(
     ))
     depths = _depth_grid(cap)
     trigger = raw_mm * stress_fraction_of_raw
-    return _search(
+    schedule = _search(
         requirement_mm=requirement_mm,
         demand=demand,
         effective_rain=effective_rain,
@@ -211,6 +218,13 @@ def optimise(
         horizon=horizon,
         overshoot_allowance=overshoot_allowance,
     )
+    # Record the horizon inputs alongside the events, at the horizon's own
+    # length: the schedule reports what each day needs and what rain it was
+    # expected to cover, which is the context the search had and no more.
+    span = max(len(schedule.events), 0)
+    schedule.daily_demand_mm = [round(float(v), 2) for v in list(demand)[:span]]
+    schedule.daily_rain_mm = [round(float(v), 2) for v in list(effective_rain)[:span]]
+    return schedule
 
 
 def _depth_grid(cap: float, resolution: float = 5.0) -> list[float]:

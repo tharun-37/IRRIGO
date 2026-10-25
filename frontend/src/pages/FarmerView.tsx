@@ -629,24 +629,29 @@ function MiniStat({ label, value }: { label: string; value: string }) {
 }
 
 /**
- * The next seven days, as the plan actually applies water.
+ * The next seven days, as need and pump days.
  *
- * The bars are the plan's own replay — days the engine schedules an
- * application, at the depth it scheduled. Nothing is fabricated into an
- * empty-looking week: a gap means the plan scheduled nothing, and the text
- * says which it is.
+ * Two layers, both from the engine:
+ * - the pale bar is the day's crop requirement — the horizon's own demand
+ *   (Kc x ET0 off the crop's curve) net of the expected rain credited — the
+ *   exact input the optimiser scheduled against. It is present even when no
+ *   pump is scheduled, so a correctly-wet week is a week of requirements,
+ *   never an empty chart;
+ * - the solid blue bar is the pump day the optimiser chose, at the depth it
+ *   chose, on top of that requirement.
  *
  * With a live node attached, the week bends to what the probe reads, in one
  * place only: today. The plan's replay opens the soil at a historical
  * depletion; the node reports what is really in the ground now. If the probe
- * reads the band the plan would water from, today's bar is marked held —
+ * reads the band the plan would water from, today's pump is marked held —
  * water the plan wanted today is not needed on the moisture the node
  * measured — and the day the plan expects it moves is not invented either;
  * the node's next decision at the next POST settles it.
  */
 function WeekCard({ field }: { field: Advisory }) {
   const days = (field.schedule ?? []).slice(0, 7)
-  const planned = days.some((day) => day.applyMm > 0)
+  const finished = field.stage === 'post_harvest' || field.stage === 'harvest'
+  const weekTotalNeed = days.reduce((sum, day) => sum + (day.needMm ?? 0), 0)
 
   // Today's hold decision, from the node's own reading. Same band rule the
   // decision model uses (dry floor 38% — see Dashboard's liveMoistureBand):
@@ -654,19 +659,22 @@ function WeekCard({ field }: { field: Advisory }) {
   // When the season is over, there is nothing to hold.
   const liveHoldsToday =
     field.live?.isLive &&
-    field.stage !== 'post_harvest' &&
-    field.stage !== 'harvest' &&
+    !finished &&
     field.sensors.soilMoisture != null &&
     Number.isFinite(field.sensors.soilMoisture) &&
     field.sensors.soilMoisture >= 38
 
-  // Day-0 minutes from the decision's own runtime-to-depth ratio, so the
+  // Pump-day minutes from the decision's own runtime-to-depth ratio, so any
   // bar's label and today's action card cannot disagree.
   const depthToday = field.recommendation.finalDepthMm ?? field.recommendation.depthMm
   const secondsPerMm =
     depthToday > 0 ? field.recommendation.durationSeconds / depthToday : 0
 
-  const peak = Math.max(1, ...days.map((day) => day.applyMm))
+  const peak = Math.max(
+    5,
+    ...days.map((day) => Math.max(day.applyMm, day.needMm ?? 0)),
+  )
+  const anyPump = days.some((day) => day.applyMm > 0)
 
   return (
     <section
@@ -677,54 +685,65 @@ function WeekCard({ field }: { field: Advisory }) {
         <span className="text-[11px] text-slate-700">plan · {field.crop.toLowerCase()}</span>
       </header>
       <div className="flex min-h-0 flex-1 gap-1.5 px-4 pb-1.5 pt-2">
-        {days.length === 0 ? (
-          <div className="flex-1 self-center text-center text-[12px] text-ink-400">
-            Nothing scheduled in the plan week.
-          </div>
-        ) : (
-          days.map((day) => {
-              const isToday = day.dayOffset === 0
-              const held = isToday && liveHoldsToday
-              const minutes =
-                isToday && secondsPerMm > 0
-                  ? Math.round(day.applyMm * secondsPerMm / 60)
-                  : Math.round(day.applyMm * 8.33)
-              return (
-                <div key={day.dayOffset} className="flex min-w-0 flex-1 flex-col items-center">
-                  <span className={`tnum flex h-4 shrink-0 items-end text-[10px] font-semibold ${
-                    held ? 'text-[#b45309]' : 'text-slate-700'
-                  }`}>
-                    {day.applyMm > 0 ? (held ? 'held' : `${minutes}m`) : ''}
-                  </span>
-                  <div className="flex w-full flex-1 items-end">
+        {days.map((day) => {
+            const isToday = day.dayOffset === 0
+            const held = isToday && liveHoldsToday
+            const need = Math.max(0, day.needMm ?? 0)
+            const needHeight =
+              need > 0.05 ? `${Math.max(6, (need / peak) * 100)}%` : '3px'
+            const pumpHeight =
+              day.applyMm > 0 ? `${Math.max(6, (day.applyMm / peak) * 100)}%` : undefined
+            const minutes = Math.round(day.applyMm * (secondsPerMm > 0 ? secondsPerMm : 8.33) / 60)
+            return (
+              <div key={day.dayOffset} className="flex min-w-0 flex-1 flex-col items-center">
+                <span className={`tnum flex h-4 shrink-0 items-end text-[10px] font-semibold ${
+                  held ? 'text-[#b45309]' : 'text-slate-700'
+                }`}>
+                  {day.applyMm > 0 ? (held ? 'held' : `${minutes}m`) : ''}
+                </span>
+                <div
+                  className="relative w-full flex-1"
+                  aria-label={`${isToday ? 'Today' : weekday(day.date)}: needs ~${need} mm${
+                    day.applyMm > 0 ? `, pump ${day.applyMm} mm` : ''
+                  }`}
+                >
+                  {/* The requirement this day pays, from the horizon's demand
+                      and expected rain. Pale, and always present while the
+                      crop is in the ground. */}
+                  <span
+                    className="absolute bottom-0 w-full rounded-t-[3px] bg-brand-200/80"
+                    style={{ height: needHeight }}
+                  />
+                  {/* The pump day the optimiser chose, drawn over the need it
+                      was scheduled to satisfy. */}
+                  {pumpHeight !== undefined && (
                     <span
-                      className={`w-full rounded-t-[3px] ${
+                      className={`absolute bottom-0 z-10 w-full rounded-t-[3px] ring-1 ring-inset ring-white/70 ${
                         held
-                          ? 'bg-gradient-to-b from-[#fbbf24] to-[#ea580c] opacity-60'
-                          : day.applyMm > 0
-                            ? 'bg-brand-500'
-                            : 'bg-ink-100'
+                          ? 'bg-gradient-to-t from-[#ea580c] to-[#fbbf24] opacity-60'
+                          : 'bg-brand-500'
                       }`}
-                      style={{
-                        height: day.applyMm > 0 ? `${Math.max(12, (day.applyMm / peak) * 100)}%` : '3px',
-                      }}
+                      style={{ height: pumpHeight }}
                     />
-                  </div>
-                  <span className={`mt-1 shrink-0 text-[11px] font-medium uppercase tracking-[0.04em] ${
-                    isToday ? 'text-brand-700 font-semibold' : 'text-slate-700'
-                  }`}>
-                    {isToday ? 'Today' : weekday(day.date)}
-                  </span>
+                  )}
                 </div>
-              )
-            }))}
+                <span className={`mt-1 shrink-0 text-[11px] font-medium uppercase tracking-[0.04em] ${
+                  isToday ? 'text-brand-700 font-semibold' : 'text-slate-700'
+                }`}>
+                  {isToday ? 'Today' : weekday(day.date)}
+                </span>
+              </div>
+            )
+          })}
       </div>
       <p className="shrink-0 px-4 pb-2 text-[11px] leading-snug text-slate-700">
-        {planned
-          ? liveHoldsToday
-            ? 'The node reads wetter than the plan assumed — the plan is waiting, and the next schedule still stands for the later days.'
-            : 'The plan week, from the engine schedule.'
-          : 'The plan schedules no water this week — the soil and rain in the replay carry the crop.'}
+        {finished
+          ? 'Season complete — the plan stops watering a harvested crop; the pale bars are the bare-soil remainder.'
+          : liveHoldsToday
+            ? 'The node reads wetter than the plan assumed — today’s pump is held, and the week of requirements still stands.'
+            : anyPump
+              ? `Pale = the crop's daily need (${num(weekTotalNeed, 0)} mm this week) · blue = the plan's pump days.`
+              : `The plan holds the pump this week — moisture and expected rain carry the ${num(weekTotalNeed, 0)} mm need.`}
       </p>
       </div>
     </section>

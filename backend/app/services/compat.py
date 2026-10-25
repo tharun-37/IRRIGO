@@ -85,9 +85,10 @@ SNAPSHOT_MAX_AGE_SECONDS = 900.0
 
 #: Format marker for the persisted snapshot cache. Folding it into the cache
 #: filename's fingerprint means any change to the snapshot's shape - the walk
-#: depth, the history window, the caller's year range - invalidates every
-#: cached file at once, with no manual step.
-SNAPSHOT_CACHE_FORMAT = "irrigo-snapshots-v1"
+#: depth, the history window, the caller's year range, or new engine fields a
+#: pickled schedule is expected to carry - invalidates every cached file at
+#: once, with no manual step.
+SNAPSHOT_CACHE_FORMAT = "irrigo-snapshots-v2"
 
 #: Controller defaults, matching what V1 commissioned its simulated nodes with.
 PUMP_RATE_LPM = 12.0
@@ -1251,9 +1252,25 @@ class CompatService:
         if schedule is not None:
             for scheduled in getattr(schedule, "events", None) or []:
                 events_by_offset[int(getattr(scheduled, "offset", -1))] = scheduled
+        # The horizon's daily demand and credited rain, straight off the
+        # schedule the optimiser planned against. Every day needs water even
+        # when the optimiser correctly schedules no pump: the week is a week
+        # of requirements with pump days on it, not a week of pump days.
+        demand_by_day: list[float] = (
+            [float(v) for v in getattr(schedule, "daily_demand_mm", [])]
+            if schedule is not None
+            else []
+        )
+        rain_by_day: list[float] = (
+            [float(v) for v in getattr(schedule, "daily_rain_mm", [])]
+            if schedule is not None
+            else []
+        )
         timeline = []
         for offset in range(0, 7):
             scheduled = events_by_offset.get(offset)
+            demand_today = demand_by_day[offset] if offset < len(demand_by_day) else 0.0
+            rain_today = rain_by_day[offset] if offset < len(rain_by_day) else 0.0
             timeline.append(
                 {
                     "date": (point.day + timedelta(days=offset)).isoformat(),
@@ -1266,6 +1283,12 @@ class CompatService:
                     )
                     if scheduled
                     else 0.0,
+                    # What the crop needs from this day, net of the rain the
+                    # horizon expected to credit it. This is the input the
+                    # optimiser planned against — not an invented bar — so the
+                    # week chart can show the requirement even on days the
+                    # optimiser correctly schedules no pump.
+                    "needMm": round(max(0.0, demand_today - rain_today), 2),
                     "stage": self._stage_label(getattr(plan, "stage", stage)),
                 }
             )

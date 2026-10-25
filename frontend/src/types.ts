@@ -210,6 +210,13 @@ export interface ScheduleDay {
   dayOffset: number
   applyMm: number
   grossMm: number
+  /**
+   * The crop's requirement for this day, net of the rain the plan's horizon
+   * expected — the input the optimiser scheduled against. Present even when
+   * no pump is scheduled, so a correctly-wet week is a week of requirements,
+   * not an empty chart.
+   */
+  needMm?: number
   stage: string
 }
 
