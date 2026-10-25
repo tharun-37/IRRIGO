@@ -8,6 +8,45 @@ can be commissioned and the firmware written against a fixed interface.
 
 ---
 
+## The bench node, as built
+
+One node exists today (Live-Field, `node-bench-01`). It is the closed-loop prototype the
+production design above will be scaled from: hobby sensors, one servo-driven valve, and the
+same actuation contract. Firmware lives outside the repository (Arduino sketch).
+
+| Signal | Pin | Wiring notes |
+| --- | --- | --- |
+| Soil probe (analog) | GPIO 34 | input-only pin; calibrated `SOIL_RAW_WET` 1500 / `SOIL_RAW_DRY` 3400 |
+| DHT11 data | GPIO 14 | input-only; pull-up belongs on the module, side effects on 35 make it read NaN |
+| GY-30 light (BH1750) | SDA 33 / SCL 25 | second I²C bus (`Wire1`), address 0x23 |
+| OLED SSD1306 | SDA 27 / SCL 26 | primary I²C bus (`Wire`), address 0x3C |
+| Valve servo signal | GPIO 13 | ESP32Servo library, 500–2400 µs pulse, OPEN 45° / CLOSED 90° |
+
+### Servo power — the one rule
+
+The servo is powered **from an external 5 V rail with a common ground** to the ESP32, never
+from the board's 3V3 pin. A servo rotating under load draws more than the regulator can
+supply, and the brownout resets the board mid-irrigation — with the valve in whatever
+position it died in.
+
+### Node-side actuation limits
+
+The closed loop acts on the backend's per-POST decision (`shouldIrrigate`,
+`durationSeconds`). Because the backend sizes `durationSeconds` for a real pump — a 1000 m²
+application can be computed at hours — the node enforces named, visible constants:
+
+- `MAX_RUN_SECONDS = 900` — hard cap on one application, however large the backend asked.
+- `REFRACTORY_MS = 120000` — minimum quiet time after a close before the valve may reopen.
+- **Moisture hysteresis** — after an application closes, the valve stays closed until soil
+  moisture has actually risen ~2 points above its level at close. A decision that stays
+  true must not cycle the valve open/shut against a wet soil that has not yet registered.
+
+The first two exist in the production fail-safe list below; the hysteresis is the bench
+protection against decision/rate mismatch and should be carried into production firmware
+with a field-calibrated threshold.
+
+---
+
 ## Bill of materials, per zone
 
 | Item | Purpose | Notes |
