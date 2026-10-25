@@ -404,9 +404,10 @@ describe('Field view', () => {
     expect(screen.getByText('minutes')).toBeTruthy()
     expect(screen.getByText(/at the pump · 18.4 mm over 1.0 acre/)).toBeTruthy()
 
-    // The two controls a farmer has to press.
+    // The two controls a farmer has to press: Listen, and Approve & run
+    // (since this field owes water and has no approval yet).
     expect(screen.getByRole('button', { name: /Listen/ })).toBeTruthy()
-    expect(screen.getByRole('button', { name: /Mark done/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Approve & run/i })).toBeTruthy()
 
     // The console's instrument vocabulary stays gone with the console.
     expect(screen.queryByText('Recommended depth')).toBeNull()
@@ -620,6 +621,75 @@ describe('Field view', () => {
     ).toBeTruthy()
   })
 
+  it('shows the approve button when water is owed and the plan is not yet approved', async () => {
+    // A field the plan says needs water, with no approval yet: the button
+    // reads "Approve & run" and calls the approve endpoint.
+    const watered = {
+      ...FIELD,
+      recommendation: {
+        ...FIELD.recommendation,
+        shouldIrrigate: true,
+        finalDepthMm: 18.0,
+        depthMm: 18.0,
+        volumeLitres: 72.0,
+        durationSeconds: 120,
+        action: 'MODERATE_IRRIGATION',
+        confidence: 0.9,
+        probability: 0.91,
+        threshold: 0.5,
+      },
+      pumpRateLpm: 12.0,
+      areaM2: 4000,
+    }
+    renderWithField(watered)
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
+    )
+    const btn = screen.getByRole('button', { name: /approve & run/i })
+    expect(btn).toBeTruthy()
+    // button is enabled by default in the test fixture
+  })
+
+  it('hides the approve button once the plan is approved', async () => {
+    // An open approval on the advisory replaces the approve button with the
+    // done toggle, because the node already has the command.
+    const approved = {
+      ...FIELD,
+      recommendation: {
+        ...FIELD.recommendation,
+        shouldIrrigate: true,
+        finalDepthMm: 18.0,
+        depthMm: 18.0,
+        volumeLitres: 72.0,
+        durationSeconds: 120,
+        action: 'MODERATE_IRRIGATION',
+        confidence: 0.9,
+        probability: 0.91,
+        threshold: 0.5,
+      },
+      pumpRateLpm: 12.0,
+      areaM2: 4000,
+      approval: {
+        approvalId: 'abc123',
+        approvedAt: '2026-10-25T09:00:00+00:00',
+        fieldId: 'PNQ-wheat-01',
+        status: 'open',
+        depthMm: 18.0,
+        durationSeconds: 120,
+        volumeLitres: 72.0,
+        pumpRateLpm: 12.0,
+      },
+    }
+    renderWithField(approved)
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
+    )
+    expect(screen.queryByRole('button', { name: /approve & run/i })).toBeNull()
+    expect(screen.getByRole('button', { name: /mark done/i })).toBeTruthy()
+  })
+
   it('carries the calendar top-dress when the sensors read adequate', async () => {
     // Same feed, but a barley field at mid-season: the sensors sit inside the
     // sufficiency bands, yet the crop calendar still owes the split N pass.
@@ -744,7 +814,22 @@ describe('Field view', () => {
   })
 
   it('records a done mark per field per day', async () => {
-    renderShell()
+    // Use a field with an active approval so the "Mark done" button shows
+    // (watered fields without approval show "Approve & run" instead).
+    const approvedField = {
+      ...FIELD,
+      approval: {
+        approvalId: 'test-approval',
+        approvedAt: '2026-10-25T09:00:00+00:00',
+        fieldId: 'PNQ-wheat-01',
+        status: 'open',
+        depthMm: 18.0,
+        durationSeconds: 120,
+        volumeLitres: 72.0,
+        pumpRateLpm: 12.0,
+      },
+    }
+    renderWithField(approvedField)
 
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),

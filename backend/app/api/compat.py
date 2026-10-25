@@ -14,6 +14,7 @@ success. The dashboard surfaces that message verbatim.
 
 from __future__ import annotations
 
+import json
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -22,7 +23,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from ..core.config import get_settings
 from ..core.database import get_database, parse_iso
-from ..db.repository import ReadingRepository
+from ..db.repository import ApprovalRepository, EventRepository, ReadingRepository
 from ..services.compat import CompatService
 from ..services.ingest import IngestError, IngestService
 
@@ -115,11 +116,15 @@ def telemetry(request: Request, body: dict[str, Any] | None = None) -> dict[str,
     if not isinstance(body, dict):
         raise HTTPException(status_code=400, detail="a JSON object body is required")
     try:
-        return get_ingest().ingest(body)
+        decision: dict[str, Any] = get_ingest().ingest(body)
     except IngestError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
+    # The command never alters the decision — it rides the response so a node
+    # with an approved plan can pick it up in the same poll it already talks.
+    decision.update(_move_approval_along(request, body))
+    return decision
 
 
 #: How long a node's own reading stays authoritative for its field's `sensors`.
@@ -192,7 +197,29 @@ def _overlay_live_all(payload: dict[str, Any]) -> dict[str, Any]:
     """Overlay applied across the whole feed, tolerant of payload changes."""
     for item in payload.get("fields") or []:
         _overlay_live(item)
+        _overlay_approval(item)
     return payload
+
+
+def _overlay_approval(advisory: dict[str, Any]) -> dict[str, Any]:
+    """
+    Attach the field's live approval, when one still has authority.
+
+    An `open` or `running` approval is the dashboard's own mirror: the button
+    under Today's job reads it instead of keeping its own state. A done or
+    superseded approval is history — the event log carries it, so the overlay
+    drops it and the button returns to its pre-approval shape.
+    """
+    field_id = advisory.get("fieldId")
+    if not field_id:
+        return advisory
+    try:
+        record = ApprovalRepository(get_database()).latest_for_field(field_id)
+    except Exception:
+        return advisory
+    if record:
+        advisory["approval"] = _approval_view(record)
+    return advisory
 
 
 #: How long a named photo finding stays actionable. A disease read does not
@@ -417,10 +444,166 @@ def advisor_field(
 ) -> dict[str, Any]:
     try:
         return _overlay_photo(
-            _overlay_live(service.advisory(field_id)), _named_results(request)
+            _overlay_approval(_overlay_live(service.advisory(field_id))),
+            _named_results(request),
         )
     except KeyError as error:
         raise HTTPException(status_code=404, detail=f"no field {field_id!r}") from error
+
+
+# --------------------------------------------------------------------------
+# approved water plans: the farmer approves; the node's servo acts
+# --------------------------------------------------------------------------
+
+
+def _plan_snapshot(advisory: dict[str, Any]) -> dict[str, Any]:
+    """The plan block an approval is built from, quoted for the audit trail."""
+    return {
+        "recommendation": advisory.get("recommendation"),
+        "pumpRateLpm": advisory.get("pumpRateLpm"),
+        "areaM2": advisory.get("areaM2"),
+        "crop": advisory.get("crop"),
+    }
+
+
+def _approval_view(record: dict[str, Any]) -> dict[str, Any]:
+    """A lean approval for API answers: no snapshot, the numbers a client reads."""
+    return {
+        "approvalId": record["approvalId"],
+        "approvedAt": record["approvedAt"],
+        "fieldId": record["fieldId"],
+        "status": record["status"],
+        "depthMm": record["depthMm"],
+        "durationSeconds": record["durationSeconds"],
+        "volumeLitres": record["volumeLitres"],
+        "pumpRateLpm": record["pumpRateLpm"],
+    }
+
+
+@router.post("/advisor/{field_id}/approve")
+def approve_plan(
+    request: Request, field_id: str, service: Any = Depends(get_advisor)
+) -> dict[str, Any]:
+    """
+    Approve this field's current water plan for the node to run.
+
+    The advisory is recomputed here and never taken from the client, so what
+    the node collects is exactly what the decision layer produced — depth,
+    seconds and volume are the engine's own numbers, not the browser's. The
+    row opens `open` and the node's next 1 Hz POST carries it as a `command`;
+    when the node reports its valve open the row turns `running`, and `done`
+    when the valve closes again. A newer approval supersedes an open one.
+    """
+    try:
+        advisory = service.advisory(field_id)
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=f"no field {field_id!r}") from error
+    recommendation = advisory.get("recommendation") or {}
+    depth = recommendation.get("finalDepthMm")
+    if depth is None:
+        depth = recommendation.get("depthMm")
+    seconds = int(round(recommendation.get("durationSeconds") or 0))
+    if not depth or depth <= 0 or seconds <= 0:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "this field's plan calls for no water today — there is "
+                "nothing to approve, and no servo run would be honest"
+            ),
+        )
+    live = advisory.get("live") or {}
+    repository = ApprovalRepository(get_database())
+    record = repository.create(
+        field_id,
+        depth_mm=float(depth),
+        duration_seconds=seconds,
+        volume_litres=recommendation.get("volumeLitres"),
+        pump_rate_lpm=advisory.get("pumpRateLpm"),
+        zone=field_id,
+        device_id=live.get("deviceId"),
+        plan_snapshot=json.dumps(_plan_snapshot(advisory), sort_keys=True),
+    )
+    EventRepository(get_database()).record(
+        kind="plan-approved",
+        zone=field_id,
+        device_id=live.get("deviceId"),
+        detail=(
+            f"Approved {record['depthMm']:.1f} mm for {record['durationSeconds'] // 60} min "
+            f"({(record['volumeLitres'] or 0):.0f} L); awaiting the node's command poll"
+        ),
+        source="dashboard",
+    )
+    return _approval_view(record)
+
+
+def _command_view(record: dict[str, Any]) -> dict[str, Any]:
+    """The command the node firmware reads: what to run and for how long."""
+    return {
+        "approvalId": record["approvalId"],
+        "action": "irrigate",
+        "fieldId": record["fieldId"],
+        "depthMm": record["depthMm"],
+        # The servo runs for exactly this. Minutes are for the firmware log,
+        # seconds carry the precision of the area-over-rate arithmetic.
+        "durationSeconds": record["durationSeconds"],
+        "minutes": int(round(record["durationSeconds"] / 60)),
+        "volumeLitres": record["volumeLitres"],
+        "pumpRateLpm": record["pumpRateLpm"],
+        "approvedAt": record["approvedAt"],
+    }
+
+
+def _move_approval_along(request: Request, payload: dict[str, Any]) -> dict[str, Any]:
+    """
+    The node side of the approval loop, fed by the reading it just posted.
+
+    An open approval rides the POST response as `command` until the node
+    reports its valve open — the claim, which stops the re-issue (the servo
+    already has the order). A running approval the valve reports closed
+    becomes `done`. Everything here is tolerant: no approvals, an unreadable
+    database, a zone with no field — any of those flow through as plain
+    telemetry with no command attached.
+    """
+    zone = payload.get("zone")
+    if not zone:
+        return {}
+    try:
+        repository = ApprovalRepository(get_database())
+        live = repository.current_for_zone(str(zone))
+        if live is None:
+            return {}
+        valve_open = payload.get("valve_open")
+        if valve_open is True and live["status"] == "open":
+            repository.claim(live["approvalId"])
+            EventRepository(get_database()).record(
+                kind="plan-running",
+                zone=str(zone),
+                device_id=live["deviceId"],
+                detail=(
+                    f"Node claimed approval {live['approvalId']}: valve open, "
+                    f"running {live['durationSeconds'] // 60} min as approved"
+                ),
+                source="node",
+            )
+            return {}
+        if valve_open is False and live["status"] == "running":
+            repository.finish(live["approvalId"])
+            EventRepository(get_database()).record(
+                kind="plan-done",
+                zone=str(zone),
+                device_id=live["deviceId"],
+                detail=(
+                    f"Approved run {live['approvalId']} complete — valve closed again"
+                ),
+                source="node",
+            )
+            return {}
+        if live["status"] == "open":
+            return {"command": _command_view(live)}
+        return {}
+    except Exception:
+        # Approval bookkeeping must never hold up a reading.
+        return {}
 
 
 # --------------------------------------------------------------------------

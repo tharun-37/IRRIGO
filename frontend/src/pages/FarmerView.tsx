@@ -1033,6 +1033,7 @@ export function FarmerView({
   live,
   onSelect,
   onClearPhoto,
+  onApprove,
 }: {
   field: Advisory
   fields: FarmerField[]
@@ -1043,6 +1044,8 @@ export function FarmerView({
   onSelect: (fieldId: string) => void
   /** Clears the leaf-photo read behind a `dismiss` chip, back to pre-photo. */
   onClearPhoto?: () => void
+  /** Approves the current water plan; called with the field's approval when the farmer taps it. */
+  onApprove?: (fieldId: string) => Promise<void>
 }) {
   const watered = depth > 0
   const rest = band === 'rest'
@@ -1204,28 +1207,44 @@ export function FarmerView({
                   <SpeakerGlyph size={18} />
                   Listen
                 </button>
-                <button
-                  type="button"
-                  onClick={toggleDone}
-                  aria-pressed={done}
-                  className={`flex h-9 items-center justify-center gap-2 rounded-card border text-[13px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${
-                    done
-                      ? 'border-status-healthy bg-status-healthySoft text-[#15803d]'
-                      : 'border-ink-200 bg-white text-ink-900 hover:border-ink-300 hover:bg-ink-50'
-                  }`}
-                >
-                  <CheckGlyph size={18} />
-                  {done ? (
-                    <span className="flex flex-col items-start leading-tight">
-                      <span>Done</span>
-                      <span aria-hidden="true" className="text-[10px] font-medium">
-                        Saved for today.
+                {/* Approve & run only when water is owed AND no active approval. */}
+                {!field.approval ? (
+                  watered && onApprove && (
+                    <button
+                      type="button"
+                      onClick={() => onApprove(field.fieldId)}
+                      className="flex h-9 items-center justify-center gap-2 rounded-card border border-brand-600 bg-brand-50 text-[13px] font-semibold text-brand-700 transition-colors hover:border-brand-700 hover:bg-brand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+                    >
+                      <CheckGlyph size={18} />
+                      Approve & run
+                    </button>
+                  )
+                ) : (
+                  // An active approval (open/running) means the node has the command.
+                  // The farmer marks the day's task complete instead.
+                  <button
+                    type="button"
+                    onClick={toggleDone}
+                    aria-pressed={done}
+                    className={`flex h-9 items-center justify-center gap-2 rounded-card border text-[13px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${
+                      done
+                        ? 'border-status-healthy bg-status-healthySoft text-[#15803d]'
+                        : 'border-ink-200 bg-white text-ink-900 hover:border-ink-300 hover:bg-ink-50'
+                    }`}
+                  >
+                    <CheckGlyph size={18} />
+                    {done ? (
+                      <span className="flex flex-col items-start leading-tight">
+                        <span>Done</span>
+                        <span aria-hidden="true" className="text-[10px] font-medium">
+                          Saved for today.
+                        </span>
                       </span>
-                    </span>
-                  ) : (
-                    'Mark done'
-                  )}
-                </button>
+                    ) : (
+                      'Mark done'
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           </section>

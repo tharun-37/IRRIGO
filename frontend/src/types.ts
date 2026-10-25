@@ -378,6 +378,24 @@ export interface Advisory {
       note: string
     } | null
   } | null
+  /**
+   * This field's approved water plan, when one still has authority (`open`
+   * — approved, the node has not collected it; `running` — the node's servo
+   * is executing exactly these numbers). Other statuses (done, superseded,
+   * expired) are history and are never attached by the advisory overlay.
+   */
+  approval?: {
+    approvalId: string
+    approvedAt: string
+    fieldId: string
+    status: 'open' | 'running'
+    depthMm: number
+    durationSeconds: number
+    volumeLitres: number | null
+    pumpRateLpm: number | null
+    /** When the node reported its valve open, present while `running`. */
+    claimedAt?: string | null
+  } | null
   water: {
     et0MmDay: number
     etcMmDay: number

@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import sqlite3
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
-from ..core.database import Database, iso, json_dumps, json_loads, utcnow
+from ..core.database import Database, iso, json_dumps, json_loads, parse_iso, utcnow
 
 SEVERITY_ORDER = {"info": 0, "warning": 1, "critical": 2}
 
@@ -454,6 +454,177 @@ class EventRepository:
             return int(cursor.fetchone()["n"])
 
 
+class ApprovalRepository:
+    """
+    Approved water plans, waiting for their node to collect the command.
+
+    The farmer approves the advisor's decision; a row opens here carrying the
+    depth and duration that were approved *together with* the plan block that
+    produced them, and the node's next 1 Hz POST receives it back as a
+    `command`. The row is the single authority on what was approved and when:
+    status survives a dashboard refresh, and superseding an approval never
+    deletes the superseded one, so the audit trail keeps every decision.
+    """
+
+    def __init__(self, database: Database) -> None:
+        self.db = database
+
+    def create(
+        self,
+        field_id: str,
+        depth_mm: float,
+        duration_seconds: int,
+        volume_litres: float | None,
+        pump_rate_lpm: float | None,
+        zone: str | None = None,
+        device_id: str | None = None,
+        plan_snapshot: str | None = None,
+        now: datetime | None = None,
+    ) -> dict[str, Any]:
+        """Record one approval, superseding any earlier open one for the field."""
+        import uuid
+
+        created_at = iso(now or utcnow())
+        with self.db.transaction() as cursor:
+            cursor.execute(
+                "UPDATE plan_approvals SET status = 'superseded', closed_at = ? "
+                "WHERE field_id = ? AND status IN ('open', 'running')",
+                (created_at, field_id),
+            )
+            cursor.execute(
+                """
+                INSERT INTO plan_approvals (
+                    approval_id, created_at, field_id, zone, device_id,
+                    depth_mm, duration_seconds, volume_litres, pump_rate_lpm,
+                    status, plan_snapshot
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?)
+                """,
+                (
+                    uuid.uuid4().hex[:16],
+                    created_at,
+                    field_id,
+                    zone,
+                    device_id,
+                    depth_mm,
+                    duration_seconds,
+                    volume_litres,
+                    pump_rate_lpm,
+                    plan_snapshot,
+                ),
+            )
+            row_id = cursor.lastrowid
+        record = self.by_id_approved(row_id)
+        assert record is not None
+        return record
+
+    def by_id_approved(self, row_id: int) -> dict[str, Any] | None:
+        with self.db.cursor() as cursor:
+            cursor.execute("SELECT * FROM plan_approvals WHERE id = ?", (row_id,))
+            row = cursor.fetchone()
+            return _plan_approval_row(row) if row else None
+
+    def by_approval_id(self, approval_id: str) -> dict[str, Any] | None:
+        with self.db.cursor() as cursor:
+            cursor.execute(
+                "SELECT * FROM plan_approvals WHERE approval_id = ?", (approval_id,)
+            )
+            row = cursor.fetchone()
+            return _plan_approval_row(row) if row else None
+
+    #: Unclaimed commands outlive the approved run by this grace before the
+    #: sweep marks them expired: enough to cover a node rebooting between
+    #: approving and collecting twice, not enough to water without a farmer
+    #: watching minutes after they tapped approve.
+    CLAIM_GRACE_SECONDS = 120.0
+
+    def current_for_zone(self, zone: str, now: datetime | None = None) -> dict[str, Any] | None:
+        """The live approval for a zone: `open` unexpired, or `running`."""
+        # One sweep per node POST: open approvals past their window expire.
+        try:
+            with self.db.transaction() as cursor:
+                cursor.execute(
+                    "SELECT id, created_at, duration_seconds FROM plan_approvals "
+                    "WHERE zone = ? AND status = 'open'",
+                    (zone,),
+                )
+                for row in cursor.fetchall():
+                    approved = parse_iso(row["created_at"])
+                    if approved is None:
+                        continue
+                    deadline = (
+                        approved
+                        + timedelta(seconds=row["duration_seconds"] + self.CLAIM_GRACE_SECONDS)
+                    )
+                    if (now or utcnow()) >= deadline:
+                        cursor.execute(
+                            "UPDATE plan_approvals SET status = 'expired', closed_at = ? "
+                            "WHERE id = ? AND status = 'open'",
+                            (iso(now or utcnow()), row["id"]),
+                        )
+        except Exception:
+            # A sweep that cannot run never holds up telemetry.
+            pass
+        with self.db.cursor() as cursor:
+            cursor.execute(
+                "SELECT * FROM plan_approvals WHERE zone = ? AND status IN ('open', 'running') "
+                "ORDER BY created_at DESC, id DESC LIMIT 1",
+                (zone,),
+            )
+            row = cursor.fetchone()
+            return _plan_approval_row(row) if row else None
+
+    def latest_for_field(
+        self, field_id: str, now: datetime | None = None
+    ) -> dict[str, Any] | None:
+        """The advisory-facing view: an open/running approval, else nothing.
+
+        A `done` approval is already history the event log carries; the chip
+        side shows it, but the overlay reports only what still has authority.
+        """
+        for status in ("open", "running"):
+            with self.db.cursor() as cursor:
+                cursor.execute(
+                    "SELECT * FROM plan_approvals WHERE field_id = ? AND status = ? "
+                    "ORDER BY created_at DESC, id DESC LIMIT 1",
+                    (field_id, status),
+                )
+                row = cursor.fetchone()
+                if row:
+                    record = _plan_approval_row(row)
+                    if record["status"] == "running" or not self._expired(record, now):
+                        return record
+        return None
+
+    def _expired(self, record: dict[str, Any], now: datetime | None) -> bool:
+        approved = parse_iso(record["approvedAt"] or "")
+        if approved is None:
+            return False
+        deadline = approved + timedelta(
+            seconds=record["durationSeconds"] + self.CLAIM_GRACE_SECONDS
+        )
+        return (now or utcnow()) >= deadline
+
+    def claim(self, approval_id: str, now: datetime | None = None) -> None:
+        """The node reported its valve open: the command was collected and run."""
+        stamp = iso(now or utcnow())
+        with self.db.transaction() as cursor:
+            cursor.execute(
+                "UPDATE plan_approvals SET status = 'running', claimed_at = ? "
+                "WHERE approval_id = ? AND status = 'open'",
+                (stamp, approval_id),
+            )
+
+    def finish(self, approval_id: str, now: datetime | None = None) -> None:
+        """The node reported its valve closed: the approved run completed."""
+        stamp = iso(now or utcnow())
+        with self.db.transaction() as cursor:
+            cursor.execute(
+                "UPDATE plan_approvals SET status = 'done', closed_at = ? "
+                "WHERE approval_id = ? AND status = 'running'",
+                (stamp, approval_id),
+            )
+
+
 # --------------------------------------------------------------------------
 # Row mapping
 # --------------------------------------------------------------------------
@@ -787,4 +958,24 @@ def _alert_row(row: sqlite3.Row) -> dict[str, Any]:
         "message": row["message"],
         "acknowledged": bool(row["acknowledged"]),
         "resolvedAt": row["resolved_at"],
+    }
+
+
+def _plan_approval_row(row: sqlite3.Row) -> dict[str, Any]:
+    return {
+        "approvalId": row["approval_id"],
+        "approvedAt": row["created_at"],
+        "fieldId": row["field_id"],
+        "zone": row["zone"],
+        "deviceId": row["device_id"],
+        "depthMm": row["depth_mm"],
+        "durationSeconds": row["duration_seconds"],
+        "volumeLitres": row["volume_litres"],
+        "pumpRateLpm": row["pump_rate_lpm"],
+        "status": row["status"],
+        "claimedAt": row["claimed_at"],
+        "closedAt": row["closed_at"],
+        # The plan block the numbers came from, served back verbatim so the
+        # approval stays auditable without re-deriving anything.
+        "plan": json_loads(row["plan_snapshot"] or "null", None),
     }

@@ -147,6 +147,36 @@ CREATE TABLE IF NOT EXISTS events (
 CREATE INDEX IF NOT EXISTS idx_events_time
     ON events(created_at DESC);
 
+-- Approved water plans. The farmer approves the advisor's decision on the
+-- dashboard; the bench node collects the command in the response of its next
+-- 1 Hz POST and runs the servo for exactly the approved run. Statuses:
+-- open      — approved, command not yet collected by the node
+-- running   — the node reported its valve open inside the approved window
+-- done      — the node reported the valve closed again (or the window ended)
+-- expired   — the window ended with no node claiming the command
+-- superseded — a newer approval for the same field replaced it before any run
+CREATE TABLE IF NOT EXISTS plan_approvals (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    approval_id      TEXT NOT NULL UNIQUE,
+    created_at       TEXT NOT NULL,
+    field_id         TEXT NOT NULL,
+    zone             TEXT,
+    device_id        TEXT,
+    depth_mm         REAL NOT NULL,
+    duration_seconds INTEGER NOT NULL,
+    volume_litres    REAL,
+    pump_rate_lpm    REAL,
+    status           TEXT NOT NULL DEFAULT 'open',
+    claimed_at       TEXT,
+    closed_at        TEXT,
+    plan_snapshot    TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_plan_approvals_zone
+    ON plan_approvals(zone, status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_plan_approvals_field
+    ON plan_approvals(field_id, created_at DESC);
+
 -- Crop-health analyses. Columns follow the blueprint's minimum analysis
 -- record; blobs never go in here, only the controlled-storage reference.
 CREATE TABLE IF NOT EXISTS crop_health_analyses (

@@ -206,6 +206,23 @@ export const api = {
       },
     ),
 
+  /**
+   * Approve this field's current water plan for the node to run. The
+   * backend rebuilds the advisory itself, so the servo is never handed
+   * numbers the browser invented; the answer is the stored approval.
+   */
+  approvePlan: (fieldId: string) =>
+    request<{
+      approvalId: string
+      approvedAt: string
+      fieldId: string
+      status: 'open' | 'running'
+      depthMm: number
+      durationSeconds: number
+      volumeLitres: number | null
+      pumpRateLpm: number | null
+    }>(`/advisor/${encodeURIComponent(fieldId)}/approve`, { method: 'POST' }),
+
   /** Ask the backend to re-run inference for a device, using its last reading. */
   recompute: (deviceId: string) =>
     request<Recommendation>(`/devices/${deviceId}/recommendation`, { method: 'POST' }),
