@@ -40,7 +40,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from ..data.crops import KCB_DEV_SHAPE, KCB_END_BARE_SOIL, KCB_LATE_SHAPE, CropParameters
-from ..phenology.gdd import GrowthStage, StageState
+from ..phenology.gdd import STAGE_ORDER, GrowthStage, StageState
 
 
 @dataclass(frozen=True)
@@ -270,3 +270,77 @@ def single_crop_coefficient(
         kc *= 0.92
 
     return max(0.05, kc)
+
+
+def kc_profile_stage_means(crop: CropParameters) -> dict[str, float]:
+    """
+    The mean FAO-56 Kc across each stage's GDD span, from the catalogue alone.
+
+    The curve on the GDD axis is a pure property of the crop's parameters
+    (`kc_initial`/`kc_mid`/`kc_end` and `gdd_stage_ends`), so these means are the
+    same for every field of that crop no matter which station's weather the
+    field replays — which is what makes them safe to compare between fields.
+    The per-field season windows are NOT, because their stage lengths and ETc
+    rates come from the field's own GDD accumulation and station ET0.
+
+    Sampled rather than integrated analytically: the curve is already piecewise
+    with breakpoints exactly on the stage ends, and twelve samples per stage is
+    far past the resolution any consumer needs.
+    """
+    breakpoints = build_breakpoints(crop)
+    spans = (
+        (GrowthStage.INITIAL.value, 0.0, breakpoints.gdd_initial_end),
+        (
+            GrowthStage.DEVELOPMENT.value,
+            breakpoints.gdd_initial_end,
+            breakpoints.gdd_development_end,
+        ),
+        (
+            GrowthStage.MID_SEASON.value,
+            breakpoints.gdd_development_end,
+            breakpoints.gdd_mid_season_end,
+        ),
+        (
+            GrowthStage.LATE_SEASON.value,
+            breakpoints.gdd_mid_season_end,
+            breakpoints.gdd_late_season_end,
+        ),
+    )
+    samples = 12
+    means: dict[str, float] = {}
+    for stage, low, high in spans:
+        values = [
+            kc_at_gdd(low + (high - low) * (index + 0.5) / samples, breakpoints)
+            for index in range(samples)
+        ]
+        means[stage] = sum(values) / len(values)
+    return means
+
+
+def peak_water_stage_span(crop: CropParameters) -> tuple[str, str]:
+    """
+    The crop's peak-water stretch as a (from_stage, to_stage) span, in canonical
+    stage order.
+
+    The thirstiest stage by the profile's mean Kc, extended over neighbours
+    whose mean is within 90% of the peak, so a crop whose drinking season is
+    genuinely flat (rice, which barely leaves kc_mid) still shows one fused
+    stretch rather than an isolated sliver.
+
+    Field-independent by construction: the span is a function of the crop's
+    catalogue row only, so every field of the same crop — existing or newly
+    registered — shows its peak-water bar over the same stages. This is why the
+    dashboard draws the bar against this span instead of ranking the per-field
+    season windows, whose ETc mixes the station's weather in.
+    """
+    means = kc_profile_stage_means(crop)
+    order = [stage.value for stage in STAGE_ORDER]
+    peak = max(order, key=lambda stage: means[stage])
+    peak_value = means[peak]
+    low = order.index(peak)
+    high = low
+    while low > 0 and means[order[low - 1]] >= 0.9 * peak_value:
+        low -= 1
+    while high < len(order) - 1 and means[order[high + 1]] >= 0.9 * peak_value:
+        high += 1
+    return order[low], order[high]

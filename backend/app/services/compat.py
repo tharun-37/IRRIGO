@@ -45,6 +45,7 @@ import pandas as pd
 
 from irrigation.data.crops import CROPS
 from irrigation.data.soil import texture as lookup_texture
+from irrigation.physics.kc_curve import peak_water_stage_span
 from irrigation.sowing import SowingEvent, season_depletion
 
 from ..core.ml_bridge import (
@@ -1075,6 +1076,29 @@ class CompatService:
             return 0.0
         return round(float(getattr(parameters, "ky", 0.0) or 0.0), 3)
 
+    @staticmethod
+    def _peak_stretch(crop: str | None) -> dict[str, str] | None:
+        """
+        The crop's peak-water stage span, from the crop catalogue alone.
+
+        A (fromStage, toStage) pair naming the stages the crop drinks most in,
+        resolved on the profile's own Kc curve over thermal time — deliberately
+        not from the per-field season windows, whose stage lengths and ETc rates
+        carry the field's station weather in. Two fields of the same crop get
+        the same span, whatever their sowing dates or stations, and a field
+        registered tomorrow gets the same span as its crop's siblings. Null
+        when the crop is outside the catalogue, which the client reads as "no
+        field-independent answer exists" and falls back to the field's own
+        windows.
+        """
+        if not crop:
+            return None
+        parameters = CROPS.get(crop)
+        if parameters is None:
+            return None
+        from_stage, to_stage = peak_water_stage_span(parameters)
+        return {"fromStage": from_stage, "toStage": to_stage}
+
     def _yield_modelled(self, crop: str | None) -> bool:
         """
         Whether the yield model was trained on this crop.
@@ -1344,6 +1368,13 @@ class CompatService:
             "schedule": timeline,
             "season": {
                 "stageWindows": windows,
+                # The crop's peak-water stage span, resolved on the crop
+                # catalogue's own Kc curve rather than on this field's windows.
+                # This is what the dashboard draws its blue peak-water bar over,
+                # so every field of one crop shows the bar over the same
+                # stages — the field-specific windows locate the field's weeks,
+                # not the crop's thirst.
+                "peakStretch": self._peak_stretch(event.crop),
                 "daysInSeason": int(getattr(plan, "season_days", 0) or 0),
                 "seasonGrossMm": round(float(getattr(plan, "season_gross_requirement_mm", 0.0) or 0.0), 1),
                 "seasonRainMm": round(float(getattr(plan, "season_rainfall_mm", 0.0) or 0.0), 1),

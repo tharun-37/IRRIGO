@@ -277,6 +277,13 @@ export interface StageWindow {
 
 export interface SeasonInfo {
   stageWindows: StageWindow[]
+  /**
+   * The crop's peak-water stage span, resolved on the crop catalogue's own
+   * Kc curve rather than on this field's windows — every field of one crop
+   * gets the same span, whatever its station or sowing date. Absent when the
+   * crop is outside the catalogue.
+   */
+  peakStretch?: { fromStage: string; toStage: string }
   daysInSeason: number
   seasonGrossMm: number
   seasonRainMm: number

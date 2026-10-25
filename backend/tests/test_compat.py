@@ -203,6 +203,7 @@ def test_advisor_returns_ranked_stage_aware_advice(client):
     season = field["season"]
     assert set(season) == {
         "stageWindows",
+        "peakStretch",
         "daysInSeason",
         "seasonGrossMm",
         "seasonRainMm",
@@ -212,6 +213,19 @@ def test_advisor_returns_ranked_stage_aware_advice(client):
         assert window["meanEtcMmDay"] >= 0
         assert window["startDate"] <= window["endDate"]
         assert "stage" in window
+
+    # The peak-water span is a function of the crop catalogue, not of this
+    # field's weather replay: every field of the same crop must report the
+    # same stages, and the pair must name real FAO-56 stages in order.
+    stage_order = ["initial", "development", "mid_season", "late_season"]
+    stretch = season["peakStretch"]
+    if stretch is not None:
+        assert set(stretch) == {"fromStage", "toStage"}
+        assert stretch["fromStage"] in stage_order
+        assert stretch["toStage"] in stage_order
+        assert stage_order.index(stretch["fromStage"]) <= stage_order.index(
+            stretch["toStage"]
+        )
 
     # All seven readings the sensor head reports must reach the payload, since
     # the field board renders them as the primary data on the page.

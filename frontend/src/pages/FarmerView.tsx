@@ -364,7 +364,8 @@ function CropAgeCard({ field }: { field: Advisory }) {
           share,
           // Relative water demand of this stage, 0–1, by its own ETc against
           // the thirstiest stage of the same season. It does not colour the
-          // track — it locates the peak-water bar below.
+          // track — it only locates the peak-water bar below when the advisory
+          // has no crop-level peakStretch to use.
           demand: window.meanEtcMmDay / maxEtc,
           etc: window.meanEtcMmDay,
           kc: window.meanKc,
@@ -407,17 +408,38 @@ function CropAgeCard({ field }: { field: Advisory }) {
   }, [current, field.ageDays, finished, progress, seasonDays, windows])
 
   /**
-   * The peak-water interval: the thirstiest stage, extended over neighbours
-   * within 90% of its ETc so a genuinely flat drinking season (rice) still
-   * shows a fused interval rather than isolated slivers.
+   * The peak-water interval the blue bar sits over.
    *
-   * One short blue bar over this run only. Its position and length come from
-   * the crop's own stage plan, so cotton's peak sits weeks from potato's and
-   * the bar cannot look the same on two fields — that is the particularity
-   * the caption asks the reader to notice.
+   * Primary source is the crop profile's own `peakStretch` (backend resolves it
+   * on the catalogue's Kc curve over thermal time), so the bar covers the same
+   * stages for every field of a crop — Cotton-South and Live-Field agree, and
+   * so does a field registered tomorrow. The per-field windows only supply the
+   * on-track geometry for that span.
+   *
+   * The ETc-based fallback below is for advisories without the span (older
+   * fixtures, crops outside the catalogue): the thirstiest window's demand,
+   * extended over neighbours within 90%.
    */
   const peakDemand = useMemo(() => {
     if (segments.length === 0) return null
+    const stretch = field.season?.peakStretch
+    if (stretch) {
+      const from = segments.findIndex((segment) => segment.key === stretch.fromStage)
+      const to = segments.findIndex((segment) => segment.key === stretch.toStage)
+      if (from >= 0 && to >= from) {
+        const etcValues = segments
+          .slice(from, to + 1)
+          .map((segment) => segment.etc)
+          .filter((v) => v != null)
+        return {
+          start: segments[from].start,
+          span: segments[to].start + segments[to].share - segments[from].start,
+          fromStage: segments[from].label,
+          toStage: segments[to].label,
+          etc: etcValues.length ? Math.max(...(etcValues as number[])) : null,
+        }
+      }
+    }
     let peakIndex = 0
     segments.forEach((segment, i) => {
       if (segment.demand > segments[peakIndex].demand) peakIndex = i
@@ -434,7 +456,7 @@ function CropAgeCard({ field }: { field: Advisory }) {
       toStage: segments[to].label,
       etc: etcValues.length ? Math.max(...(etcValues as number[])) : null,
     }
-  }, [segments])
+  }, [field.season, segments])
 
   return (
     <section className="card flex h-full min-h-0 flex-col overflow-hidden" aria-label="Crop age">
