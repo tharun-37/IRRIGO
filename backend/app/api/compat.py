@@ -234,6 +234,12 @@ def _named_results(request: Request) -> dict[str, dict[str, Any]]:
         label = prediction.get("classLabel")
         if not label:
             continue
+        # A read the service attached no guidance to named no disease it
+        # knows — "Potato Healthy" among them. That is a clean leaf, not a
+        # finding: it may not turn the fertiliser chip away from its green
+        # "no feed" verdict, so it does not ride the advisory at all.
+        if not treatment:
+            continue
         named[field_id] = {
             "classLabel": label,
             "rawScore": prediction.get("rawScore"),

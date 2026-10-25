@@ -401,3 +401,39 @@ def test_the_advisor_ignores_a_photo_beyond_the_freshness_window(client):
     assert not constrained, (
         "a read from outside the freshness window must not constrain the plan"
     )
+
+
+def test_a_healthy_read_leaves_the_fertiliser_verdict_green(client):
+    """
+    A pushed photo that reads clean is good news, not a finding: the
+    advisor must not attach it as `photoDisease`, so the fertiliser chip
+    keeps its green "no feed" verdict until a disease is actually named.
+    "Potato Healthy" is a recorded class the model returns for clean
+    leaves — exactly the push this test answers.
+    """
+    from datetime import datetime, timezone
+
+    from app.db.repository import CropHealthRepository
+
+    repository = CropHealthRepository(app.state.health_repository.db)
+    field_id = (client.get("/api/advisor").json()["fields"])[0]["fieldId"]
+    repository.insert(
+        {
+            "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "field_id": field_id,
+            "crop": "Potato",
+            "prediction_label": "Potato Healthy",
+            "result_status": "result",
+            "treatment": None,
+        }
+    )
+
+    fields = client.get("/api/advisor").json()["fields"]
+    quoted = [
+        item for item in fields
+        if item["fieldId"] == field_id and item.get("photoDisease")
+    ]
+    assert not quoted, (
+        "a clean-leaf read carries no treatment guidance and must not "
+        "turn the fertiliser chip on"
+    )
