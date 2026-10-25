@@ -363,8 +363,8 @@ function CropAgeCard({ field }: { field: Advisory }) {
           start: cursor,
           share,
           // Relative water demand of this stage, 0–1, by its own ETc against
-          // the thirstiest stage of the same season. This is what colours the
-          // track, not the crop's age.
+          // the thirstiest stage of the same season. It does not colour the
+          // track — it locates the peak-water bar below.
           demand: window.meanEtcMmDay / maxEtc,
           etc: window.meanEtcMmDay,
           kc: window.meanKc,
@@ -406,6 +406,36 @@ function CropAgeCard({ field }: { field: Advisory }) {
     return (stage.from + progress * (stage.to - stage.from)) * 100
   }, [current, field.ageDays, finished, progress, seasonDays, windows])
 
+  /**
+   * The peak-water interval: the thirstiest stage, extended over neighbours
+   * within 90% of its ETc so a genuinely flat drinking season (rice) still
+   * shows a fused interval rather than isolated slivers.
+   *
+   * One short blue bar over this run only. Its position and length come from
+   * the crop's own stage plan, so cotton's peak sits weeks from potato's and
+   * the bar cannot look the same on two fields — that is the particularity
+   * the caption asks the reader to notice.
+   */
+  const peakDemand = useMemo(() => {
+    if (segments.length === 0) return null
+    let peakIndex = 0
+    segments.forEach((segment, i) => {
+      if (segment.demand > segments[peakIndex].demand) peakIndex = i
+    })
+    let from = peakIndex
+    while (from > 0 && segments[from - 1].demand >= 0.9 * segments[peakIndex].demand) from--
+    let to = peakIndex
+    while (to < segments.length - 1 && segments[to + 1].demand >= 0.9 * segments[peakIndex].demand) to++
+    const etcValues = segments.slice(from, to + 1).map((segment) => segment.etc).filter((v) => v != null)
+    return {
+      start: segments[from].start,
+      span: segments[to].start + segments[to].share - segments[from].start,
+      fromStage: segments[from].label,
+      toStage: segments[to].label,
+      etc: etcValues.length ? Math.max(...(etcValues as number[])) : null,
+    }
+  }, [segments])
+
   return (
     <section className="card flex h-full min-h-0 flex-col overflow-hidden" aria-label="Crop age">
       <div className="pad-card flex h-full min-h-0 flex-col px-4 pt-2 pb-2.5">
@@ -434,31 +464,33 @@ function CropAgeCard({ field }: { field: Advisory }) {
         <div className="shrink-0">
           <div className="relative">
             <div className="flex h-3 gap-0.5 overflow-hidden rounded-pill bg-ink-100">
-              {segments.map((segment) => {
-                // The colour carries the water demand, not the crop's age:
-                // solid blue is the stretch the crop drinks most, the pale
-                // blue the shoulder stages, grey the light drinkers. Where the
-                // crop is is the arrow's job alone.
-                const fill =
-                  segment.demand >= 0.8
-                    ? 'bg-brand-500'
-                    : segment.demand >= 0.55
-                      ? 'bg-brand-300'
-                      : 'bg-ink-200/60'
-                const tip =
-                  segment.etc != null
-                    ? `${segment.label} · ~${num(segment.etc, 1)} mm/day${segment.kc != null ? `, Kc ${num(segment.kc, 2)}` : ''}`
-                    : segment.label
-                return (
-                  <div
-                    key={segment.key}
-                    title={tip}
-                    style={{ width: `${segment.share}%` }}
-                    className={fill}
-                  />
-                )
-              })}
+              {segments.map((segment) => (
+                <div
+                  key={segment.key}
+                  title={
+                    segment.etc != null
+                      ? `${segment.label} · ~${num(segment.etc, 1)} mm/day${segment.kc != null ? `, Kc ${num(segment.kc, 2)}` : ''}`
+                      : segment.label
+                  }
+                  style={{ width: `${segment.share}%` }}
+                  className="bg-ink-200/70"
+                />
+              ))}
             </div>
+            {peakDemand !== null && (
+              <span
+                className="pointer-events-auto absolute bottom-0.5 top-0.5 z-[5] rounded-pill bg-brand-500 shadow-[0_0_0_1px_rgba(255,255,255,0.6)]"
+                style={{
+                  left: `${peakDemand.start + peakDemand.span * 0.07}%`,
+                  width: `${peakDemand.span * 0.86}%`,
+                }}
+                title={`Peak water stretch · ${
+                  peakDemand.fromStage === peakDemand.toStage
+                    ? peakDemand.fromStage
+                    : `${peakDemand.fromStage} → ${peakDemand.toStage}`
+                }${peakDemand.etc != null ? `, up to ~${num(peakDemand.etc, 1)} mm/day` : ''}`}
+              />
+            )}
             {marker !== null && (
               <>
                 <span
@@ -499,7 +531,7 @@ function CropAgeCard({ field }: { field: Advisory }) {
             ))}
           </div>
           <p className="mt-1 text-[10px] leading-none text-ink-400">
-            Blue = the stretch the crop drinks most · arrow = today ({field.ageDays} days)
+            Blue bar = the crop's peak-water stretch · arrow = today ({field.ageDays} days)
           </p>
         </div>
 
