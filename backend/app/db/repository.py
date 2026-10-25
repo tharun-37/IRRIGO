@@ -648,6 +648,26 @@ class CropHealthRepository:
             cursor.execute(query, params)
             return [_crop_health_row(row) for row in cursor.fetchall()]
 
+    def list_named_results(self, since: str, limit: int = 200) -> list[dict[str, Any]]:
+        """
+        Named disease reads: class names the model returned, newest first.
+
+        The food for the advisor's photo overlay: a *named* result is one the
+        fertiliser plan is allowed to react to — sub-floor reads that answered
+        "normal", retake advice and failures constrain nothing. `since` is the
+        ISO timestamp the caller's freshness window implies; rows are capped so
+        a long history cannot make the overlay expensive.
+        """
+        query = """
+            SELECT * FROM crop_health_analyses
+            WHERE result_status = 'result' AND prediction_label IS NOT NULL
+              AND created_at >= ?
+            ORDER BY created_at DESC, id DESC LIMIT ?
+        """
+        with self.db.cursor() as cursor:
+            cursor.execute(query, (since, limit))
+            return [_crop_health_row(row) for row in cursor.fetchall()]
+
     def set_feedback(self, analysis_id: str, feedback: str) -> dict[str, Any] | None:
         """
         Optional, consented farmer feedback. It is stored verbatim and never

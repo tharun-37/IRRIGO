@@ -432,6 +432,68 @@ describe('Field view', () => {
     expect(within(notes as HTMLElement).getByText(/37 kg\/acre · N short/)).toBeTruthy()
   })
 
+  it('holds the bag of urea when a fresh photo names a blight', async () => {
+    // Same starved soil, but this week's leaf photo named bacterial leaf
+    // blight. The backend attaches the disease's nutrition word to the
+    // advisory, and the chip vetoes the very feed the sensors were about to
+    // call for — quoting the photo that earned the hold.
+    const held = {
+      ...FIELD,
+      sensors: { ...FIELD.sensors, nitrogen: 8 },
+      photoDisease: {
+        classLabel: 'Wheat Bacterial leaf blight',
+        rawScore: 0.81,
+        photoOn: '2026-10-02T07:41:00+00:00',
+        nutrition: {
+          nutrient: 'nitrogen',
+          action: 'withhold',
+          note: 'Extra nitrogen prolongs blight; stop the planned nitrogen until the crop recovers.',
+        },
+      },
+    }
+    renderWithField(held)
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
+    )
+
+    const notes = screen.getByLabelText(/Yield and today.s notes/)
+    const hold = within(notes as HTMLElement).getByText('Hold the fertilizer today')
+    expect(hold).toBeTruthy()
+    expect(within(notes as HTMLElement).queryByText(/of urea/)).toBeNull()
+    expect(document.body.textContent).toContain('was found in a photo on 2026-10-02')
+  })
+
+  it('passes the photo-sourced potash check before the nitrogen feed', async () => {
+    // A short nitrogen band still owes urea, but this week's photo read
+    // Alternaria, which thrives on potash-starved plants: the chip keeps the
+    // dose and demands the potash check first, with the photo's date on it.
+    const checked = {
+      ...FIELD,
+      sensors: { ...FIELD.sensors, nitrogen: 8 },
+      photoDisease: {
+        classLabel: 'Cotton Alternaria leaf spot',
+        rawScore: 0.72,
+        photoOn: '2026-10-02T07:41:00+00:00',
+        nutrition: {
+          nutrient: 'potassium',
+          action: 'check',
+          note: 'Alternaria thrives on potassium-starved plants.',
+        },
+      },
+    }
+    renderWithField(checked)
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
+    )
+
+    const notes = screen.getByLabelText(/Yield and today.s notes/)
+    expect(within(notes as HTMLElement).getByText('Add half a bag of urea')).toBeTruthy()
+    expect(within(notes as HTMLElement).getByText(/Check potash first/)).toBeTruthy()
+    expect(within(notes as HTMLElement).getByText(/photo of 2026-10-02/)).toBeTruthy()
+  })
+
   it('carries the calendar top-dress when the sensors read adequate', async () => {
     // Same feed, but a barley field at mid-season: the sensors sit inside the
     // sufficiency bands, yet the crop calendar still owes the split N pass.

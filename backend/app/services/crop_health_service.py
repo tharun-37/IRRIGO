@@ -210,6 +210,63 @@ TREATMENTS: dict[str, str] = {
     ),
 }
 
+#: What a named disease means for the *fertiliser* plan — the same
+#: general-practice sediment the treatment text distils, now structured so
+#: the advisory's fertiliser chip can act on it instead of the farmer having
+#: to reconcile a handful of prose with a pile of urea mid-season. A named
+#: photo becomes a veto or a qualifier the chip quotes with its date; a
+#: disease outside this table constrains nothing. No dose, no product: the
+#: action words are what the treatment text already said.
+NUTRITION_VERSION = "nutr-en-1"
+
+#: nutrient — what the plan would feed; action — what the photo asks of it:
+#: "withhold" stop the planned feed, "reduce" feed less than planned,
+#: "check" verify sufficiency before feeding, "balance" correct the balance
+#: rather than push one nutrient, "steady" neither raise nor cut it.
+DISEASE_NUTRITION: dict[str, dict[str, str]] = {
+    "Rice Brown spot": {
+        "nutrient": "potassium",
+        "action": "check",
+        "note": "Brown spot feeds on stressed plants; check that potassium "
+        "is not short before adding more nitrogen.",
+    },
+    "Rice Bacterial leaf blight": {
+        "nutrient": "nitrogen",
+        "action": "withhold",
+        "note": "Extra nitrogen prolongs blight; stop the planned nitrogen "
+        "until the crop recovers.",
+    },
+    "Rice Leaf smut": {
+        "nutrient": "nitrogen",
+        "action": "balance",
+        "note": "Strengthen the crop with balanced fertilisation, not with "
+        "more nitrogen.",
+    },
+    "Barley Bipolaris leaf spot": {
+        "nutrient": "nitrogen",
+        "action": "check",
+        "note": "Bipolaris tracks nitrogen shortfall; check that nitrogen "
+        "is sufficient before assuming the feed is done.",
+    },
+    "Barley Powdery mildew": {
+        "nutrient": "nitrogen",
+        "action": "reduce",
+        "note": "Soft, over-fed leaves invite mildew; feed less nitrogen.",
+    },
+    "Cotton Alternaria leaf spot": {
+        "nutrient": "potassium",
+        "action": "check",
+        "note": "Alternaria thrives on potassium-starved plants; check "
+        "potash before adding more nitrogen.",
+    },
+    "Potato Early blight": {
+        "nutrient": "nitrogen",
+        "action": "steady",
+        "note": "Stressed plants get blight first; keep nitrogen steady "
+        "rather than pushing it.",
+    },
+}
+
 
 class CropHealthArtifact:
     """
@@ -532,11 +589,19 @@ class CropHealthService:
         if status == RESULT and prediction.classLabel:
             treatment_text = TREATMENTS.get(prediction.classLabel)
             if treatment_text:
+                nutrition = DISEASE_NUTRITION.get(prediction.classLabel)
                 treatment = {
                     "heading": "Treatment & nutrition guidance",
                     "text": treatment_text,
                     "disclaimer": TREATMENT_DISCLAIMER,
                     "textVersion": TREATMENT_VERSION,
+                    # What the named disease asks of the fertiliser plan,
+                    # structured for the advisory's fertiliser chip. None for
+                    # a disease outside the table — a quiet disease names no
+                    # nutrient constraint.
+                    "nutrition": dict(nutrition, textVersion=NUTRITION_VERSION)
+                    if nutrition
+                    else None,
                 }
         return {
             "created_at": datetime.now(timezone.utc)

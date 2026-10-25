@@ -14,7 +14,8 @@ success. The dashboard surfaces that message verbatim.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+import logging
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -24,6 +25,8 @@ from ..core.database import get_database, parse_iso
 from ..db.repository import ReadingRepository
 from ..services.compat import CompatService
 from ..services.ingest import IngestError, IngestService
+
+logger = logging.getLogger("iic.api.compat")
 
 router = APIRouter(tags=["v1-compat"])
 
@@ -192,6 +195,67 @@ def _overlay_live_all(payload: dict[str, Any]) -> dict[str, Any]:
     return payload
 
 
+#: How long a named photo finding stays actionable. A disease read does not
+#: expire like a moisture sample — lesions persist — but the fertiliser dispose
+#: decays: a blight named last month is not a blight the crop still carries, so
+#: past this window the photo stops constraining the plan and the farmer takes
+#: a fresh one.
+PHOTO_FRESH_SECONDS = 7.0 * 86400.0
+
+
+def _named_results(request: Request) -> dict[str, dict[str, Any]]:
+    """
+    The freshest named disease read per field, within the freshness window.
+
+    Deliberately tolerant of everything: no photo history, no crop-health
+    table, an unreadable database — any of those leaves no photo constraining
+    the plan, which is exactly what "no photo evidence" means. One query per
+    advisor request; the query is capped and field-scoped, so the 2 s poll
+    never walks a long history.
+    """
+    repository = getattr(request.app.state, "health_repository", None)
+    if repository is None:
+        return {}
+    since = (
+        datetime.now(timezone.utc) - timedelta(seconds=PHOTO_FRESH_SECONDS)
+    ).isoformat(timespec="seconds")
+    try:
+        rows = repository.list_named_results(since)
+    except Exception:
+        logger.exception("photo overlay could not read analysis records")
+        return {}
+    named: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        field_id = row.get("fieldId")
+        if not field_id or field_id in named:
+            continue
+        prediction = row.get("prediction") or {}
+        treatment = row.get("treatment") or None
+        label = prediction.get("classLabel")
+        if not label:
+            continue
+        named[field_id] = {
+            "classLabel": label,
+            "rawScore": prediction.get("rawScore"),
+            # When the photo was taken, the provenance the chip quotes.
+            "photoOn": row.get("createdAt"),
+            # What the named disease asks of the fertiliser plan, if anything.
+            "nutrition": (treatment or {}).get("nutrition"),
+        }
+    return named
+
+
+def _overlay_photo(
+    payload: dict[str, Any], named: dict[str, dict[str, Any]]
+) -> dict[str, Any]:
+    """Attach each field's freshest named photo read, tolerant of changes."""
+    for item in payload.get("fields") or []:
+        record = named.get(item.get("fieldId"))
+        if record:
+            item["photoDisease"] = record
+    return payload
+
+
 # --------------------------------------------------------------------------
 # devices and zones
 # --------------------------------------------------------------------------
@@ -331,19 +395,24 @@ def events(
 
 @router.get("/advisor")
 def advisor(
+    request: Request,
     service: Any = Depends(get_advisor),
 ) -> dict[str, Any]:
     """Ranked, plain-language irrigation advice for every field, fusing the V1
     decision model with the V2 requirement model."""
-    return _overlay_live_all(service.advisories())
+    return _overlay_photo(
+        _overlay_live_all(service.advisories()), _named_results(request)
+    )
 
 
 @router.get("/advisor/{field_id}")
 def advisor_field(
-    field_id: str, service: Any = Depends(get_advisor)
+    request: Request, field_id: str, service: Any = Depends(get_advisor)
 ) -> dict[str, Any]:
     try:
-        return _overlay_live(service.advisory(field_id))
+        return _overlay_photo(
+            _overlay_live(service.advisory(field_id)), _named_results(request)
+        )
     except KeyError as error:
         raise HTTPException(status_code=404, detail=f"no field {field_id!r}") from error
 

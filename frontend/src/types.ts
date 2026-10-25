@@ -360,6 +360,24 @@ export interface Advisory {
    * price its week's pump bars with the decision's own maths.
    */
   pumpRateLpm?: number
+  /**
+   * The field's freshest named leaf-photo read, when one is fresh enough to
+   * still mean anything. The fertiliser chip acts on `nutrition` — hold a
+   * blight's nitrogen, check the potash a leaf spot thrives on — and quotes
+   * the photo that earned it. Absent (or null) means no photo is constraining
+   * the plan today.
+   */
+  photoDisease?: {
+    classLabel: string
+    rawScore: number | null
+    /** When the photo was analysed (ISO timestamp), the chip's provenance. */
+    photoOn: string
+    nutrition: {
+      nutrient: 'nitrogen' | 'phosphorus' | 'potassium'
+      action: 'withhold' | 'reduce' | 'check' | 'balance' | 'steady'
+      note: string
+    } | null
+  } | null
   water: {
     et0MmDay: number
     etcMmDay: number

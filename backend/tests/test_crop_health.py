@@ -213,3 +213,191 @@ def test_advisory_carries_the_safety_block(client):
     assert fields
     assert all("safety" in field for field in fields)
     assert all(field["safety"]["applied"] for field in fields)
+
+
+def test_a_named_class_carries_its_nutrition_word(tmp_path):
+    """
+    A named photo read means something for the fertiliser plan, not just the
+    spray can. The mapping is the same general practice the treatment text
+    distils, structured so the advisory's fertiliser chip can act on it; the
+    table is audited here so a wording edit cannot quietly break the contract.
+    """
+    from app.schemas_crop_health import CropHealthPredictionOut
+    from app.services.crop_health_service import (
+        DISEASE_NUTRITION,
+        TREATMENTS,
+        CropHealthService,
+    )
+
+    assert set(DISEASE_NUTRITION) <= set(TREATMENTS), (
+        "a nutrition word must belong to a class that also carries treatment text"
+    )
+    for entry in DISEASE_NUTRITION.values():
+        assert entry["nutrient"] in {"nitrogen", "phosphorus", "potassium"}
+        assert entry["action"] in {"withhold", "reduce", "check", "balance", "steady"}
+        assert entry["note"].strip(), "the word carries the agronomy; no empty notes"
+
+    # A real service on empty paths: no artifact, no store traffic — these
+    # records go through _record alone, which is where the word attaches.
+    class _Paths:
+        crop_health_images_dir = str(tmp_path / "images")
+        models_dir = str(tmp_path / "models")
+
+    service = CropHealthService(_Paths())
+    named = CropHealthPredictionOut()
+    named.classLabel = "Rice Bacterial leaf blight"
+    record = service._record(
+        "result", "reason", named, [], {}, None,
+        "Rice", None, None, None, None, False,
+    )
+    nutrition = record["treatment"]["nutrition"]
+    assert nutrition["nutrient"] == "nitrogen"
+    assert nutrition["action"] == "withhold"
+    assert nutrition["textVersion"]
+
+    # A class outside the table constrains nothing — a bared disease says no
+    # nutrient word, not a guessed one.
+    unnamed = CropHealthPredictionOut()
+    unnamed.classLabel = "Potato Late blight"
+    record = service._record(
+        "result", "reason", unnamed, [], {}, None,
+        "Potato", None, None, None, None, False,
+    )
+    assert record["treatment"]["nutrition"] is None
+
+    # No class named → no treatment at all, so nothing for a chip to act on.
+    blank = CropHealthPredictionOut()
+    blank.classLabel = None
+    record = service._record(
+        "result", "reason", blank, [], {}, None,
+        "Rice", None, None, None, None, False,
+    )
+    assert record["treatment"] is None
+
+
+def test_named_results_query_filters_age_and_status(tmp_path):
+    """
+    Only fresh, named reads are food for the plan: a blight named last month
+    is not a blight the crop still carries, and a sub-floor "normal" read
+    constrains nothing. `list_named_results` is the gate.
+    """
+    from app.db.repository import CropHealthRepository
+
+    database = Database(f"sqlite:///{(tmp_path / 'named.db').as_posix()}")
+    database.initialise()
+    repository = CropHealthRepository(database)
+
+    recent = repository.insert(
+        {
+            "created_at": "2026-10-24T09:00:00+00:00",
+            "field_id": "Live-Field",
+            "prediction_label": "Rice Brown spot",
+            "result_status": "result",
+            "treatment": {"heading": "h", "text": "t", "disclaimer": "d",
+                          "textVersion": "treat-en-1",
+                          "nutrition": {"nutrient": "potassium", "action": "check",
+                                        "note": "n", "textVersion": "nutr-en-1"}},
+        }
+    )
+    older = repository.insert(
+        {
+            "created_at": "2026-09-01T09:00:00+00:00",
+            "field_id": "Live-Field",
+            "prediction_label": "Rice Brown spot",
+            "result_status": "result",
+        }
+    )
+    # A read that names nothing: it reaches the table but not the query —
+    # a "normal" answer never constrains a fertiliser plan.
+    repository.insert(
+        {
+            "created_at": "2026-10-24T10:00:00+00:00",
+            "field_id": "Live-Field",
+            "prediction_label": None,
+            "result_status": "result",
+        }
+    )
+
+    rows = repository.list_named_results("2026-10-18T00:00:00+00:00")
+    ids = [row["analysisId"] for row in rows]
+    assert ids == [recent["analysisId"]], (
+        "the query must keep exactly the fresh named reads newest-first, "
+        f"dropping the obsolete and the unnamed ones, got {ids}"
+    )
+    # The treatment the service attached travels with the row, so the overlay
+    # can hand the fertiliser chip the structured word.
+    assert rows[0]["treatment"]["nutrition"]["action"] == "check"
+
+
+def test_the_advisor_lets_a_fresh_photo_constrain_the_plan(client):
+    """
+    The photo joins the plan end to end: a named, fresh read for a field in
+    the feed rides the advisory as `photoDisease`, carrying its class and the
+    structured nutrition word the fertiliser chip acts on — and no photo for
+    a field means no constraint for that field, so no chip invents work from
+    a photo another field earned.
+    """
+    from app.db.repository import CropHealthRepository
+    from datetime import datetime, timezone
+
+    repository = CropHealthRepository(app.state.health_repository.db)
+    field_id = (client.get("/api/advisor").json()["fields"])[0]["fieldId"]
+    named = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    repository.insert(
+        {
+            "created_at": named,
+            "field_id": field_id,
+            "crop": "Rice",
+            "prediction_label": "Rice Bacterial leaf blight",
+            "result_status": "result",
+            "treatment": {"heading": "h", "text": "t", "disclaimer": "d",
+                          "textVersion": "treat-en-1",
+                          "nutrition": {"nutrient": "nitrogen", "action": "withhold",
+                                        "note": "n", "textVersion": "nutr-en-1"}},
+        }
+    )
+
+    feed = client.get("/api/advisor").json()
+    fields = {item["fieldId"]: item for item in feed["fields"]}
+    photo = fields[field_id]["photoDisease"]
+    assert photo["classLabel"] == "Rice Bacterial leaf blight"
+    assert photo["photoOn"] == named
+    assert photo["nutrition"]["nutrient"] == "nitrogen"
+    assert photo["nutrition"]["action"] == "withhold"
+    for other_id, item in fields.items():
+        if other_id != field_id:
+            assert "photoDisease" not in item, (
+                f"{other_id} must not inherit a photo read taken for {field_id}"
+            )
+
+
+def test_the_advisor_ignores_a_photo_beyond_the_freshness_window(client):
+    """
+    A named read stops constraining the plan after the window: a blight
+    named last month is not evidence this week's feed choice answers to.
+    The farmer takes a fresh photo; the plan does not age its advice on a
+    stale one.
+    """
+    from app.db.repository import CropHealthRepository
+
+    repository = CropHealthRepository(app.state.health_repository.db)
+    field_id = (client.get("/api/advisor").json()["fields"])[0]["fieldId"]
+    repository.insert(
+        {
+            "created_at": "2025-01-01T00:00:00+00:00",
+            "field_id": field_id,
+            "crop": "Rice",
+            "prediction_label": "Rice Bacterial leaf blight",
+            "result_status": "result",
+            "treatment": None,
+        }
+    )
+
+    fields = client.get("/api/advisor").json()["fields"]
+    constrained = [
+        item for item in fields
+        if item["fieldId"] == field_id and item.get("photoDisease")
+    ]
+    assert not constrained, (
+        "a read from outside the freshness window must not constrain the plan"
+    )

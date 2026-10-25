@@ -220,6 +220,19 @@ function diseaseName(raw: string): string {
   return titleCase(raw.replace(/_/g, ' '))
 }
 
+/**
+ * A photo's class often opens with the crop's own name — "Rice Bacterial leaf
+ * blight" on the Paddy field — and the farmer is already reading that field,
+ * so the duplicated word is dropped. A label that does not match the crop is
+ * shown as the backend named it.
+ */
+function shortenPhotoLabel(label: string, crop: string): string {
+  const words = label.split(' ')
+  return words[0].toLowerCase() === (crop || '').toLowerCase()
+    ? words.slice(1).join(' ')
+    : label
+}
+
 /** Remedy for a class label, matched without regard to case or underscores. */
 function remedyFor(label: string): string | undefined {
   const key = label.toLowerCase().replace(/_/g, ' ')
@@ -291,11 +304,15 @@ function farmerChips(field: Advisory): FarmerChip[] {
   const fertilizer = fertilizerAdvice(field.sensors)
   const shortageKeys = nutrientShortages(field.sensors)
   const pesticide = pesticideAdvice(field.risk)
+  const photo = field.photoDisease ?? null
+  const nutrition = photo?.nutrition ?? null
 
   let fertilizerChip: FarmerChip
+  let fertilizerNutrient: 'nitrogen' | 'phosphorus' | 'potassium' | null = null
   const shortage = shortageKeys[0]
   if (fertilizer.tone === 'warn' && shortage) {
     const product = FERTILIZER_PRODUCTS[shortage]
+    fertilizerNutrient = shortage
     const nutrientKgHa = field.risk.nutrientDemandKgHa?.[shortage] ?? 0
     const productKgAcre = nutrientKgHa / product.fraction / 2.471
     const bags = (productKgAcre * acres) / 50
@@ -314,13 +331,57 @@ function farmerChips(field: Advisory): FarmerChip[] {
     }
   } else {
     // No sensor shortage: the calendar can still owe this crop a pass.
-    fertilizerChip =
-      topDressChip(field, acres) ?? {
+    const topDress = topDressChip(field, acres)
+    if (topDress) {
+      // The top-dress is a nitrogen feed by definition.
+      fertilizerNutrient = 'nitrogen'
+      fertilizerChip = topDress
+    } else {
+      fertilizerChip = {
         key: 'fertilizer',
         title: 'No fertilizer today',
         detail: 'No fertilizer needed at this stage.',
         tone: 'healthy',
       }
+    }
+  }
+
+  /*
+   * The leaf photo joins the fertiliser decision.
+   *
+   * A named photo carries what its disease means for the nutrient plan —
+   * the same general practice the photo card's treatment text states,
+   * structured by the backend. The chip does not invent a dose from the
+   * photo: it only vetoes or qualifies the feed the sensors and the
+   * calendar already called for, quoting the photo that earned the word.
+   */
+  const photoLabel = photo
+    ? shortenPhotoLabel(photo.classLabel, field.crop)
+    : ''
+  if (
+    nutrition &&
+    nutrition.nutrient === 'nitrogen' &&
+    fertilizerNutrient === 'nitrogen' &&
+    (nutrition.action === 'withhold' || nutrition.action === 'reduce')
+  ) {
+    fertilizerChip = {
+      key: 'fertilizer',
+      title: 'Hold the fertilizer today',
+      detail: `${nutrition.note} ${photoLabel} was found in a photo on ${
+        photo!.photoOn.slice(0, 10)
+      }; feed once the field reads clean again.`,
+      tone: 'alert',
+    }
+  } else if (
+    nutrition &&
+    nutrition.nutrient === 'potassium' &&
+    nutrition.action === 'check' &&
+    fertilizerNutrient === 'nitrogen'
+  ) {
+    fertilizerChip = {
+      ...fertilizerChip,
+      detail: `Check potash first — ${nutrition.note} (${photoLabel}, photo of ${photo!.photoOn.slice(0, 10)})`,
+    }
   }
 
   const sprayChip: FarmerChip =
