@@ -146,7 +146,10 @@ const NUTRIENT_SYMBOLS = {
  */
 function nutrientShortages(s: Advisory['sensors']): (keyof typeof NUTRIENT_BANDS)[] {
   return (['nitrogen', 'phosphorus', 'potassium'] as const).filter(
-    (nutrient) => s[nutrient] < NUTRIENT_BANDS[nutrient][0],
+    (nutrient) => {
+      const value = s[nutrient]
+      return value != null && value < NUTRIENT_BANDS[nutrient][0]
+    },
   )
 }
 

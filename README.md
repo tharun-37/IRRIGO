@@ -179,6 +179,150 @@ a farmer should apply" is not one the evidence supports yet.
 
 ---
 
+## Hardware
+
+The bench node uses:
+
+| Sensor | Pin / Interface | Purpose |
+|--------|----------------|---------|
+| Capacitive soil moisture sensor | GPIO 34 (ADC) | Soil moisture % (0-100%) |
+| DHT11 | GPIO 14 | Air temperature & humidity |
+| BH1750 (GY-30) | GPIO 33/25 (I²C) | Light intensity (lux) |
+| Servo (valve) | GPIO 13 | Valve actuation (OPEN/CLOSED) |
+
+**Not included:** NPK probe, pH sensor, EC sensor, Modbus/RS485/MAX3485.
+The fertilizer recommendation returns `needs_soil_test` when soil NPK is missing;
+the farmer enters a lab soil test manually. The crop-health photo model is
+unaffected (uses image statistics only).
+
+---
+
+## What it does
+
+**Registers sowings.** A field is registered once, with its crop, soil, method
+and sowing date. From that date the system counts elapsed days and thermal time,
+derives the growth stage, and tracks root depth, crop coefficient, total available
+water and depletion forward. Nothing needs re-entering as the season advances.
+
+```powershell
+& $py scripts\sow_field.py compare
+```
+
+The same wheat field appears twice, seeded and mature:
+
+| | seedling | mature |
+|---|---|---|
+| Kc | 0.40 | 1.15 |
+| root depth | 30 cm | 180 cm |
+| TAW | 60 mm | 360 mm |
+| 14-day requirement | small | large |
+
+That contrast is the whole system in one table. A crop needs more water as it
+grows, for the boring reason that there is more root and more leaf, and a tool
+that cannot express that is not a tool.
+
+**Estimates the requirement.** `models.py` fits a gradient-boosted regressor on 36
+features that describe the *physical state* of the field: Kc, root depth, depletion
+and its fraction of TAW, growing degree days, and the weather. It reaches
+**+72.8% skill against the textbook `Kc × ET0 × 14` calculation** a practitioner
+would do by hand (4.34 mm against 15.97 mm, on rows that need water).
+
+**Schedules it.** `optimizer.py` searches dated schedules by dynamic programming,
+respecting the method's per-event cap, daily infiltration, field capacity and the
+delivery cap. It will not apply more than was computed; if the requirement is too
+small to avoid crop stress it says so in those words instead of quietly
+over-watering.
+
+**Reports its own uncertainty.** Split-conformal intervals, calibrated and then
+*measured*:
+
+| nominal | interval | realised coverage |
+|---|---|---|
+| 80% | ±6.53 mm | 80.0% |
+| 90% | ±9.11 mm | 90.0% |
+
+Read the realised column, not the nominal one. It is there because this
+calibration step caught a real bug — the quantile level was inverted, producing an
+interval ten times too narrow while labelling itself 90% correct.
+
+**Refuses to over-promise.** "Needs water at all" is reported separately from the
+regression, because it is a different question: recall **0.996**, missed **0.42%**,
+false alarms **27.61%**. It is deliberately biased toward watering. A false alarm
+wastes an irrigation; a false negative costs yield that cannot be recovered.
+
+---
+
+## Validated against independent data
+
+A simulation that checks itself proves nothing, so the inputs are cross-checked
+against ERA5 via Open-Meteo — a different implementation of the same physics.
+
+**Evapotranspiration.** Two independent FAO-56 implementations, 12 stations,
+2015–2024, 43,836 paired days:
+
+```
+mean r 0.911    ratio 0.998    bias -0.014 mm/day
+```
+
+The project's FAO-56 Penman-Monteith arithmetic agrees with ERA5 to within 0.2%
+on the mean.
+
+**Simulated soil water against observed soil water** — the check the project most
+needed and did not have:
+
+```
+100% of 72,082 corpus rows paired
+within-series seasonal shape, 555 series: mean r +0.352, 90.5% positive
+observed depth profile monotonic increasing: yes
+```
+
+**What this does and does not prove.** ERA5 is a reanalysis, not a probe, and its
+0–7 cm layer sits above most of the root zone. This is corroboration, not
+calibration. The simulated soil profile is deliberately *not* fitted to ERA5:
+that would replace a transparent physical model with an opaque correction that
+transfers badly to a new field.
+
+---
+
+## Honest limitations
+
+Read these before trusting a number in the field.
+
+**The FAO-56 coefficients are global averages, uncalibrated for these fields.**
+Crop coefficients, stage lengths and depletion fractions are published defaults.
+That is the largest single source of error in the system and no amount of
+modelling removes it. A local Kc curve and one season of probe data would help
+more than any further model work.
+
+**Soil texture is assigned, not measured.** Twelve FAO-56 classes allocated per
+field specification. The external validation localises the error precisely: the
+seasonal *dynamics* are sound (within-series r +0.35) but the *level* is off per
+station in both directions. SoilGrids is the fix; the API was unreachable from
+the build environment.
+
+**GDD stage thresholds are an assumption.** FAO-56 publishes stage lengths in
+days, not accumulated thermal time. Phenology will be wrong for varieties whose
+thermal requirement differs from the table.
+
+**Two irrigation methods are absent from the corpus.** `Flood` and `Paddy`
+produce constant columns in the feature matrix. Rice on a paddy is a significant
+Indian case and its absence is a real gap.
+
+**One station fails, and it is reported.** Kolkata, leave-one-station-out
+R² = −0.244. 87.2% of its rows need no water against 39.8% in training, because
+it receives 9.07 mm/day of rain against 3.89 elsewhere. That is genuine covariate
+shift from a climate with no analogue in the corpus, not a rounding error, and the
+operational consequence — 11.12 mm error on KOL rows that do need water, against
+4.18 mm overall — is the number that matters. Twelve stations is a small sample
+of the subcontinent's climate. More stations is the fix.
+
+**There is no labelled field data anywhere in this project.** Every water number
+traces to NASA POWER, the FAO-56 tables, or this simulator. Nothing here has been
+checked against a measured irrigation decision, and the claim "this predicts what
+a farmer should apply" is not one the evidence supports yet.
+
+---
+
 ## Data provenance
 
 | what | source | coverage |

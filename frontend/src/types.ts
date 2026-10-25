@@ -34,11 +34,11 @@ export interface Telemetry {
   temperature: number
   humidity: number
   soilMoisture: number
-  soilPh: number
-  ec: number
-  nitrogen: number
-  phosphorus: number
-  potassium: number
+  soilPh: number | null
+  ec: number | null
+  nitrogen: number | null
+  phosphorus: number | null
+  potassium: number | null
   lightIntensity: number
   batteryVolts: number | null
   rssiDbm: number | null

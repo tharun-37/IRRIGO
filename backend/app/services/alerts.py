@@ -16,17 +16,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-#: Plausibility bounds for a 7-in-1 NPK probe. Outside these the reading is a
-#: fault, not a value. The NPK ceiling is the sensor's own reported range.
+#: Plausibility bounds for the bench node sensor suite.
+#: Outside these the reading is a fault, not a value.
+#: NPK, pH, EC are omitted — the bench node does not have those sensors.
 SENSOR_LIMITS: dict[str, tuple[float, float]] = {
     "temperature": (-10.0, 80.0),
     "humidity": (0.0, 100.0),
     "soil_moisture": (0.0, 100.0),
-    "soil_ph": (2.5, 9.5),
-    "ec": (0.0, 20.0),
-    "nitrogen": (0.0, 3000.0),
-    "phosphorus": (0.0, 3000.0),
-    "potassium": (0.0, 3000.0),
     "light_intensity": (0.0, 200_000.0),
 }
 
@@ -143,6 +139,8 @@ def evaluate(
         ph = reading.get("soilPh")
         ec = reading.get("ec")
 
+    # Only evaluate pH/EC alerts if the sensors are present.
+    # The bench node does not have pH/EC sensors, so these are skipped.
     if ph is not None and (ph < PH_ALERT_LOW or ph > PH_ALERT_HIGH):
         direction = "acidic" if ph < PH_ALERT_LOW else "alkaline"
         alerts.append(
