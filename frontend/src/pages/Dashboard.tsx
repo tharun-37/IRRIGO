@@ -102,15 +102,6 @@ const NODE_FRESH_SECONDS = 1800
 const MOISTURE_WILTING_PCT = 12
 
 /**
- * The node's own moisture band, by the decision model's rule.
- */
-function liveMoistureBand(soilMoisture: number): 'dry' | 'optimal' | 'wet' {
-  if (soilMoisture < MOISTURE_DRY_PCT) return 'dry'
-  if (soilMoisture > 62) return 'wet'
-  return 'optimal'
-}
-
-/**
  * Live water-stress coefficient, FAO-33's Ks, from the node's own probe.
  *
  * 1 means fully supplied (the reading is inside or above the model's optimal

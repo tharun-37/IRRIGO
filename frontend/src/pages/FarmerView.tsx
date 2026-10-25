@@ -30,9 +30,17 @@ import { AlertGlyph, LeafGlyph } from '../components/ui'
 import CropHealthCheck from '../components/CropHealthCheck'
 import { FieldMap, type MapField, type MapTone } from '../components/FieldMap'
 import { int, num, relativeTime, titleCase } from '../lib/format'
-import type { Advisory, LiveWeather, ScheduleDay, Telemetry } from '../types'
+import type { Advisory, LiveWeather, Telemetry } from '../types'
 
 type Band = 'dry' | 'good' | 'wet' | 'rest' | 'none'
+
+/**
+ * The decision model's dry floor — backend `MOISTURE_BAND = (38, 62)`
+ * (`backend/ml/inference.py`). A reading below 38% is the band the model
+ * treats as dry. Restated here so the visible hold rule and the models
+ * cannot drift apart silently.
+ */
+const MOISTURE_DRY_PCT = 38
 
 export interface FarmerChip {
   key: 'fertilizer' | 'spray' | 'yield'
@@ -261,11 +269,19 @@ function plotTone(field: FarmerField): MapTone {
   return field.band
 }
 
-function weekday(iso: string): string {
-  const date = new Date(`${iso}T00:00:00`)
-  return Number.isNaN(date.getTime())
-    ? '—'
-    : date.toLocaleDateString(undefined, { weekday: 'short' })
+/**
+ * Real-calendar weekday labels for the horizon.
+ *
+ * Offset 0 is the operator's own today, so the chart reads on the calendar
+ * its reader uses — the plan's *data* is the engine's weather replay and is
+ * anchored at the archive's last day (2024-12-31, a Tuesday), which must
+ * never rename the operator's week. The bar heights stay the plan's; only
+ * the axis labels follow the real calendar.
+ */
+function weekday(offset: number, today = new Date()): string {
+  const date = new Date(today)
+  date.setDate(today.getDate() + offset)
+  return date.toLocaleDateString(undefined, { weekday: 'short' })
 }
 
 function SpeakerGlyph({ size = 20 }: { size?: number }) {
@@ -654,15 +670,15 @@ function WeekCard({ field }: { field: Advisory }) {
   const weekTotalNeed = days.reduce((sum, day) => sum + (day.needMm ?? 0), 0)
 
   // Today's hold decision, from the node's own reading. Same band rule the
-  // decision model uses (dry floor 38% — see Dashboard's liveMoistureBand):
-  // hold only when the node is fresh AND the soil is not in the dry band.
-  // When the season is over, there is nothing to hold.
+  // decision model uses (dry floor MOISTURE_DRY_PCT — backed by the model's
+  // MOISTURE_BAND): hold only when the node is fresh AND the soil is not in
+  // the dry band. When the season is over, there is nothing to hold.
   const liveHoldsToday =
     field.live?.isLive &&
     !finished &&
     field.sensors.soilMoisture != null &&
     Number.isFinite(field.sensors.soilMoisture) &&
-    field.sensors.soilMoisture >= 38
+    field.sensors.soilMoisture >= MOISTURE_DRY_PCT
 
   // Pump-day minutes from the decision's own runtime-to-depth ratio, so any
   // bar's label and today's action card cannot disagree.
@@ -703,7 +719,7 @@ function WeekCard({ field }: { field: Advisory }) {
                 </span>
                 <div
                   className="relative w-full flex-1"
-                  aria-label={`${isToday ? 'Today' : weekday(day.date)}: needs ~${need} mm${
+                  aria-label={`${isToday ? 'Today' : weekday(day.dayOffset)}: needs ~${need} mm${
                     day.applyMm > 0 ? `, pump ${day.applyMm} mm` : ''
                   }`}
                 >
@@ -730,18 +746,8 @@ function WeekCard({ field }: { field: Advisory }) {
                 <span className={`mt-1 shrink-0 text-[11px] font-medium uppercase tracking-[0.04em] ${
                   isToday ? 'text-brand-700 font-semibold' : 'text-slate-700'
                 }`}>
-                  {isToday ? 'Today' : weekday(day.date)}
+                  {isToday ? 'Today' : weekday(day.dayOffset)}
                 </span>
-                {/* The projected soil depletion at the end of this day, from
-                    the optimiser's own path. A pump day dips; the day the
-                    number reaches the crop's stress line is the day the plan
-                    would pump — which is why a wet-soil week legitimately
-                    carries no pump bars. */}
-                {!finished && day.soilDepletionMm != null && (
-                  <span className="tnum mt-0.5 shrink-0 text-[9px] leading-none text-ink-400">
-                    {Math.round(day.soilDepletionMm)}mm
-                  </span>
-                )}
               </div>
             )
           })}
