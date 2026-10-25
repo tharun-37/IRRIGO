@@ -1221,29 +1221,39 @@ export function FarmerView({
                   )
                 ) : (
                   // An active approval (open/running) means the node has the command.
-                  // The farmer marks the day's task complete instead.
-                  <button
-                    type="button"
-                    onClick={toggleDone}
-                    aria-pressed={done}
-                    className={`flex h-9 items-center justify-center gap-2 rounded-card border text-[13px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${
-                      done
-                        ? 'border-status-healthy bg-status-healthySoft text-[#15803d]'
-                        : 'border-ink-200 bg-white text-ink-900 hover:border-ink-300 hover:bg-ink-50'
-                    }`}
-                  >
-                    <CheckGlyph size={18} />
-                    {done ? (
-                      <span className="flex flex-col items-start leading-tight">
-                        <span>Done</span>
-                        <span aria-hidden="true" className="text-[10px] font-medium">
-                          Saved for today.
-                        </span>
-                      </span>
+                  // If water is currently running, the farmer stops it; when the
+                  // approved window has passed, the button says "Done for today".
+                  <>
+                    {watered && field.approval.status === 'running' ? (
+                      <button
+                        type="button"
+                        onClick={toggleDone}
+                        aria-pressed={done}
+                        className={`flex h-9 items-center justify-center gap-2 rounded-card border text-[13px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${
+                          done
+                            ? 'border-status-healthy bg-status-healthySoft text-[#15803d]'
+                            : 'border-red-600 bg-red-50 text-red-700 hover:border-red-700 hover:bg-red-100'
+                        }`}
+                      >
+                        <CheckGlyph size={18} />
+                        {done ? 'Done for today' : 'Stop watering'}
+                      </button>
                     ) : (
-                      'Mark done'
+                      <button
+                        type="button"
+                        onClick={toggleDone}
+                        aria-pressed={done}
+                        className={`flex h-9 items-center justify-center gap-2 rounded-card border text-[13px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${
+                          done
+                            ? 'border-status-healthy bg-status-healthySoft text-[#15803d]'
+                            : 'border-ink-200 bg-white text-ink-900 hover:border-ink-300 hover:bg-ink-50'
+                        }`}
+                      >
+                        <CheckGlyph size={18} />
+                        {done ? 'Done for today' : 'Mark done'}
+                      </button>
                     )}
-                  </button>
+                  </>
                 )}
               </div>
             </div>

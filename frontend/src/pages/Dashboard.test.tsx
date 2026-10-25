@@ -814,15 +814,27 @@ describe('Field view', () => {
   })
 
   it('records a done mark per field per day', async () => {
-    // Use a field with an active approval so the "Mark done" button shows
-    // (watered fields without approval show "Approve & run" instead).
+    // Use a field with an active running approval so the "Stop watering"
+    // button shows (watered fields without approval show "Approve & run" instead).
     const approvedField = {
       ...FIELD,
+      recommendation: {
+        ...FIELD.recommendation,
+        shouldIrrigate: true,
+        finalDepthMm: 18.0,
+        depthMm: 18.0,
+        volumeLitres: 72.0,
+        durationSeconds: 120,
+        action: 'MODERATE_IRRIGATION',
+        confidence: 0.9,
+        probability: 0.91,
+        threshold: 0.5,
+      },
       approval: {
         approvalId: 'test-approval',
         approvedAt: '2026-10-25T09:00:00+00:00',
         fieldId: 'PNQ-wheat-01',
-        status: 'open',
+        status: 'running',
         depthMm: 18.0,
         durationSeconds: 120,
         volumeLitres: 72.0,
@@ -835,13 +847,13 @@ describe('Field view', () => {
       expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
     )
 
-    const mark = screen.getByRole('button', { name: /Mark done/ })
+    const mark = screen.getByRole('button', { name: /Stop watering/ })
     expect(mark.getAttribute('aria-pressed')).toBe('false')
     fireEvent.click(mark)
 
-    const done = screen.getByRole('button', { name: /^Done$/ })
+    const done = screen.getByRole('button', { name: /Done for today/ })
     expect(done.getAttribute('aria-pressed')).toBe('true')
-    expect(screen.getByText('Saved for today.')).toBeTruthy()
+    expect(screen.getByText('Done for today')).toBeTruthy()
   })
 
   it('keeps the crop photo check page a straight capture flow', async () => {
