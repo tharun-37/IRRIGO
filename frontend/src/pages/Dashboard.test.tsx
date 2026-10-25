@@ -272,6 +272,22 @@ function renderWithField(field: unknown) {
 
 describe('Field view', () => {
   beforeEach(() => {
+    // This environment ships no storage at all; a small stub keeps the
+    // "cleared read outlives the page" semantics testable, and unstubAllGlobals
+    // drops it after each test so one test's ack cannot leak into the next.
+    const backing: Record<string, string> = {}
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => (key in backing ? backing[key] : null),
+      setItem: (key: string, value: string) => {
+        backing[key] = String(value)
+      },
+      removeItem: (key: string) => {
+        delete backing[key]
+      },
+      clear: () => {
+        for (const key of Object.keys(backing)) delete backing[key]
+      },
+    })
     vi.stubGlobal(
       'ResizeObserver',
       class {
@@ -521,6 +537,85 @@ describe('Field view', () => {
     expect(
       within(notes as HTMLElement).getByText(
         /a leaf photo named Cotton Bacterial blight on 2026-10-02/,
+      ),
+    ).toBeTruthy()
+  })
+
+  it('returns the chip to green when the farmer marks the leaves clear', async () => {
+    // The demo beat: the pushed photo turned the chip warn; the farmer reads
+    // it, taps "Mark leaves clear", and the chip reverts to the green
+    // no-feed verdict it had before the photo — with the read no longer
+    // quoted — because the ack is stored per field, outliving the page.
+    const named = {
+      ...FIELD,
+      photoDisease: {
+        classLabel: 'Cotton Bacterial blight',
+        rawScore: 0.66,
+        photoOn: '2026-10-25T09:00:00+00:00',
+        nutrition: null,
+      },
+    }
+    renderWithField(named)
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
+    )
+    const notes = screen.getByLabelText(/Yield and today.s notes/)
+    expect(within(notes as HTMLElement).getByText('No fertilizer today')).toBeTruthy()
+
+    fireEvent.click(
+      within(notes as HTMLElement).getByRole('button', {
+        name: /mark leaves clear/i,
+      }),
+    )
+
+    expect(
+      within(notes as HTMLElement).getByText('No fertilizer needed at this stage.'),
+    ).toBeTruthy()
+    expect(within(notes as HTMLElement).queryByText(/a leaf photo named/)).toBeNull()
+    expect(localStorage.getItem('irrig.photoAck.PNQ-wheat-01')).toBe(
+      '2026-10-25T09:00:00+00:00',
+    )
+
+    // Green after refresh too: the same feed is still served, the stored ack
+    // keeps the read cleared on a remount.
+    cleanup()
+    renderWithField(named)
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
+    )
+    const remounted = screen.getByLabelText(/Yield and today.s notes/)
+    expect(
+      within(remounted as HTMLElement).getByText('No fertilizer needed at this stage.'),
+    ).toBeTruthy()
+    expect(
+      within(remounted as HTMLElement).queryByText(/a leaf photo named/),
+    ).toBeNull()
+  })
+
+  it('re-opens the note when a newer photo names a disease again', async () => {
+    // A cleared read stays cleared, but the chip is not deaf: pushing a fresh
+    // photo (a later timestamp) warns again, so each demo pass can re-run
+    // green → warn → clear without touching the storage by hand.
+    localStorage.setItem('irrig.photoAck.PNQ-wheat-01', '2026-10-25T09:00:00+00:00')
+    const newer = {
+      ...FIELD,
+      photoDisease: {
+        classLabel: 'Cotton Bacterial blight',
+        rawScore: 0.58,
+        photoOn: '2026-10-25T11:30:00+00:00',
+        nutrition: null,
+      },
+    }
+    renderWithField(newer)
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
+    )
+    const notes = screen.getByLabelText(/Yield and today.s notes/)
+    expect(
+      within(notes as HTMLElement).getByText(
+        /a leaf photo named Cotton Bacterial blight on 2026-10-25/,
       ),
     ).toBeTruthy()
   })

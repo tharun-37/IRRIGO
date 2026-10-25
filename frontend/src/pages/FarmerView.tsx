@@ -39,6 +39,13 @@ export interface FarmerChip {
   title: string
   detail: string
   tone: 'healthy' | 'warn' | 'alert' | 'neutral'
+  /**
+   * True when this chip's state came from a leaf-photo read the farmer may
+   * acknowledge — "Mark leaves clear" returns the verdict it had before the
+   * photo, and the note stays cleared across a refresh unless a newer photo
+   * names a disease again.
+   */
+  dismiss?: boolean
 }
 
 /** One field as the farm overview and the map need it, already reduced. */
@@ -949,7 +956,13 @@ function LiveNodeCard({ field }: { field: Advisory }) {
 }
 
 /** What the crop should give, and the things that are not on today's list. */
-function YieldCard({ chips }: { chips: FarmerChip[] }) {
+function YieldCard({
+  chips,
+  onClearPhoto,
+}: {
+  chips: FarmerChip[]
+  onClearPhoto?: () => void
+}) {
   const yieldChip = chips.find((chip) => chip.key === 'yield')
   const notes = chips.filter((chip) => chip.key !== 'yield')
 
@@ -988,6 +1001,15 @@ function YieldCard({ chips }: { chips: FarmerChip[] }) {
                   {chip.title}
                 </p>
                 <p className="mt-0.5 text-[11px] leading-snug text-slate-600">{chip.detail}</p>
+                {chip.dismiss && onClearPhoto && (
+                  <button
+                    type="button"
+                    onClick={onClearPhoto}
+                    className="mt-1 text-[11px] font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-900"
+                  >
+                    Mark leaves clear
+                  </button>
+                )}
               </div>
             </li>
           ))}
@@ -1010,6 +1032,7 @@ export function FarmerView({
   chips,
   live,
   onSelect,
+  onClearPhoto,
 }: {
   field: Advisory
   fields: FarmerField[]
@@ -1018,6 +1041,8 @@ export function FarmerView({
   chips: FarmerChip[]
   live: LiveWeather | null
   onSelect: (fieldId: string) => void
+  /** Clears the leaf-photo read behind a `dismiss` chip, back to pre-photo. */
+  onClearPhoto?: () => void
 }) {
   const watered = depth > 0
   const rest = band === 'rest'
@@ -1257,7 +1282,7 @@ export function FarmerView({
             }
           >
             <SoilWaterCard field={field} band={band} />
-            <YieldCard chips={chips} />
+            <YieldCard chips={chips} onClearPhoto={onClearPhoto} />
             {field.live?.isLive && <LiveNodeCard field={field} />}
           </div>
         </div>

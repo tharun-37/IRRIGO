@@ -259,6 +259,37 @@ function topDisease(
  */
 const TOP_DRESS_CROPS = ['barley', 'potato'] as const
 
+/**
+ * Where "the farmer cleared this leaf-photo read" is kept, keyed by field.
+ * The advisor keeps serving the same analysis record for up to seven days,
+ * but a read a farmer has acknowledged must not keep re-yellowing the
+ * fertiliser chip — a localStorage entry outlives the refresh, and a newer
+ * photo (a pushed re-check) opens the note again by dated comparison.
+ */
+const PHOTO_ACK_PREFIX = 'irrig.photoAck.'
+
+function readPhotoAck(fieldId: string): string | null {
+  if (!fieldId || typeof localStorage === 'undefined') return null
+  try {
+    return localStorage.getItem(PHOTO_ACK_PREFIX + fieldId)
+  } catch {
+    // Private mode or blocked storage: the ack lives in this session only.
+    return null
+  }
+}
+
+/**
+ * True when the farmer has cleared this read, or an older one. Both
+ * timestamps come from the same backend generator, but the comparison is
+ * parsed where possible so a stored ack survives a format change.
+ */
+function readIsCleared(photoOn: string, ackOn: string): boolean {
+  const photoMs = Date.parse(photoOn)
+  const ackMs = Date.parse(ackOn)
+  const known = Number.isFinite(photoMs) && Number.isFinite(ackMs)
+  return known ? photoMs <= ackMs : photoOn <= ackOn
+}
+
 function topDressChip(field: Advisory, acres: number): FarmerChip | null {
   if (stageKey(field) !== 'mid_season') return null
   if (!TOP_DRESS_CROPS.includes((field.crop ?? '').toLowerCase() as (typeof TOP_DRESS_CROPS)[number])) {
@@ -291,12 +322,19 @@ function topDressChip(field: Advisory, acres: number): FarmerChip | null {
  * harvest is quoted per acre because that is the land measure the work is
  * done in.
  */
-function farmerChips(field: Advisory): FarmerChip[] {
+function farmerChips(field: Advisory, photoAckOn?: string | null): FarmerChip[] {
   const acres = field.areaM2 / ACRE_M2
   const fertilizer = fertilizerAdvice(field.sensors)
   const shortageKeys = nutrientShortages(field.sensors)
   const pesticide = pesticideAdvice(field.risk)
-  const photo = field.photoDisease ?? null
+  // A read the farmer already cleared does not speak twice: the chip behaves
+  // exactly as if the photo had not been taken. A newer photo re-opens the
+  // note (readPhotoAck stores one cleared timestamp per field).
+  const rawPhoto = field.photoDisease ?? null
+  const photo =
+    rawPhoto && photoAckOn && readIsCleared(rawPhoto.photoOn, photoAckOn)
+      ? null
+      : rawPhoto
   const nutrition = photo?.nutrition ?? null
 
   let fertilizerChip: FarmerChip
@@ -363,6 +401,7 @@ function farmerChips(field: Advisory): FarmerChip[] {
         photo!.photoOn.slice(0, 10)
       }; feed once the field reads clean again.`,
       tone: 'alert',
+      dismiss: true,
     }
   } else if (
     nutrition &&
@@ -372,6 +411,7 @@ function farmerChips(field: Advisory): FarmerChip[] {
   ) {
     fertilizerChip = {
       ...fertilizerChip,
+      dismiss: true,
       detail: `Check potash first — ${nutrition.note} (${photoLabel}, photo of ${photo!.photoOn.slice(0, 10)})`,
     }
   } else if (photo && fertilizerNutrient === null) {
@@ -384,6 +424,10 @@ function farmerChips(field: Advisory): FarmerChip[] {
       key: 'fertilizer',
       title: 'No fertilizer today',
       tone: 'warn',
+      // The farmer can clear the read the moment they act on it — the chip
+      // returns to the green verdict it had before the photo, and it stays
+      // green across a refresh until a newer photo names a disease again.
+      dismiss: true,
       detail:
         `Nothing owed at this stage — but a leaf photo named ${photoLabel} on ${photo!.photoOn.slice(0, 10)}` +
         `${nutrition ? `, and ${nutrition.note}` : ''}. Hold any feeding of your own until the leaves read clear.`,
@@ -562,6 +606,28 @@ export default function Dashboard() {
 
   const depth = field ? depthOf(field) : 0
   const soil = field ? wetness(field) : { remaining: 0, band: 'none' as Band }
+  // Per-field record of which leaf-photo read the farmer has cleared. Read
+  // straight from localStorage on a field switch; the map covers rolls of the
+  // same field within this session between renders.
+  const [photoAcks, setPhotoAcks] = useState<Record<string, string>>({})
+  const ackOn =
+    (field && (photoAcks[field.fieldId] ?? readPhotoAck(field.fieldId))) ?? null
+  /**
+   * "Mark leaves clear": acknowledge the fresh photo read behind the
+   * fertiliser chip. The stored timestamp is the very read being dismissed,
+   * so a newer pushed photo re-opens the note while this one stays cleared —
+   * including across a refresh, because the ack outlives the page.
+   */
+  const clearPhoto = useCallback(() => {
+    const photoOn = field?.photoDisease?.photoOn
+    if (!field || !photoOn) return
+    try {
+      localStorage.setItem(PHOTO_ACK_PREFIX + field.fieldId, photoOn)
+    } catch {
+      // Blocked storage: the ack still holds for the rest of this session.
+    }
+    setPhotoAcks((prev) => ({ ...prev, [field.fieldId]: photoOn }))
+  }, [field])
   // The farmer view's list and map are a reduction of the same feed, so they
   // are derived once per payload rather than per render.
   const farmRows = useMemo(() => farmerFields(fields), [fields])
@@ -694,9 +760,10 @@ export default function Dashboard() {
               fields={farmRows}
               depth={depth}
               band={soil.band}
-              chips={farmerChips(field)}
+              chips={farmerChips(field, ackOn)}
               live={live.data?.station === field.station ? live.data : null}
               onSelect={setFieldId}
+              onClearPhoto={clearPhoto}
             />
           </div>
         )}
