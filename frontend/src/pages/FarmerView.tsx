@@ -34,14 +34,6 @@ import type { Advisory, LiveWeather, Telemetry } from '../types'
 
 type Band = 'dry' | 'good' | 'wet' | 'rest' | 'none'
 
-/**
- * The decision model's dry floor — backend `MOISTURE_BAND = (38, 62)`
- * (`backend/ml/inference.py`). A reading below 38% is the band the model
- * treats as dry. Restated here so the visible hold rule and the models
- * cannot drift apart silently.
- */
-const MOISTURE_DRY_PCT = 38
-
 export interface FarmerChip {
   key: 'fertilizer' | 'spray' | 'yield'
   title: string
@@ -656,29 +648,18 @@ function MiniStat({ label, value }: { label: string; value: string }) {
  * - the solid blue bar is the pump day the optimiser chose, at the depth it
  *   chose, on top of that requirement.
  *
- * With a live node attached, the week bends to what the probe reads, in one
- * place only: today. The plan's replay opens the soil at a historical
- * depletion; the node reports what is really in the ground now. If the probe
- * reads the band the plan would water from, today's pump is marked held —
- * water the plan wanted today is not needed on the moisture the node
- * measured — and the day the plan expects it moves is not invented either;
- * the node's next decision at the next POST settles it.
+ * What is rendered here is the plan the node's own reading grounded: the
+ * advisory maps the probe's moisture onto a real starting depletion and the
+ * optimiser rebuilds the week from it, so a wet probe already shows its
+ * shorter week and a dry probe its earlier pumps. The decision block on the
+ * action card is priced off that same plan's day-0 event. A frontend hold
+ * stamp here would be a second decision-maker contradicting both — if the
+ * plan says pump today, the bar and the action card say pump today.
  */
 function WeekCard({ field }: { field: Advisory }) {
   const days = (field.schedule ?? []).slice(0, 7)
   const finished = field.stage === 'post_harvest' || field.stage === 'harvest'
   const weekTotalNeed = days.reduce((sum, day) => sum + (day.needMm ?? 0), 0)
-
-  // Today's hold decision, from the node's own reading. Same band rule the
-  // decision model uses (dry floor MOISTURE_DRY_PCT — backed by the model's
-  // MOISTURE_BAND): hold only when the node is fresh AND the soil is not in
-  // the dry band. When the season is over, there is nothing to hold.
-  const liveHoldsToday =
-    field.live?.isLive &&
-    !finished &&
-    field.sensors.soilMoisture != null &&
-    Number.isFinite(field.sensors.soilMoisture) &&
-    field.sensors.soilMoisture >= MOISTURE_DRY_PCT
 
   // Pump-day minutes from the decision's own runtime-to-depth ratio, so any
   // bar's label and today's action card cannot disagree.
@@ -703,7 +684,6 @@ function WeekCard({ field }: { field: Advisory }) {
       <div className="flex min-h-0 flex-1 gap-1.5 px-4 pb-1.5 pt-2">
         {days.map((day) => {
             const isToday = day.dayOffset === 0
-            const held = isToday && liveHoldsToday
             const need = Math.max(0, day.needMm ?? 0)
             const needHeight =
               need > 0.05 ? `${Math.max(6, (need / peak) * 100)}%` : '3px'
@@ -712,10 +692,8 @@ function WeekCard({ field }: { field: Advisory }) {
             const minutes = Math.round(day.applyMm * (secondsPerMm > 0 ? secondsPerMm : 8.33) / 60)
             return (
               <div key={day.dayOffset} className="flex min-w-0 flex-1 flex-col items-center">
-                <span className={`tnum flex h-4 shrink-0 items-end text-[10px] font-semibold ${
-                  held ? 'text-[#b45309]' : 'text-slate-700'
-                }`}>
-                  {day.applyMm > 0 ? (held ? 'held' : `${minutes}m`) : ''}
+                <span className="tnum flex h-4 shrink-0 items-end text-[10px] font-semibold text-slate-700">
+                  {day.applyMm > 0 ? `${minutes}m` : ''}
                 </span>
                 <div
                   className="relative w-full flex-1"
@@ -734,11 +712,7 @@ function WeekCard({ field }: { field: Advisory }) {
                       was scheduled to satisfy. */}
                   {pumpHeight !== undefined && (
                     <span
-                      className={`absolute bottom-0 z-10 w-full rounded-t-[3px] ring-1 ring-inset ring-white/70 ${
-                        held
-                          ? 'bg-gradient-to-t from-[#ea580c] to-[#fbbf24] opacity-60'
-                          : 'bg-brand-500'
-                      }`}
+                      className="absolute bottom-0 z-10 w-full rounded-t-[3px] bg-brand-500 ring-1 ring-inset ring-white/70"
                       style={{ height: pumpHeight }}
                     />
                   )}
@@ -755,11 +729,9 @@ function WeekCard({ field }: { field: Advisory }) {
       <p className="shrink-0 px-4 pb-2 text-[11px] leading-snug text-slate-700">
         {finished
           ? 'Season complete — the plan stops watering a harvested crop; the pale bars are the bare-soil remainder.'
-          : liveHoldsToday
-            ? 'The node reads wetter than the plan assumed — today’s pump is held, and the week of requirements still stands.'
-            : anyPump
-              ? `Pale = the crop's daily need (${num(weekTotalNeed, 0)} mm this week) · blue = pump days · grey mm = projected soil depletion (pump at RAW when it nears the stress line).`
-              : `No pump this week: the soil holds ${num((field.water.tawMm ?? 0) - (field.water.depletionMm ?? 0), 0)} mm of available water and the week takes ${num(weekTotalNeed, 0)} mm — the pump returns when depletion (grey) nears the ${num(field.water.rawMm ?? 0, 0)} mm stress line.`}
+          : anyPump
+            ? `Pale = the crop's daily need (${num(weekTotalNeed, 0)} mm this week) · blue = pump days, labelled with the pump time at the decision's own runtime rate.`
+            : `No pump this week: the soil holds ${num((field.water.tawMm ?? 0) - (field.water.depletionMm ?? 0), 0)} mm of available water and the week takes ${num(weekTotalNeed, 0)} mm — the pump returns when the projected depletion nears the ${num(field.water.rawMm ?? 0, 0)} mm stress line.`}
       </p>
       </div>
     </section>
