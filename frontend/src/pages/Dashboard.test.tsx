@@ -494,6 +494,37 @@ describe('Field view', () => {
     expect(within(notes as HTMLElement).getByText(/photo of 2026-10-02/)).toBeTruthy()
   })
 
+  it('still carries the photo when nothing is owed, with the read named', async () => {
+    // The screenshot case: a cotton leaf photo names bacterial blight, no
+    // nutrient band is tripped and cotton owes no calendar pass — so the
+    // dose is genuinely zero. The chip may not invent one, but it may not
+    // stay silent either: it keeps the honest "no feed" title and quotes
+    // the read the photo made.
+    const named = {
+      ...FIELD,
+      photoDisease: {
+        classLabel: 'Cotton Bacterial blight',
+        rawScore: 0.66,
+        photoOn: '2026-10-02T12:35:00+00:00',
+        nutrition: null,
+      },
+    }
+    renderWithField(named)
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
+    )
+
+    const notes = screen.getByLabelText(/Yield and today.s notes/)
+    // Title stays honest; the read and its date arrive in the detail.
+    expect(within(notes as HTMLElement).getByText('No fertilizer today')).toBeTruthy()
+    expect(
+      within(notes as HTMLElement).getByText(
+        /a leaf photo named Cotton Bacterial blight on 2026-10-02/,
+      ),
+    ).toBeTruthy()
+  })
+
   it('carries the calendar top-dress when the sensors read adequate', async () => {
     // Same feed, but a barley field at mid-season: the sensors sit inside the
     // sufficiency bands, yet the crop calendar still owes the split N pass.

@@ -29,8 +29,8 @@ import type { ReactNode } from 'react'
 import { AlertGlyph, LeafGlyph } from '../components/ui'
 import CropHealthCheck from '../components/CropHealthCheck'
 import { FieldMap, type MapField, type MapTone } from '../components/FieldMap'
-import { int, num, relativeTime, titleCase } from '../lib/format'
-import type { Advisory, LiveWeather, Telemetry } from '../types'
+import { int, num, titleCase } from '../lib/format'
+import type { Advisory, LiveWeather } from '../types'
 
 type Band = 'dry' | 'good' | 'wet' | 'rest' | 'none'
 
@@ -941,7 +941,7 @@ function LiveNodeCard({ field }: { field: Advisory }) {
         </dl>
       </div>
       <p className="shrink-0 px-4 pb-2 text-[11px] leading-snug text-slate-700">
-        ESP32 {live?.deviceId} posts every ~10 s{live?.valveOpen != null ? ' and reports its valve' : ''}. Soil
+        ESP32 {live?.deviceId} posts every ~1 s{live?.valveOpen != null ? ' and reports its valve' : ''}. Soil
         water, air and light above are the node's own measurements, not the plan's estimates.
       </p>
     </section>
@@ -1009,7 +1009,6 @@ export function FarmerView({
   band,
   chips,
   live,
-  node,
   onSelect,
 }: {
   field: Advisory
@@ -1018,8 +1017,6 @@ export function FarmerView({
   band: Band
   chips: FarmerChip[]
   live: LiveWeather | null
-  /** The node's freshest own POST for this field, from the 1 s telemetry poll. */
-  node?: Telemetry | null
   onSelect: (fieldId: string) => void
 }) {
   const watered = depth > 0
@@ -1172,37 +1169,6 @@ export function FarmerView({
                 />
                 {sky}
               </p>
-
-              {/* The node's own state, the moment it last told the backend — the
-                  closed loop, as the node reports it, on the card that issued
-                  the plan it is running. Shown only while the node is fresh. */}
-              {node && (
-                <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 rounded-panel bg-white/70 px-2.5 py-1.5 text-[12px] text-ink-700">
-                  <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-emerald-800">
-                    ESP32 node
-                  </span>
-                  <span className="tnum text-ink-700">
-                    posted{' '}
-                    {relativeTime(node.recordedAt)}
-                  </span>
-                  {node.valveOpen != null && (
-                    <span className="tnum">
-                      · valve{' '}
-                      <span
-                        className={`font-bold ${
-                          node.valveOpen ? 'text-brand-700' : 'text-ink-500'
-                        }`}
-                      >
-                        {node.valveOpen ? 'OPEN' : 'CLOSED'}
-                      </span>
-                      {node.valveOpen &&
-                        watered &&
-                        field.live?.isLive &&
-                        ' · running this plan'}
-                    </span>
-                  )}
-                </p>
-              )}
 
               <div className="mt-auto grid grid-cols-2 gap-2 pt-1.5">
                 <button

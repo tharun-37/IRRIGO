@@ -23,7 +23,7 @@ import { GrainFilter, LeafGlyph } from '../components/ui'
 import { AddField } from '../components/AddField'
 import { FarmerView, type FarmerChip, type FarmerField } from './FarmerView'
 import { int, num, relativeTime, titleCase } from '../lib/format'
-import type { Advisory, Telemetry } from '../types'
+import type { Advisory } from '../types'
 
 /**
  * The advisor's own poll cadence.
@@ -95,14 +95,6 @@ const ACRE_M2 = 4046.86
  */
 const MOISTURE_DRY_PCT = 38
 
-/**
- * How fresh a node POST must be for the action card to announce it, in
- * seconds. Mirrors the backend's own live window (`LIVE_SENSOR_WINDOW_SECONDS
- * = 1800`, backend/app/api/compat.py): past it a reading is history, not a
- * live node. Without this the strip would keep announcing the DB's oldest row
- * — a node that last posted months or years ago — as if it were on the air.
- */
-const NODE_FRESH_SECONDS = 1800
 /**
  * Near-wilting floor for the live stress curve: stress is 1 at 12% by volume
  * and 0 at the dry band. A bench probe rarely reads below 12; the taper from
@@ -382,6 +374,20 @@ function farmerChips(field: Advisory): FarmerChip[] {
       ...fertilizerChip,
       detail: `Check potash first — ${nutrition.note} (${photoLabel}, photo of ${photo!.photoOn.slice(0, 10)})`,
     }
+  } else if (photo && fertilizerNutrient === null) {
+    // A named photo still earns provenance when nothing was owed: the honest
+    // action is unchanged — no feed today — but the chip says why it carries
+    // the read, so the next hand-fed dose waits for a clean leaf rather than
+    // riding on a silent card. A class with no nutrient word changes nothing
+    // about the dose; it only names what the leaves said.
+    fertilizerChip = {
+      key: 'fertilizer',
+      title: 'No fertilizer today',
+      tone: 'warn',
+      detail:
+        `Nothing owed at this stage — but a leaf photo named ${photoLabel} on ${photo!.photoOn.slice(0, 10)}` +
+        `${nutrition ? `, and ${nutrition.note}` : ''}. Hold any feeding of your own until the leaves read clear.`,
+    }
   }
 
   const sprayChip: FarmerChip =
@@ -528,7 +534,7 @@ function farmerFields(fields: Advisory[]): FarmerField[] {
 }
 
 export default function Dashboard() {
-  const { bump, refresh, telemetry } = useLive()
+  const { bump, refresh } = useLive()
   const [fieldId, setFieldId] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
 
@@ -540,28 +546,6 @@ export default function Dashboard() {
     () => fields.find((item) => item.fieldId === fieldId) ?? fields[0],
     [fields, fieldId],
   )
-
-  // The node's freshest own POST for the field being read, from the live
-  // telemetry poll (1 s, the node's own posting rate) — faster than the
-  // advisor's 2 s, so the valve state and the node's last-seen time on the
-  // action card lead the cards that wait for the next advisory payload. Only
-  // genuinely fresh posts count (NODE_FRESH_SECONDS): the telemetry feed also
-  // carries the DB's historical rows, and "posted 663 days ago" is not a
-  // live node.
-  const node = useMemo(() => {
-    if (!field) return null
-    let freshest: Telemetry | null = null
-    for (const row of telemetry) {
-      if (row.zone === field.fieldId && (!freshest || row.recordedAt > freshest.recordedAt)) {
-        freshest = row
-      }
-    }
-    if (!freshest) return null
-    const ageSeconds = (Date.now() - new Date(freshest.recordedAt).getTime()) / 1000
-    return Number.isFinite(ageSeconds) && ageSeconds >= 0 && ageSeconds <= NODE_FRESH_SECONDS
-      ? freshest
-      : null
-  }, [field, telemetry])
 
   // The live sky reading, when a live feed is configured. Polled far less often
   // than the advisory: the upstream observation is cached for ten minutes
@@ -712,7 +696,6 @@ export default function Dashboard() {
               band={soil.band}
               chips={farmerChips(field)}
               live={live.data?.station === field.station ? live.data : null}
-              node={node}
               onSelect={setFieldId}
             />
           </div>
