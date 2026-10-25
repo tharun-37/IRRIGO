@@ -1,16 +1,19 @@
 /**
  * Shared data-fetching hook.
  *
- * V2 has no WebSocket and nothing that changes by itself, so `bump` is kept as a
- * compatibility seam V1 left behind: a shell refresh and a page reload both want
- * the same data, and this is the single path. Pages that need fresher data pass
- * a shorter interval; they do not re-render on a fake stream.
+ * V2 has no WebSocket, but it does have hardware: the bench node posts every
+ * second, so the polling cadence is chosen around that stream, not around a
+ * static planner. `bump` is kept as a compatibility seam V1 left behind: a
+ * shell refresh and a page reload both want the same data, and this is the
+ * single path. Pages that need fresher data pass a shorter interval; they do
+ * not re-render on a fake stream.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError } from '../api/client'
 
-const MIN_REFETCH_MS = 3_000
+/** One beat of the node's 1 Hz stream: a new frame is worth a refetch. */
+const MIN_REFETCH_MS = 1_000
 
 export function usePollingFetch<T>(
   fetcher: () => Promise<T>,

@@ -32,7 +32,15 @@ interface Options {
   onFrame?: (frame: LiveFrame) => void
 }
 
-const POLL_MS = 10_000
+/**
+ * Poll cadence for the live-state feed.
+ *
+ * The bench node posts every second, so polling once per second is the
+ * fastest the shell can honestly follow the stream. `seen` sets make the
+ * repeat frames cheap: only genuinely new rows reach the handlers, so a
+ * steady 1 Hz feed re-renders only when the node actually said something new.
+ */
+const POLL_MS = 1_000
 
 export function useLiveTelemetry({ onTelemetry, onRecommendation }: Options) {
   const [state, setState] = useState<SocketState>('connecting')

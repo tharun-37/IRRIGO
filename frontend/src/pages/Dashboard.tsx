@@ -25,7 +25,17 @@ import { FarmerView, type FarmerChip, type FarmerField } from './FarmerView'
 import { int, num, relativeTime, titleCase } from '../lib/format'
 import type { Advisory, Telemetry } from '../types'
 
-const REFRESH = 15_000
+/**
+ * The advisor's own poll cadence.
+ *
+ * The node's raw frames arrive every second and are followed at that
+ * cadence by the telemetry poll; this number is for the *computed* advisor,
+ * whose fusion re-decides every field on every request. Once per second on
+ * a throttled machine spends CPU re-deciding a plan the probe has not moved;
+ * twice a second keeps every card within one beat of the 1 Hz stream while
+ * staying off the request thread the telemetry feed shares.
+ */
+const REFRESH = 2_000
 
 type Band = 'dry' | 'good' | 'wet' | 'rest' | 'none'
 
@@ -471,11 +481,12 @@ export default function Dashboard() {
   )
 
   // The node's freshest own POST for the field being read, from the live
-  // telemetry poll (10 s) — faster than the advisor's 15 s, so the valve
-  // state and the node's last-seen time on the action card lead the cards
-  // that wait for the next advisory payload. Only genuinely fresh posts
-  // count (NODE_FRESH_SECONDS): the telemetry feed also carries the DB's
-  // historical rows, and "posted 663 days ago" is not a live node.
+  // telemetry poll (1 s, the node's own posting rate) — faster than the
+  // advisor's 2 s, so the valve state and the node's last-seen time on the
+  // action card lead the cards that wait for the next advisory payload. Only
+  // genuinely fresh posts count (NODE_FRESH_SECONDS): the telemetry feed also
+  // carries the DB's historical rows, and "posted 663 days ago" is not a
+  // live node.
   const node = useMemo(() => {
     if (!field) return null
     let freshest: Telemetry | null = null
