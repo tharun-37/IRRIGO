@@ -462,6 +462,10 @@ class CompatService:
                 str(getattr(self.settings, "weather_end_year", "")),
                 str(HISTORY_DAYS),
                 str(SEASON_MAX_DAYS),
+                # The trigger fraction shapes the pickled schedule itself, so
+                # changing `.env` must invalidate the disk cache or a restart
+                # would serve plans computed at the previous trigger.
+                str(getattr(self.settings, "irrigation_trigger_fraction", "")),
             ]
         )
         digest = hashlib.sha1()

@@ -795,16 +795,18 @@ def _schedule_for(
     gdd_now: float,
     taw: float,
     raw: float,
+    stress_fraction_of_raw: float = 1.0,
 ):
     """
     Turn today's requirement into a dated schedule.
 
-    The stress trigger is passed at 1.0 of the allowable depletion, which is the
-    FAO-56 stress point rather than the earlier trigger a human operator usually
-    acts on. The optimiser plans so that the crop does not cross stress inside the
-    horizon; a farmer who would rather irrigate earlier than that is expressing a
-    risk preference, not a physics error, and it belongs in the caller's hands
-    rather than hard-coded here.
+    `stress_fraction_of_raw` is where a farmer's risk preference enters: the
+    default 1.0 plans to the FAO-56 stress point itself, so a schedule is agreed
+    only where the physics demands it, while a lower value irrigates earlier
+    than stress — fewer or shallower applications, bought at the price of more
+    passes. A human operator usually acts before the stress point; carrying the
+    choice as a caller's parameter, rather than hard-coding it here, keeps the
+    physics and the preference separate.
     """
     crop = event.crop_parameters
     et0, rain, probability = _forward_weather(
@@ -824,6 +826,7 @@ def _schedule_for(
         raw_mm=raw,
         soil=event.soil,
         method=event.method,
+        stress_fraction_of_raw=stress_fraction_of_raw,
     )
 
 
@@ -834,6 +837,7 @@ def plan_field(
     as_of: date | None = None,
     depletion_mm: float = 0.0,
     with_season: bool = True,
+    stress_fraction_of_raw: float = 1.0,
 ) -> FieldPlan:
     """
     Produce the water plan for one sowing as of one day.
@@ -842,6 +846,10 @@ def plan_field(
     right default for a sowing date, because on the day of sowing the profile
     *is* at field capacity, and it is the wrong default for a field check three
     weeks later, which is why it is a parameter rather than a constant.
+
+    `stress_fraction_of_raw` passes the caller's irrigation trigger through to
+    the schedule: the default 1.0 plans exactly to the FAO-56 stress point,
+    and any lower value asks the optimiser to act earlier than that.
     """
     crop = event.crop_parameters
     as_of = as_of or event.sown_on
@@ -882,7 +890,7 @@ def plan_field(
         )
 
     schedule = _schedule_for(event, station, climatology, as_of, depletion_mm, gdd_now,
-                             taw, raw)
+                             taw, raw, stress_fraction_of_raw)
 
     emerged = stage.stage == GrowthStage.INITIAL and (
         stage.season_progress >= event.emergence_fraction

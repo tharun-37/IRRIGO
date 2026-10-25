@@ -29,6 +29,7 @@ from typing import Any
 
 import pandas as pd
 
+from app.core.config import get_settings
 from irrigation.data.cultivation import METHODS
 from irrigation.data.crops import CROPS
 from irrigation.data.soil import TEXTURES
@@ -207,6 +208,11 @@ class PlanService:
             as_of=as_of,
             depletion_mm=depletion_mm,
             with_season=with_season,
+            # The operator's irrigation trigger, from `.env`. Read at plan time
+            # but a process constant: the caches below memoise on the plan
+            # inputs, and the process restarts whenever `.env` changes, so the
+            # fraction never stales inside a running process.
+            stress_fraction_of_raw=get_settings().irrigation_trigger_fraction,
         )
 
     def plan_cached(

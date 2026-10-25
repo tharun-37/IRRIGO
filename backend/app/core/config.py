@@ -69,6 +69,14 @@ class Settings(BaseSettings):
     #: rather than trusting the node. The models were fitted on FAO-56 values.
     enable_weather_enrichment: bool = True
 
+    #: Irrigation trigger as a fraction of the crop's readily available water.
+    #: 1.0 is the FAO-56 stress point — the engine schedules only when the
+    #: physics demands water. A lower fraction irrigates earlier than stress:
+    #: the operator's risk preference, for a demo or a farm that acts before
+    #: the crop feels it. Plan caches key on the plan inputs, so restart the
+    #: backend after changing this for it to take effect.
+    irrigation_trigger_fraction: float = 1.0
+
     # --- live weather, Open-Meteo primary / OpenWeather fallback ----------
     #: Open-Meteo needs no key and no account, so the live card works out of
     #: the box. An OpenWeather key, when present in `.env`, turns the keyed
