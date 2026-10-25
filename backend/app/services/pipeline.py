@@ -178,7 +178,7 @@ class AdvisoryPipeline:
         self._weather[station] = table
         return table
 
-    def _feature_frame(self, snap: FieldSnapshot) -> pd.DataFrame:
+    def _feature_frame(self, snap: FieldSnapshot, plan: Any = None) -> pd.DataFrame:
         """
         One row in the exact shape `FeatureSpec` and the trained model require.
 
@@ -187,11 +187,14 @@ class AdvisoryPipeline:
         same rule the corpus used. `soil_ph` is the crop's optimum midpoint and
         `soil_temperature_c` follows the corpus offset; both are the stated
         approximations `CompatService` documents for V1 and are reused here so the
-        two models are not fed contradictory soil chemistry.
+        two models are not fed contradictory soil chemistry. `plan` overrides the
+        snapshot's replay plan when a fresh probe grounds the soil state, and the
+        air features the node itself senses (temperature, humidity) come from
+        the node's row in that case.
         """
         event = snap.event
         point = snap.current
-        plan = point.plan
+        plan = plan if plan is not None else point.plan
         day = point.day
         weather = self._station_rows(event.station).get(day, {})
 
@@ -210,13 +213,26 @@ class AdvisoryPipeline:
                 theta_fc - depletion / max(1e-6, 1000.0 * root_depth_m), 0.0, theta_fc
             )
         )
-        air_temp = _f(weather.get("air_temperature_c"), 25.0)
+        # Sensible only when the plan was grounded at a fresh node row; for the
+        # replay path the station values stand, and `_live_node_row` degrades
+        # to None on any telemetry problem.
+        live_row = (
+            self.compat._live_node_row(event.field_id) if plan is not point.plan else None
+        )
+        air_temp = _f(
+            weather.get("air_temperature_c") if live_row is None else live_row.get("temperature"),
+            25.0,
+        )
+        air_humidity = _f(
+            weather.get("humidity_pct") if live_row is None else live_row.get("humidity"),
+            55.0,
+        )
 
         data: dict[str, Any] = {
             # -- measured atmosphere
             "et0_mm_day": _f(getattr(plan, "et0_mm_day", 0.0)),
             "vpd_kpa": _f(weather.get("vpd_kpa"), 1.2),
-            "humidity_pct": _f(weather.get("humidity_pct"), 55.0),
+            "humidity_pct": air_humidity,
             "air_temperature_c": air_temp,
             "tmax_c": _f(weather.get("tmax_c"), air_temp),
             "tmin_c": _f(weather.get("tmin_c"), air_temp),
@@ -296,9 +312,16 @@ class AdvisoryPipeline:
             return False, "Effective rooting depth is zero."
         return True, None
 
-    def _estimate(self, snap: FieldSnapshot) -> dict[str, Any]:
-        """The V2 requirement estimate plus its conformal interval."""
-        requirement = getattr(snap.current.plan, "requirement", None)
+    def _estimate(self, snap: FieldSnapshot, plan: Any = None) -> dict[str, Any]:
+        """The V2 requirement estimate plus its conformal interval.
+
+        `plan` overrides the snapshot's replay plan: when a fresh node reading
+        grounds the soil state, the estimate must describe *that* profile — a
+        requirement model predicting from a depletion the probe contradicts
+        would disagree with the advisory beside it by construction.
+        """
+        plan = plan if plan is not None else snap.current.plan
+        requirement = getattr(plan, "requirement", None)
         physics = _f(getattr(requirement, "net_requirement_mm", 0.0))
         single = _f(getattr(requirement, "single_application_mm", 0.0))
         block: dict[str, Any] = {
@@ -327,7 +350,7 @@ class AdvisoryPipeline:
             return block
 
         try:
-            features = self._feature_frame(snap)
+            features = self._feature_frame(snap, plan)
             prediction = float(self._model.predict(features)[0])
             if COVERAGE in self._model.conformal:
                 low, high = self._model.interval(prediction, COVERAGE)
@@ -481,8 +504,10 @@ class AdvisoryPipeline:
 
     # --- enrichment ------------------------------------------------------
 
-    def _enrich(self, snap: FieldSnapshot, advisory: dict[str, Any]) -> dict[str, Any]:
-        nir = self._estimate(snap)
+    def _enrich(
+        self, snap: FieldSnapshot, advisory: dict[str, Any], plan: Any = None
+    ) -> dict[str, Any]:
+        nir = self._estimate(snap, plan)
         fusion = self._fuse(advisory, nir)
         advisory["models"] = {
             "v1": self._v1_block(advisory),
@@ -543,7 +568,15 @@ class AdvisoryPipeline:
 
     def advisory(self, field_id: str) -> dict[str, Any]:
         snapshot = self.compat._find(field_id)  # raises KeyError -> 404 upstream
-        return self._enrich(snapshot, self.compat._advisory(snapshot))
+        advisory = self.compat._advisory(snapshot)
+        # The requirement estimate and the fusion must describe the same soil
+        # state the advisory's plan started from, so the grounding is looked
+        # up once here and passed through. When nothing is fresh this is the
+        # snapshot's own replay plan.
+        plan, _ = self.compat.grounded_plan(
+            snapshot.event, snapshot.current.plan, snapshot.current.day
+        )
+        return self._enrich(snapshot, advisory, plan)
 
     def advisories(self) -> dict[str, Any]:
         self.compat._require_ready()
@@ -551,7 +584,11 @@ class AdvisoryPipeline:
         for event in self.compat.plans.list_fields():
             try:
                 snapshot = self.compat._snapshot(event)
-                fields.append(self._enrich(snapshot, self.compat._advisory(snapshot)))
+                advisory = self.compat._advisory(snapshot)
+                plan, _ = self.compat.grounded_plan(
+                    snapshot.event, snapshot.current.plan, snapshot.current.day
+                )
+                fields.append(self._enrich(snapshot, advisory, plan))
             except Exception:
                 logger.exception("pipeline failed for %s", event.field_id)
         fields.sort(key=lambda item: item["priority"], reverse=True)

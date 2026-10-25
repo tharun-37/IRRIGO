@@ -887,10 +887,62 @@ class CompatService:
                 "features": {},
                 "frozen_sensors": [],
             }
-        readings = [point.reading for snap in self._snapshots() for point in snap.points]
+        # The drift question is about the deployed population, not the replay:
+        # the PSI is only honest against rows a real probe produced. The store
+        # wins whenever it has rows; the plan-replay readings remain the
+        # fallback so a fleet without telemetry still gets its synthetic check
+        # rather than an empty one.
+        readings = self._real_drift_readings(hours)
+        source = "telemetry" if readings else "replay"
+        if not readings:
+            readings = [point.reading for snap in self._snapshots() for point in snap.points]
         report = self._controller.drift_report(readings)
         report["window_hours"] = hours
+        report["source"] = source
         return report
+
+    def _real_drift_readings(self, hours: int, limit: int = 5_000) -> list[Reading]:
+        """
+        The fleet's real node rows inside the drift window, as Reading objects.
+
+        Quantities the nodes did not sense stay NaN and are skipped per-column
+        by `drift_report`'s value filter — a hole in the store must never read
+        as a shifted distribution. Unreadable store degrades to an empty list,
+        which the caller reads as "fall back to the replay readings".
+        """
+        try:
+            rows = ReadingRepository(get_database()).recent(hours=hours, limit=limit)
+        except Exception:
+            return []
+        nan = float("nan")
+        readings: list[Reading] = []
+        for row in rows:
+            moment = datetime.now(timezone.utc)
+            recorded = row.get("recordedAt")
+            if recorded:
+                try:
+                    moment = parse_iso(recorded)
+                except (TypeError, ValueError):
+                    moment = datetime.now(timezone.utc)
+            readings.append(
+                Reading(
+                    device_id=str(row.get("deviceId") or ""),
+                    zone=str(row.get("zone") or ""),
+                    temperature=_number(row.get("temperature"), nan),
+                    humidity=_number(row.get("humidity"), nan),
+                    soil_moisture=_number(row.get("soilMoisture"), nan),
+                    soil_ph=_number(row.get("soilPh"), nan),
+                    ec=_number(row.get("ec"), nan),
+                    nitrogen=_number(row.get("nitrogen"), nan),
+                    phosphorus=_number(row.get("phosphorus"), nan),
+                    potassium=_number(row.get("potassium"), nan),
+                    light_intensity=_number(row.get("lightIntensity"), nan),
+                    rainfall=_number(row.get("rainfall"), nan),
+                    wind_speed=_number(row.get("windSpeed"), nan),
+                    recorded_at=moment,
+                )
+            )
+        return readings
 
     def alerts(self, open_only: bool, limit: int) -> dict[str, Any]:
         alerts = [alert for snap in self._snapshots() for alert in self._field_alerts(snap)]
@@ -1141,14 +1193,69 @@ class CompatService:
             return crop in levels
         return crop in CROP_PROFILES
 
-    def _live_node_moisture(self, field_id: str) -> float | None:
+    def grounded_plan(
+        self, event: SowingEvent, replay_plan: Any, day: date
+    ) -> tuple[Any, dict[str, Any] | None]:
         """
-        The field's freshest real node soil moisture, or `None`.
+        The plan a field's advisory should start from, grounded in the probe.
+
+        A fresh node reading replaces the replay's *assumed* soil state: the
+        probe's relative-wetness percent (100 at field capacity, 0 when every
+        millimetre of plant-available water is gone) maps to a depletion
+        fraction of `1 - p/100` of TAW, and a plan built at that measured
+        depletion is returned in the first slot. ET, Kc and the rest of the
+        physics then run forward from the measured state — the same optimiser,
+        the same catalogue, a real starting point.
+
+        The second slot is the fresh reading itself, or `None` when no row was
+        fresh (the caller then answers from the replay alone). Telemetry or
+        planning failures degrade to the replay plan: a broken probe must
+        never stop the plan. Memoised through `plan_cached` on (field, day,
+        depletion), so repeated calls and the pipeline's second lookup draw
+        the same schedule.
+        """
+        row = self._live_node_row(event.field_id)
+        if row is None:
+            return replay_plan, None
+        value = row.get("soilMoisture")
+        if not isinstance(value, (int, float)):
+            return replay_plan, row
+        moisture = float(value)
+        taw_now = float(getattr(replay_plan, "taw_mm", 0.0) or 0.0)
+        if taw_now <= 0.0:
+            return replay_plan, row
+        measured_fraction = float(np.clip(1.0 - moisture / 100.0, 0.0, 1.0))
+        measured_depletion = round(measured_fraction * taw_now, 1)
+        replay_depletion = float(getattr(replay_plan, "depletion_mm", 0.0) or 0.0)
+        if abs(measured_depletion - replay_depletion) <= 1.0:
+            return replay_plan, row
+        try:
+            grounded = self.plans.plan_cached(
+                event.field_id,
+                day.isoformat(),
+                measured_depletion,
+                with_season=False,
+            )
+            return grounded, row
+        except Exception:
+            logger.exception(
+                "live-soil replan for %s failed; keeping the replay", event.field_id
+            )
+            return replay_plan, row
+
+    def _live_node_row(self, field_id: str) -> dict[str, Any] | None:
+        """
+        The field's freshest real node reading, or `None`.
 
         Mirrors the API overlay's lookup: newest row whose zone is the field,
         authoritative only inside the freshness window. Telemetry problems
         degrade to `None`, which keeps the advisory running on the weather
         replay — a missing probe must never kill the plan.
+
+        The row carries every quantity the node sensed (soil moisture, air
+        temperature, humidity, light) exactly as it posted them and the
+        derived/unsensed chemistry it inherited at ingest, so callers can
+        evaluate the models on the full measurement instead of just moisture.
         """
         try:
             rows = ReadingRepository(get_database()).latest(None, limit=200)
@@ -1164,10 +1271,82 @@ class CompatService:
             return None
         if not (0.0 <= age <= LIVE_NODE_FRESH_SECONDS):
             return None
-        value = row.get("soilMoisture")
-        if isinstance(value, (int, float)):
-            return float(value)
-        return None
+        return row
+
+    def _live_sensed_reading(self, row: dict[str, Any], base: Reading) -> Reading:
+        """
+        One Reading the models evaluate the node against.
+
+        The node-sensed quantities — soil moisture, air temperature, humidity,
+        light — come off the row exactly as posted. Everything the rig cannot
+        sense (pH, EC, nutrients) keeps the plan-derived value in `base`,
+        which is the document decision already recorded at ingest, not an
+        invention here. Luminance is clamped to the training window, the same
+        clamp the replay's reading applies to solar-derived light, because a
+        photoresistor left in the sun should not push the models outside the
+        data they were fitted on.
+        """
+        moisture = _number(row.get("soilMoisture"), base.soil_moisture)
+        moment = base.recorded_at
+        recorded = row.get("recordedAt")
+        if recorded:
+            try:
+                moment = parse_iso(recorded)
+            except (TypeError, ValueError):
+                pass
+        return replace(
+            base,
+            soil_moisture=moisture,
+            temperature=_number(row.get("temperature"), base.temperature),
+            humidity=_number(row.get("humidity"), base.humidity),
+            light_intensity=float(
+                np.clip(_number(row.get("lightIntensity"), base.light_intensity), 8000.0, 110_000.0)
+            ),
+            recorded_at=moment,
+        )
+
+    def _live_history(
+        self, row: dict[str, Any], base: Reading, limit: int = 7
+    ) -> list[Reading]:
+        """
+        The node's own trailing samples, oldest first, for temporal features.
+
+        The feature row's mean-3/mean-7/trend terms are functions of recent
+        soil-moisture readings; the ingest path already evaluates them on the
+        node's real history, so the advisory's re-decision must not evaluate
+        an empty series and claim the same feature values. Older rows may lag
+        on quantities the firmware gained later — unsensed gaps fall back to
+        the plan-derived `base` value, the same carry-forward rule ingest
+        applies. Spacing is the posting cadence, not a calendar day; that is
+        the honest shape of a 10 s bench deployment and matches the ingest
+        path's history exactly.
+        """
+        recent: list[Reading] = []
+        try:
+            rows = ReadingRepository(get_database()).previous_readings(
+                str(row.get("deviceId") or ""), row.get("recordedAt") or "", limit=limit
+            )
+        except Exception:
+            rows = []
+        for item in rows:
+            moment = base.recorded_at
+            recorded = item.get("recordedAt")
+            if recorded:
+                try:
+                    moment = parse_iso(recorded)
+                except (TypeError, ValueError):
+                    pass
+            recent.append(
+                replace(
+                    base,
+                    soil_moisture=_number(item.get("soilMoisture"), base.soil_moisture),
+                    temperature=_number(item.get("temperature"), base.temperature),
+                    humidity=_number(item.get("humidity"), base.humidity),
+                    light_intensity=_number(item.get("lightIntensity"), base.light_intensity),
+                    recorded_at=moment,
+                )
+            )
+        return recent
 
     def _advisory(self, snap: FieldSnapshot) -> dict[str, Any]:
         """
@@ -1203,39 +1382,37 @@ class CompatService:
         # forward from that measured state, which is exactly what precision
         # scheduling means: the physics is the same, the starting point is real.
         # Stage-based quantities are untouched; a probe cannot move Kc or age.
-        state_plan = plan
-        moisture = self._live_node_moisture(event.field_id)
+        # A fresh probe reading replaces the replay's *assumed* soil state:
+        # `grounded_plan` maps the node's relative wetness onto a real starting
+        # depletion and the full physics runs forward from it. Stage-based
+        # quantities are untouched; a probe cannot move Kc or age.
+        state_plan, live_row = self.grounded_plan(event, plan, point.day)
+        schedule = getattr(state_plan, "schedule", None) or schedule
+        moisture = None
+        if live_row is not None:
+            value = live_row.get("soilMoisture")
+            if isinstance(value, (int, float)):
+                moisture = float(value)
         if moisture is not None:
-            taw_now = float(getattr(plan, "taw_mm", 0.0) or 0.0)
-            if taw_now > 0.0:
-                measured_fraction = float(np.clip(1.0 - moisture / 100.0, 0.0, 1.0))
-                measured_depletion = round(measured_fraction * taw_now, 1)
-                replay_depletion = float(getattr(plan, "depletion_mm", 0.0) or 0.0)
-                if abs(measured_depletion - replay_depletion) > 1.0:
-                    try:
-                        state_plan = self.plans.plan_cached(
-                            event.field_id,
-                            point.day.isoformat(),
-                            measured_depletion,
-                            with_season=False,
-                        )
-                        schedule = getattr(state_plan, "schedule", None) or schedule
-                        # The decision is re-made through the same controller,
-                        # on the reading the probe actually took, at the live
-                        # plan's ET0. An empty history is the controller's own
-                        # documented single-sample mode (its warmup does it).
-                        decision = self._decide(
-                            state_plan,
-                            replace(point.reading, soil_moisture=moisture),
-                            point.config,
-                            [],
-                        )
-                    except Exception:
-                        logger.exception(
-                            "live-soil replan for %s failed; keeping the replay",
-                            event.field_id,
-                        )
-                        state_plan = plan
+            try:
+                # The decision is re-made through the same controller, on
+                # the reading the probe actually took — moisture, air
+                # temperature, humidity and light from the node — with the
+                # node's own trailing samples behind it, so the temporal
+                # features are the field's real trend. Unsensed chemistry
+                # keeps the derived values, as at ingest.
+                decision = self._decide(
+                    state_plan,
+                    self._live_sensed_reading(live_row, point.reading),
+                    point.config,
+                    self._live_history(live_row, point.reading),
+                )
+            except Exception:
+                logger.exception(
+                    "live reading decision for %s failed; keeping the replay",
+                    event.field_id,
+                )
+                decision = point.decision
 
         days_until = getattr(state_plan, "days_until_stress", None)
 
