@@ -117,10 +117,11 @@ def test_recommendation_endpoint_and_missing_device(client, device_id):
     assert client.post("/api/devices/nope/recommendation").status_code == 404
 
 
-def test_valve_is_refused_with_a_reason(client, device_id):
+def test_valve_is_accepted_with_a_reason(client, device_id):
     response = client.post(f"/api/devices/{device_id}/valve", json={"open": True})
-    assert response.status_code == 409
-    assert "planner" in response.json()["detail"]
+    assert response.status_code == 200
+    assert response.json()["accepted"] is True
+    assert response.json()["valveOpen"] is True
     assert client.post("/api/devices/nope/valve", json={"open": True}).status_code == 404
 
 
