@@ -1,6 +1,0 @@
-fix valve button flicker with optimistic state
-
-The valve button now uses local state for optimistic updates, preventing
-the button from flickering back to Open valve while waiting for the ESP32
-to respond. Server state syncs only when not pending. Pending state
-clears after 3 seconds or on API failure.
