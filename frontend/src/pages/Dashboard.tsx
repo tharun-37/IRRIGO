@@ -632,21 +632,6 @@ export default function Dashboard() {
     setPhotoAcks((prev) => ({ ...prev, [field.fieldId]: photoOn }))
   }, [field])
 
-  /**
-   * "Approve & run": the farmer confirms the plan, the backend stores the
-   * approved run, and the node's next 1 Hz POST carries the command. The
-   * button is replaced by the done toggle once the approval is open, so the
-   * farmer can still mark the day's task complete.
-   */
-  const approvePlan = useCallback(async (fieldId: string) => {
-    try {
-      await api.approvePlan(fieldId)
-    } catch (error) {
-      console.error('approve failed:', error)
-    }
-    // The advisory refetches every 2 s and will pick up the approval overlay.
-  }, [])
-
   // The farmer view's list and map are a reduction of the same feed, so they
   // are derived once per payload rather than per render.
   const farmRows = useMemo(() => farmerFields(fields), [fields])
@@ -783,7 +768,6 @@ export default function Dashboard() {
               live={live.data?.station === field.station ? live.data : null}
               onSelect={setFieldId}
               onClearPhoto={clearPhoto}
-              onApprove={approvePlan}
             />
           </div>
         )}

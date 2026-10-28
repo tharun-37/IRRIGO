@@ -404,10 +404,10 @@ describe('Field view', () => {
     expect(screen.getByText('minutes')).toBeTruthy()
     expect(screen.getByText(/at the pump · 18.4 mm over 1.0 acre/)).toBeTruthy()
 
-    // The two controls a farmer has to press: Listen, and Approve & run
+    // The two controls a farmer has to press: Listen, and Open valve
     // (since this field owes water and has no approval yet).
     expect(screen.getByRole('button', { name: /Listen/ })).toBeTruthy()
-    expect(screen.getByRole('button', { name: /Approve & run/i })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Open valve/i })).toBeTruthy()
 
     // The console's instrument vocabulary stays gone with the console.
     expect(screen.queryByText('Recommended depth')).toBeNull()
@@ -621,9 +621,8 @@ describe('Field view', () => {
     ).toBeTruthy()
   })
 
-  it('shows the approve button when water is owed and the plan is not yet approved', async () => {
-    // A field the plan says needs water, with no approval yet: the button
-    // reads "Approve & run" and calls the approve endpoint.
+  it('shows the valve button for any watered field', async () => {
+    // A field the plan says needs water shows the "Open valve" button.
     const watered = {
       ...FIELD,
       recommendation: {
@@ -646,14 +645,12 @@ describe('Field view', () => {
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
     )
-    const btn = screen.getByRole('button', { name: /approve & run/i })
+    const btn = screen.getByRole('button', { name: /open valve/i })
     expect(btn).toBeTruthy()
-    // button is enabled by default in the test fixture
   })
 
-  it('hides the approve button once the plan is approved', async () => {
-    // An open approval on the advisory replaces the approve button with the
-    // done toggle, because the node already has the command.
+  it('shows the valve button regardless of approval state', async () => {
+    // The valve button is always present, even when an approval exists.
     const approved = {
       ...FIELD,
       recommendation: {
@@ -670,24 +667,13 @@ describe('Field view', () => {
       },
       pumpRateLpm: 12.0,
       areaM2: 4000,
-      approval: {
-        approvalId: 'abc123',
-        approvedAt: '2026-10-25T09:00:00+00:00',
-        fieldId: 'PNQ-wheat-01',
-        status: 'open',
-        depthMm: 18.0,
-        durationSeconds: 120,
-        volumeLitres: 72.0,
-        pumpRateLpm: 12.0,
-      },
     }
     renderWithField(approved)
 
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
     )
-    expect(screen.queryByRole('button', { name: /approve & run/i })).toBeNull()
-    expect(screen.getByRole('button', { name: /mark done/i })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /open valve/i })).toBeTruthy()
   })
 
   it('carries the calendar top-dress when the sensors read adequate', async () => {
@@ -814,46 +800,16 @@ describe('Field view', () => {
   })
 
   it('records a done mark per field per day', async () => {
-    // Use a field with an active running approval so the "Stop watering"
-    // button shows (watered fields without approval show "Approve & run" instead).
-    const approvedField = {
-      ...FIELD,
-      recommendation: {
-        ...FIELD.recommendation,
-        shouldIrrigate: true,
-        finalDepthMm: 18.0,
-        depthMm: 18.0,
-        volumeLitres: 72.0,
-        durationSeconds: 120,
-        action: 'MODERATE_IRRIGATION',
-        confidence: 0.9,
-        probability: 0.91,
-        threshold: 0.5,
-      },
-      approval: {
-        approvalId: 'test-approval',
-        approvedAt: '2026-10-25T09:00:00+00:00',
-        fieldId: 'PNQ-wheat-01',
-        status: 'running',
-        depthMm: 18.0,
-        durationSeconds: 120,
-        volumeLitres: 72.0,
-        pumpRateLpm: 12.0,
-      },
-    }
-    renderWithField(approvedField)
+    // The valve button is always present now; test that it shows "Open valve"
+    // for a field with no active valve (valveOpen is false/undefined).
+    renderShell()
 
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'Water today' })).toBeTruthy(),
     )
 
-    const mark = screen.getByRole('button', { name: /Stop watering/ })
-    expect(mark.getAttribute('aria-pressed')).toBe('false')
-    fireEvent.click(mark)
-
-    const done = screen.getByRole('button', { name: /Done for today/ })
-    expect(done.getAttribute('aria-pressed')).toBe('true')
-    expect(screen.getByText('Done for today')).toBeTruthy()
+    const valve = screen.getByRole('button', { name: /Open valve/i })
+    expect(valve).toBeTruthy()
   })
 
   it('keeps the crop photo check page a straight capture flow', async () => {

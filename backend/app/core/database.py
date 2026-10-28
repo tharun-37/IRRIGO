@@ -147,6 +147,19 @@ CREATE TABLE IF NOT EXISTS events (
 CREATE INDEX IF NOT EXISTS idx_events_time
     ON events(created_at DESC);
 
+-- Manual valve commands from the dashboard. The node collects these in its
+-- next 1 Hz telemetry response and actuates the servo.
+CREATE TABLE IF NOT EXISTS manual_valve_commands (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    device_id     TEXT NOT NULL,
+    open_         INTEGER NOT NULL,
+    created_at    TEXT NOT NULL,
+    consumed      INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_manual_valve_device
+    ON manual_valve_commands(device_id, consumed, created_at DESC);
+
 -- Approved water plans. The farmer approves the advisor's decision on the
 -- dashboard; the bench node collects the command in the response of its next
 -- 1 Hz POST and runs the servo for exactly the approved run. Statuses:

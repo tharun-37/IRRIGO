@@ -6,7 +6,7 @@ temp database: approve (the endpoint rebuilds the advisory itself, so the
 node receives the engine's numbers, not the browser's), collect (the node's
 next 1 Hz POST response carries the command), claim (the node reports its
 valve open, which stops the re-issue), and done (the valve closes). The
-fifth state — expired — is the sweep: a command nobody collected dies when
+fifth state -- expired -- is the sweep: a command nobody collected dies when
 the approved window does, so nothing waters without a farmer watching.
 
 The advisory behind the HTTP tests is a patched pipeline advisory: the real
@@ -77,7 +77,7 @@ def client(tmp_path_factory):
     """One lifespan, with sowings and the database both redirected to temp.
 
     `get_database` caches its singleton process-wide, so the fixture swaps it
-    for a temp-backed Database and restores the previous one afterwards — a
+    for a temp-backed Database and restores the previous one afterwards -- a
     module whose tests read the project database must still see it.
     """
     import app.core.database as database_module
@@ -155,8 +155,8 @@ def _repository():
 def test_the_endpoint_approves_the_engine_s_own_numbers(client, monkeypatch):
     """
     Approving a wet plan answers with the advisory's depth, seconds and
-    volume — rebuilt server-side, so the node can never be handed numbers a
-    client invented — and the row opens with status `open`.
+    volume -- rebuilt server-side, so the node can never be handed numbers a
+    client invented -- and the row opens with status `open`.
     """
     _approve_probe(monkeypatch)
     approval = client.post(f"/api/advisor/{PROBE_FIELD}/approve")
@@ -202,7 +202,7 @@ def test_approving_a_dry_plan_is_refused(client, monkeypatch):
 
 
 def test_unknown_field_cannot_be_approved(client, monkeypatch):
-    """The 404 is the service's own — no advisory, no approval, ever."""
+    """The 404 is the service's own -- no advisory, no approval, ever."""
     _approve_probe(monkeypatch)
     response = client.post("/api/advisor/no-such-field/approve")
     assert response.status_code == 404
@@ -212,7 +212,7 @@ def test_the_node_collects_claims_and_completes_the_approved_run(client):
     """
     The full servo loop at the node's own 1 Hz rhythm: the open approval
     rides the POST response as a command; the node's own valve report claims
-    it (re-issuing stops); its closing report finishes the run — and the
+    it (re-issuing stops); its closing report finishes the run -- and the
     audit trail keeps every step in the event log.
     """
     from app.core.database import get_database

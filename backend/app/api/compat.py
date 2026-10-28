@@ -7,8 +7,8 @@ V1's shape. They are additive: no V2 route is displaced, and the paths
 (`/health`, `/zones`, `/telemetry`, `/analytics`, `/models`, `/alerts`,
 `/events`) do not collide with `/system`, `/fields`, `/plan` or `/model`.
 
-Control endpoints that V2 genuinely cannot honour — opening a valve, or a
-free-form prediction — return 409 with an explanation instead of a hollow
+Control endpoints that V2 genuinely cannot honour -- opening a valve, or a
+free-form prediction -- return 409 with an explanation instead of a hollow
 success. The dashboard surfaces that message verbatim.
 """
 
@@ -77,8 +77,8 @@ def get_ingest() -> IngestService:
     """
     The telemetry pipeline, built on first use.
 
-    Every argument is a process-wide singleton — the sqlite database, the
-    settings, the 2.6 MB decision bundle, the weather cache — so the lazy
+    Every argument is a process-wide singleton -- the sqlite database, the
+    settings, the 2.6 MB decision bundle, the weather cache -- so the lazy
     construction costs almost nothing, and this module stays importable even
     when those pieces are still warming.
     """
@@ -103,8 +103,8 @@ def telemetry(request: Request, body: dict[str, Any] | None = None) -> dict[str,
 
     V1 pushed telemetry over a WebSocket from a client running inside its own
     process; V2 turns the same contract into an HTTP POST so a bench node
-    speaks plain HTTP. The response carries the whole decision — should we
-    irrigate, at what depth, with what probability — so the node's Serial log
+    speaks plain HTTP. The response carries the whole decision -- should we
+    irrigate, at what depth, with what probability -- so the node's Serial log
     is the same answer the dashboard will render.
 
     `device_api_key` in `.env` turns on a shared-secret check via the
@@ -121,15 +121,17 @@ def telemetry(request: Request, body: dict[str, Any] | None = None) -> dict[str,
         raise HTTPException(status_code=422, detail=str(error)) from error
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
-    # The command never alters the decision — it rides the response so a node
+    # The command never alters the decision -- it rides the response so a node
     # with an approved plan can pick it up in the same poll it already talks.
     decision.update(_move_approval_along(request, body))
+    # Manual valve commands from the dashboard ride the response too.
+    decision.update(_move_manual_valve(request, body))
     return decision
 
 
 #: How long a node's own reading stays authoritative for its field's `sensors`.
 #: The bench posts every ~1 s; the window has to outlast a move or a couple of
-#: dropped samples, not a full outage — past it the advisory falls back to the
+#: dropped samples, not a full outage -- past it the advisory falls back to the
 #: plan-derived values and says so in its `live` block.
 LIVE_SENSOR_WINDOW_SECONDS = 1800.0
 
@@ -138,7 +140,7 @@ def _overlay_live(advisory: dict[str, Any]) -> dict[str, Any]:
     """
     Attach the node's freshest real reading to one field's advisory.
 
-    The advisor's `sensors` are derived from the field's plan replay — a
+    The advisor's `sensors` are derived from the field's plan replay -- a
     documented approximation, not a measurement. When a device posts real
     telemetry for the field's zone, the honest answer is the measurement, so
     the quantities the node actually senses replace the plan-derived ones, and
@@ -207,7 +209,7 @@ def _overlay_approval(advisory: dict[str, Any]) -> dict[str, Any]:
 
     An `open` or `running` approval is the dashboard's own mirror: the button
     under Today's job reads it instead of keeping its own state. A done or
-    superseded approval is history — the event log carries it, so the overlay
+    superseded approval is history -- the event log carries it, so the overlay
     drops it and the button returns to its pre-approval shape.
     """
     field_id = advisory.get("fieldId")
@@ -223,7 +225,7 @@ def _overlay_approval(advisory: dict[str, Any]) -> dict[str, Any]:
 
 
 #: How long a named photo finding stays actionable. A disease read does not
-#: expire like a moisture sample — lesions persist — but the fertiliser dispose
+#: expire like a moisture sample -- lesions persist -- but the fertiliser dispose
 #: decays: a blight named last month is not a blight the crop still carries, so
 #: past this window the photo stops constraining the plan and the farmer takes
 #: a fresh one.
@@ -235,7 +237,7 @@ def _named_results(request: Request) -> dict[str, dict[str, Any]]:
     The freshest named disease read per field, within the freshness window.
 
     Deliberately tolerant of everything: no photo history, no crop-health
-    table, an unreadable database — any of those leaves no photo constraining
+    table, an unreadable database -- any of those leaves no photo constraining
     the plan, which is exactly what "no photo evidence" means. One query per
     advisor request; the query is capped and field-scoped, so the 2 s poll
     never walks a long history.
@@ -262,7 +264,7 @@ def _named_results(request: Request) -> dict[str, dict[str, Any]]:
         if not label:
             continue
         # A read the service attached no guidance to named no disease it
-        # knows — "Potato Healthy" among them. That is a clean leaf, not a
+        # knows -- "Potato Healthy" among them. That is a clean leaf, not a
         # finding: it may not turn the fertiliser chip away from its green
         # "no feed" verdict, so it does not ride the advisory at all.
         if not treatment:
@@ -314,6 +316,7 @@ def zones(compat: CompatService = Depends(get_compat)) -> dict[str, Any]:
 
 @router.post("/devices/{device_id}/valve")
 def valve(
+    request: Request,
     device_id: str,
     body: dict[str, Any] | None = None,
     compat: CompatService = Depends(get_compat),
@@ -322,13 +325,18 @@ def valve(
         compat.device(device_id)
     except KeyError as error:
         raise HTTPException(status_code=404, detail=f"no device {device_id!r}") from error
-    raise HTTPException(
-        status_code=409,
-        detail=(
-            "V2 is a planner, not a controller: it has no valve to open. Use the "
-            "engine's schedule on the plan endpoint to decide when to irrigate."
-        ),
+    open_ = bool((body or {}).get("open", False))
+    from ..db.repository import ManualValveCommandRepository
+    from ..core.database import get_database
+    repo = ManualValveCommandRepository(get_database())
+    repo.create(device_id, open_)
+    EventRepository(get_database()).record(
+        kind="valve-manual",
+        device_id=device_id,
+        detail=f"Manual valve command: {'OPEN' if open_ else 'CLOSE'}",
+        source="dashboard",
     )
+    return {"accepted": True, "deviceId": device_id, "valveOpen": open_}
 
 
 @router.post("/devices/{device_id}/recommendation")
@@ -488,7 +496,7 @@ def approve_plan(
     Approve this field's current water plan for the node to run.
 
     The advisory is recomputed here and never taken from the client, so what
-    the node collects is exactly what the decision layer produced — depth,
+    the node collects is exactly what the decision layer produced -- depth,
     seconds and volume are the engine's own numbers, not the browser's. The
     row opens `open` and the node's next 1 Hz POST carries it as a `command`;
     when the node reports its valve open the row turns `running`, and `done`
@@ -507,7 +515,7 @@ def approve_plan(
         raise HTTPException(
             status_code=409,
             detail=(
-                "this field's plan calls for no water today — there is "
+                "this field's plan calls for no water today -- there is "
                 "nothing to approve, and no servo run would be honest"
             ),
         )
@@ -558,10 +566,10 @@ def _move_approval_along(request: Request, payload: dict[str, Any]) -> dict[str,
     The node side of the approval loop, fed by the reading it just posted.
 
     An open approval rides the POST response as `command` until the node
-    reports its valve open — the claim, which stops the re-issue (the servo
+    reports its valve open â€” the claim, which stops the re-issue (the servo
     already has the order). A running approval the valve reports closed
     becomes `done`. Everything here is tolerant: no approvals, an unreadable
-    database, a zone with no field — any of those flow through as plain
+    database, a zone with no field â€” any of those flow through as plain
     telemetry with no command attached.
     """
     zone = payload.get("zone")
@@ -593,7 +601,81 @@ def _move_approval_along(request: Request, payload: dict[str, Any]) -> dict[str,
                 zone=str(zone),
                 device_id=live["deviceId"],
                 detail=(
-                    f"Approved run {live['approvalId']} complete — valve closed again"
+                    f"Approved run {live['approvalId']} complete â€” valve closed again"
+                ),
+                source="node",
+            )
+            return {}
+        if live["status"] == "open":
+            return {"command": _command_view(live)}
+        return {}
+    except Exception:
+        # Approval bookkeeping must never hold up a reading.
+        return {}
+
+
+# --------------------------------------------------------------------------
+# out-of-band prediction
+# --------------------------------------------------------------------------
+
+
+@router.post("/predict")
+def predict(body: dict[str, Any] | None = None) -> dict[str, Any]:
+    raise HTTPException(
+        status_code=409,
+        detail=(
+            "V2 does not accept arbitrary sensor payloads. Register a sowing and "
+            "read its decision from /devices/{id}/recommendation instead."
+        ),
+    )
+
+
+def _move_manual_valve(request: Request, payload: dict[str, Any]) -> dict[str, Any]:
+    device_id = payload.get("device_id")
+    if not device_id:
+        return {}
+    try:
+        from ..db.repository import ManualValveCommandRepository
+        from ..core.database import get_database
+        repo = ManualValveCommandRepository(get_database())
+        pending = repo.pending_for_device(str(device_id))
+        if pending is None:
+            return {}
+        repo.consume(pending["id"])
+        return {"valveCommand": {"open": pending["open"]}}
+    except Exception:
+        return {}
+
+    zone = payload.get("zone")
+    if not zone:
+        return {}
+    try:
+        repository = ApprovalRepository(get_database())
+        live = repository.current_for_zone(str(zone))
+        if live is None:
+            return {}
+        valve_open = payload.get("valve_open")
+        if valve_open is True and live["status"] == "open":
+            repository.claim(live["approvalId"])
+            EventRepository(get_database()).record(
+                kind="plan-running",
+                zone=str(zone),
+                device_id=live["deviceId"],
+                detail=(
+                    f"Node claimed approval {live['approvalId']}: valve open, "
+                    f"running {live['durationSeconds'] // 60} min as approved"
+                ),
+                source="node",
+            )
+            return {}
+        if valve_open is False and live["status"] == "running":
+            repository.finish(live["approvalId"])
+            EventRepository(get_database()).record(
+                kind="plan-done",
+                zone=str(zone),
+                device_id=live["deviceId"],
+                detail=(
+                    f"Approved run {live['approvalId']} complete -- valve closed again"
                 ),
                 source="node",
             )

@@ -1,0 +1,22 @@
+Open and close valve button with confirmation dialog
+
+The Mark done button is replaced with an Open valve / Close valve toggle
+button. When the valve is open and the user clicks Close valve, a
+confirmation dialog warns that watering time is not yet finished (with
+remaining minutes) before closing. The servo moves in real-time via the
+existing telemetry ingest pipeline - the manual command rides the node's
+next 1 Hz POST response.
+
+Backend changes:
+- POST /devices/{id}/valve now stores a manual valve command instead of
+  returning 409
+- New manual_valve_commands table in the database schema
+- ManualValveCommandRepository for create/consume/pending lookup
+- Telemetry ingest response includes valveCommand for the node to act on
+- _move_manual_valve() handles the node-side collection loop
+
+Frontend changes:
+- Toggle valve button shows Open valve (green) or Close valve (red)
+- Confirmation dialog with remaining watering time before close
+- Uses api.valve() to send command to backend
+- Removed unused done/mark-done tracking code

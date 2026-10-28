@@ -979,3 +979,68 @@ def _plan_approval_row(row: sqlite3.Row) -> dict[str, Any]:
         # approval stays auditable without re-deriving anything.
         "plan": json_loads(row["plan_snapshot"] or "null", None),
     }
+
+
+class ManualValveCommandRepository:
+    """
+    Stores manual valve commands from the dashboard for the node to collect.
+
+    The dashboard sends open/close commands via POST /devices/{id}/valve. The node
+    collects them in its next 1 Hz telemetry POST response. Each command is
+    consumed once -- after the node reads it, it is marked consumed so it is not
+    re-issued.
+    """
+
+    def __init__(self, database: Database) -> None:
+        self.db = database
+
+    def create(self, device_id: str, open_: bool, now: datetime | None = None) -> dict[str, Any]:
+        """Store a manual valve command."""
+        created_at = iso(now or utcnow())
+        with self.db.transaction() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO manual_valve_commands (device_id, open_, created_at, consumed)
+                VALUES (?, ?, ?, 0)
+                """,
+                (device_id, 1 if open_ else 0, created_at),
+            )
+            row_id = cursor.lastrowid
+        return {"id": row_id, "device_id": device_id, "open": open_, "created_at": created_at}
+
+    def pending_for_device(self, device_id: str) -> dict[str, Any] | None:
+        """Get the oldest unconsumed command for a device."""
+        with self.db.cursor() as cursor:
+            cursor.execute(
+                "SELECT * FROM manual_valve_commands WHERE device_id = ? AND consumed = 0 ORDER BY created_at ASC, id ASC LIMIT 1",
+                (device_id,),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                return None
+            return {
+                "id": row["id"],
+                "device_id": row["device_id"],
+                "open": bool(row["open_"]),
+                "created_at": row["created_at"],
+            }
+
+    def consume(self, command_id: int) -> None:
+        """Mark a command as consumed."""
+        with self.db.transaction() as cursor:
+            cursor.execute(
+                "UPDATE manual_valve_commands SET consumed = 1 WHERE id = ?",
+                (command_id,),
+            )
+
+    def recent_for_device(self, device_id: str, limit: int = 5) -> list[dict[str, Any]]:
+        """Get recent commands for a device."""
+        with self.db.cursor() as cursor:
+            cursor.execute(
+                "SELECT * FROM manual_valve_commands WHERE device_id = ? ORDER BY created_at DESC, id DESC LIMIT ?",
+                (device_id, limit),
+            )
+            return [
+                {"id": row["id"], "device_id": row["device_id"], "open": bool(row["open_"]), "created_at": row["created_at"], "consumed": bool(row["consumed"])}
+                for row in cursor.fetchall()
+            ]

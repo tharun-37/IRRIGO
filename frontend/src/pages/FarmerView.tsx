@@ -24,12 +24,13 @@
  * alert rows) underneath.
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import type { ReactNode } from 'react'
 import { AlertGlyph, LeafGlyph } from '../components/ui'
 import CropHealthCheck from '../components/CropHealthCheck'
 import { FieldMap, type MapField, type MapTone } from '../components/FieldMap'
 import { int, num, titleCase } from '../lib/format'
+import { api } from '../api/client'
 import type { Advisory, LiveWeather } from '../types'
 
 type Band = 'dry' | 'good' | 'wet' | 'rest' | 'none'
@@ -175,29 +176,6 @@ function whyLine(field: Advisory, band: Band, watered: boolean): string {
 
 function stageWords(field: Advisory): string {
   return titleCase(String(field.stageLabel ?? '').replace(/\(.*?\)/g, '').trim())
-}
-
-function todayKey(): string {
-  const now = new Date()
-  return `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`
-}
-
-function readDone(key: string): boolean {
-  try {
-    return window.localStorage.getItem(key) === '1'
-  } catch {
-    return false
-  }
-}
-
-function writeDone(key: string, value: boolean): void {
-  try {
-    if (value) window.localStorage.setItem(key, '1')
-    else window.localStorage.removeItem(key)
-  } catch {
-    // A private-mode browser throws on write. The mark is a convenience, not
-    // the record, so losing it is better than breaking the screen over it.
-  }
 }
 
 /**
@@ -1033,7 +1011,6 @@ export function FarmerView({
   live,
   onSelect,
   onClearPhoto,
-  onApprove,
 }: {
   field: Advisory
   fields: FarmerField[]
@@ -1044,8 +1021,6 @@ export function FarmerView({
   onSelect: (fieldId: string) => void
   /** Clears the leaf-photo read behind a `dismiss` chip, back to pre-photo. */
   onClearPhoto?: () => void
-  /** Approves the current water plan; called with the field's approval when the farmer taps it. */
-  onApprove?: (fieldId: string) => Promise<void>
 }) {
   const watered = depth > 0
   const rest = band === 'rest'
@@ -1079,13 +1054,6 @@ export function FarmerView({
   const why = whyLine(field, band, watered)
   const rain = field.water.rainfallMmDay > 0.05 ? ' Rain today is already counted.' : ''
 
-  const doneKey = `irrigo.done.${field.fieldId}.${todayKey()}`
-  const [done, setDone] = useState(() => readDone(doneKey))
-
-  useEffect(() => {
-    setDone(readDone(doneKey))
-  }, [doneKey])
-
   useEffect(
     () => () => {
       if ('speechSynthesis' in window) window.speechSynthesis.cancel()
@@ -1112,10 +1080,27 @@ export function FarmerView({
     window.speechSynthesis.speak(utterance)
   }
 
-  const toggleDone = () => {
-    const next = !done
-    setDone(next)
-    writeDone(doneKey, next)
+  const toggleValve = () => {
+    const deviceId = field.live?.deviceId ?? field.sensors.deviceId ?? ''
+    if (!deviceId) return
+    const isOpen = field.live?.valveOpen === true
+    if (isOpen) {
+      // Watering time not yet finished — ask for confirmation
+      const remaining = field.approval
+        ? Math.max(0, field.approval.durationSeconds - (Date.now() / 1000 - new Date(field.approval.approvedAt).getTime() / 1000))
+        : 0
+      const remainingMin = Math.ceil(remaining / 60)
+      const msg = remainingMin > 0
+        ? `Watering time is not yet finished (${remainingMin} min remaining). Are you sure you want to close the valve?`
+        : 'Are you sure you want to close the valve?'
+      if (!window.confirm(msg)) return
+    }
+    const open = !isOpen
+    api.valve(deviceId, open).catch(() => {})
+    // Optimistic update
+    if (field.live) {
+      field.live.valveOpen = open
+    }
   }
 
   const plots = useMemo(() => plotsFor(fields), [fields])
@@ -1207,54 +1192,19 @@ export function FarmerView({
                   <SpeakerGlyph size={18} />
                   Listen
                 </button>
-                {/* Approve & run only when water is owed AND no active approval. */}
-                {!field.approval ? (
-                  watered && onApprove && (
-                    <button
-                      type="button"
-                      onClick={() => onApprove(field.fieldId)}
-                      className="flex h-9 items-center justify-center gap-2 rounded-card border border-brand-600 bg-brand-50 text-[13px] font-semibold text-brand-700 transition-colors hover:border-brand-700 hover:bg-brand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
-                    >
-                      <CheckGlyph size={18} />
-                      Approve & run
-                    </button>
-                  )
-                ) : (
-                  // An active approval (open/running) means the node has the command.
-                  // If water is currently running, the farmer stops it; when the
-                  // approved window has passed, the button says "Done for today".
-                  <>
-                    {watered && field.approval.status === 'running' ? (
-                      <button
-                        type="button"
-                        onClick={toggleDone}
-                        aria-pressed={done}
-                        className={`flex h-9 items-center justify-center gap-2 rounded-card border text-[13px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${
-                          done
-                            ? 'border-status-healthy bg-status-healthySoft text-[#15803d]'
-                            : 'border-red-600 bg-red-50 text-red-700 hover:border-red-700 hover:bg-red-100'
-                        }`}
-                      >
-                        <CheckGlyph size={18} />
-                        {done ? 'Done for today' : 'Stop watering'}
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={toggleDone}
-                        aria-pressed={done}
-                        className={`flex h-9 items-center justify-center gap-2 rounded-card border text-[13px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${
-                          done
-                            ? 'border-status-healthy bg-status-healthySoft text-[#15803d]'
-                            : 'border-ink-200 bg-white text-ink-900 hover:border-ink-300 hover:bg-ink-50'
-                        }`}
-                      >
-                        <CheckGlyph size={18} />
-                        {done ? 'Done for today' : 'Mark done'}
-                      </button>
-                    )}
-                  </>
-                )}
+                {/* Open/Close valve button — controls the servo in real-time. */}
+                <button
+                  type="button"
+                  onClick={toggleValve}
+                  className={`flex h-9 items-center justify-center gap-2 rounded-card border text-[13px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${
+                    field.live?.valveOpen
+                      ? 'border-red-600 bg-red-50 text-red-700 hover:border-red-700 hover:bg-red-100'
+                      : 'border-status-healthy bg-status-healthySoft text-[#15803d] hover:border-[#15803d] hover:bg-green-100'
+                  }`}
+                >
+                  <CheckGlyph size={18} />
+                  {field.live?.valveOpen ? 'Close valve' : 'Open valve'}
+                </button>
               </div>
             </div>
           </section>
