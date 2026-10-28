@@ -1,9 +1,6 @@
-add manual valve control button with confirmation dialog
+fix valve button flicker with optimistic state
 
-- Backend: POST /devices/{id}/valve now stores manual commands instead of returning 409
-- New manual_valve_commands table for device-side command queue
-- Telemetry response includes valveCommand for ESP32 to act on in real-time
-- Frontend: Open valve (green) / Close valve (red) toggle button
-- Confirmation dialog when closing valve while watering time is not finished
-- Updated test_valve_is_refused_with_a_reason to test_valve_is_accepted_with_a_reason
-- All 67 frontend + 50 backend tests pass
+The valve button now uses local state for optimistic updates, preventing
+the button from flickering back to Open valve while waiting for the ESP32
+to respond. Server state syncs only when not pending. Pending state
+clears after 3 seconds or on API failure.

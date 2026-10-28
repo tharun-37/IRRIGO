@@ -321,13 +321,26 @@ def valve(
     body: dict[str, Any] | None = None,
     compat: CompatService = Depends(get_compat),
 ) -> dict[str, Any]:
+    # Look up the device from the database (not the compat registry),
+    # so bench nodes that have posted telemetry are accepted.
+    from ..db.repository import DeviceRepository
+    from ..core.database import get_database
+    device_repo = DeviceRepository(get_database())
+    device = None
     try:
-        compat.device(device_id)
-    except KeyError as error:
-        raise HTTPException(status_code=404, detail=f"no device {device_id!r}") from error
+        device = device_repo.get(device_id)
+    except KeyError:
+        pass
+    if device is None:
+        with get_database().cursor() as cursor:
+            cursor.execute("SELECT * FROM devices WHERE id = ?", (device_id,))
+            row = cursor.fetchone()
+            if row is not None:
+                device = {"id": row["id"]}
+    if device is None:
+        raise HTTPException(status_code=404, detail=f"no device {device_id!r}")
     open_ = bool((body or {}).get("open", False))
     from ..db.repository import ManualValveCommandRepository
-    from ..core.database import get_database
     repo = ManualValveCommandRepository(get_database())
     repo.create(device_id, open_)
     EventRepository(get_database()).record(

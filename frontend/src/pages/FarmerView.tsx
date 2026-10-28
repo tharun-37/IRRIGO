@@ -24,7 +24,7 @@
  * alert rows) underneath.
  */
 
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { AlertGlyph, LeafGlyph } from '../components/ui'
 import CropHealthCheck from '../components/CropHealthCheck'
@@ -1080,12 +1080,23 @@ export function FarmerView({
     window.speechSynthesis.speak(utterance)
   }
 
+  // Local valve state for optimistic updates
+  const [valveOpen, setValveOpen] = useState<boolean>(field.live?.valveOpen === true)
+  const [valvePending, setValvePending] = useState<boolean>(false)
+
+  // Sync with server state when advisory refreshes (only when not pending)
+  useEffect(() => {
+    if (!valvePending && field.live?.valveOpen != null) {
+      setValveOpen(field.live.valveOpen)
+    }
+  }, [field.live?.valveOpen, valvePending])
+
   const toggleValve = () => {
     const deviceId = field.live?.deviceId ?? field.sensors.deviceId ?? ''
     if (!deviceId) return
-    const isOpen = field.live?.valveOpen === true
+    const isOpen = valveOpen
     if (isOpen) {
-      // Watering time not yet finished — ask for confirmation
+      // Watering time not yet finished - ask for confirmation
       const remaining = field.approval
         ? Math.max(0, field.approval.durationSeconds - (Date.now() / 1000 - new Date(field.approval.approvedAt).getTime() / 1000))
         : 0
@@ -1096,11 +1107,13 @@ export function FarmerView({
       if (!window.confirm(msg)) return
     }
     const open = !isOpen
-    api.valve(deviceId, open).catch(() => {})
-    // Optimistic update
-    if (field.live) {
-      field.live.valveOpen = open
-    }
+    setValveOpen(open)
+    setValvePending(true)
+    api.valve(deviceId, open).catch(() => {
+      setValveOpen(isOpen)
+      setValvePending(false)
+    })
+    setTimeout(() => setValvePending(false), 3000)
   }
 
   const plots = useMemo(() => plotsFor(fields), [fields])
@@ -1197,13 +1210,13 @@ export function FarmerView({
                   type="button"
                   onClick={toggleValve}
                   className={`flex h-9 items-center justify-center gap-2 rounded-card border text-[13px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${
-                    field.live?.valveOpen
+                    valveOpen
                       ? 'border-red-600 bg-red-50 text-red-700 hover:border-red-700 hover:bg-red-100'
                       : 'border-status-healthy bg-status-healthySoft text-[#15803d] hover:border-[#15803d] hover:bg-green-100'
                   }`}
                 >
                   <CheckGlyph size={18} />
-                  {field.live?.valveOpen ? 'Close valve' : 'Open valve'}
+                  {valveOpen ? 'Close valve' : 'Open valve'}
                 </button>
               </div>
             </div>
