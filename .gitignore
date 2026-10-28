@@ -45,3 +45,7 @@ frontend/*.tsbuildinfo
 # corpus this rule is actually meant to exclude is the one at the root.
 data/
 !/src/irrigation/data/
+
+# Datasets (large data files, regenerate with scripts/)
+datasets/
+
